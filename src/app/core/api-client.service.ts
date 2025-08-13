@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Categoria, Movimiento } from './models';
 import { AuthService } from './auth.service';
+import { ENV } from './env';
 
 type Mode = 'local' | 'remote';
 const MODE: Mode = 'remote'; // cámbialo a 'local' si quieres probar sin backend
@@ -89,7 +90,7 @@ export class ApiClientService {
   }
 
   // Ajusta aquí la URL base de tu API (local o deploy)
-  private base = 'https://nanoclean-api.onrender.com';
+  private base = ENV.API_URL || 'http://localhost:3000';
 
   private listMovimientosRemote(params?: any){ 
     const qs = this.qs(params);
