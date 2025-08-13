@@ -1,0 +1,19 @@
+<section class="grid">
+  <mat-card>
+    <h3>Hoy</h3>
+    <p>Ingresos: {{ingHoy() | currency:'MXN':'symbol-narrow':'1.0-0'}}</p>
+    <p>Egresos: {{egHoy() | currency:'MXN':'symbol-narrow':'1.0-0'}}</p>
+    <p><b>Balance:</b> {{(ingHoy()-egHoy()) | currency:'MXN'}}</p>
+  </mat-card>
+
+  <mat-card>
+    <h3>Mes</h3>
+    <p>Ingresos: {{ingMes() | currency:'MXN'}}</p>
+    <p>Egresos: {{egMes() | currency:'MXN'}}</p>
+    <p><b>Balance:</b> {{(ingMes()-egMes()) | currency:'MXN'}}</p>
+
+    <button mat-stroked-button (click)="exportarCSV()" style="margin-top:8px">
+      Exportar CSV del mes
+    </button>
+  </mat-card>
+</section>

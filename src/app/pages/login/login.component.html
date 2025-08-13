@@ -1,0 +1,19 @@
+<h2>Iniciar sesión</h2>
+
+<form [formGroup]="fg" (ngSubmit)="submit()">
+  <mat-form-field style="width:100%" appearance="fill">
+    <mat-label>Email</mat-label>
+    <input matInput formControlName="email" type="email" autocomplete="email" />
+  </mat-form-field>
+
+  <mat-form-field style="width:100%" appearance="fill">
+    <mat-label>Contraseña</mat-label>
+    <input matInput formControlName="password" type="password" autocomplete="current-password" />
+  </mat-form-field>
+
+  <button mat-raised-button color="primary" type="submit" [disabled]="fg.invalid || loading">
+    {{ loading ? 'Entrando...' : 'Entrar' }}
+  </button>
+
+  <p *ngIf="err" style="color:#b00020; margin-top:8px">{{err}}</p>
+</form>

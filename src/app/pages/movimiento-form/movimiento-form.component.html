@@ -1,0 +1,38 @@
+<form [formGroup]="fg" (ngSubmit)="save()">
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Tipo</mat-label>
+    <mat-select formControlName="tipo">
+      <mat-option value="ingreso">Ingreso</mat-option>
+      <mat-option value="egreso">Egreso</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Monto</mat-label>
+    <input matInput formControlName="monto" inputmode="decimal" type="number" step="0.01">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Fecha</mat-label>
+    <input matInput formControlName="fecha" type="date">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Categoría</mat-label>
+    <mat-select formControlName="categoria_id">
+      <mat-option *ngFor="let c of categorias" [value]="c.id">{{c.nombre}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Método de pago</mat-label>
+    <input matInput formControlName="metodo_pago" placeholder="Efectivo, transferencia...">
+  </mat-form-field>
+
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Nota</mat-label>
+    <input matInput formControlName="nota" maxlength="140">
+  </mat-form-field>
+
+  <button mat-raised-button color="primary" type="submit" [disabled]="fg.invalid">Guardar</button>
+</form>

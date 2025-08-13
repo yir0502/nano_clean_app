@@ -1,0 +1,18 @@
+<div class="filters">
+  <button mat-stroked-button (click)="filtrar('hoy')">Hoy</button>
+  <button mat-stroked-button (click)="filtrar('semana')">Semana</button>
+  <button mat-stroked-button (click)="filtrar('mes')">Mes</button>
+  <button mat-stroked-button (click)="limpiar()">Todos</button>
+</div>
+
+<mat-list>
+  <mat-list-item *ngFor="let m of data()" (click)="open(m.id)">
+    <div matListItemTitle>{{ m.tipo | titlecase }} • {{ m.monto | currency:'MXN' }}</div>
+    <div matListItemLine>{{ m.fecha }} · {{ m.nota || '—' }}</div>
+
+    <button mat-icon-button color="warn" matListItemMeta
+            (click)="eliminar(m.id, $event)" aria-label="Eliminar">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </mat-list-item>
+</mat-list>
