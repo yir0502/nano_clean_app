@@ -173,6 +173,8 @@ export class ApiClientService {
 
   // ===== API GENÉRICA (para usar this.api.get('/dashboard'), etc.) =====
   get<T>(path: string, params?: Record<string, any>): Promise<T> {
+    console.log(`ApiClientService: GET ${path}`, this.url(path, params), MODE);
+    
     if (MODE === 'remote') return this.fetchJSON(this.url(path, params));
     // Soporte local para /dashboard
     if (path === '/dashboard') return this.dashboardLocal() as unknown as Promise<T>;

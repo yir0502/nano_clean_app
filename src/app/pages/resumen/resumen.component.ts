@@ -1,157 +1,224 @@
+// src/app/pages/resumen/resumen.component.ts
 import { Component, OnInit } from '@angular/core';
-import { SharedModule } from '../../shared/shared.module';
-import { NgIf, NgFor, DatePipe, CurrencyPipe } from '@angular/common';
-import { Chart, registerables } from 'chart.js';
-import { ChartConfiguration } from 'chart.js';
-import { ApiClientService } from '../../core/api-client.service';
+import { CommonModule } from '@angular/common';
 
-Chart.register(...registerables);
+import { MatCardModule } from '@angular/material/card';
+import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
-type SerieMes = { label: string; ingresos: number; egresos: number; };
-type CategoriaMonto = { nombre: string; monto: number; };
-type Movimiento = { id: string; fecha: string; categoria: string; tipo: 'ingreso'|'egreso'; monto: number; nota?: string; };
+import { NgChartsModule } from 'ng2-charts';
+import type { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { Chart as ChartJS, registerables } from 'chart.js';
+ChartJS.register(...registerables);
 
-const BRAND = '#1e6bff'; // azul de marca
-const EXPEN = '#ff3b30'; // rojo egresos (iOS-like)
-const hexA = (hex: string, a: number) => {
-  const bigint = parseInt(hex.replace('#',''), 16);
-  const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
-  return `rgba(${r},${g},${b},${a})`;
-};
+import { DashboardService, DashboardUIResponse, DashboardDay } from '../../core/dashboard.service';
+
+// 🎨 Colores (ajusta a tu marca)
+const C_INGRESO_BG   = 'hsla(158, 64%, 45%, .75)'; // verde
+const C_INGRESO_LINE = 'hsl(158, 64%, 45%)';
+const C_EGRESO_BG    = 'hsla(0, 83%, 60%, .75)';   // rojo
+const C_EGRESO_LINE  = 'hsl(0, 83%, 60%)';
 
 @Component({
   selector: 'app-resumen',
   standalone: true,
-  imports: [SharedModule, NgIf, NgFor, DatePipe, CurrencyPipe],
+  imports: [
+    CommonModule,
+    MatCardModule, MatListModule, MatIconModule, MatDividerModule, MatButtonToggleModule,
+    NgChartsModule
+  ],
   templateUrl: './resumen.component.html',
   styleUrls: ['./resumen.component.scss']
 })
 export class ResumenComponent implements OnInit {
+  // Estado
   loading = true;
+  error?: string;
 
-  // KPIs
+  // KPIs (mes actual)
   ingresosMes = 0;
   egresosMes  = 0;
   balanceMes  = 0;
 
-  // Rango seleccionado (12m por defecto)
-  range: '12m'|'6m'|'3m' = '12m';
-  seriesFull: SerieMes[] = [];
+  // Rango de la 1ª gráfica
+  range: '3m'|'6m'|'12m' = '3m';
 
-  // Line: Ingresos vs Egresos
-  lineLabels: string[] = [];
-  lineData: ChartConfiguration<'line'>['data'] = {
-    labels: this.lineLabels,
-    datasets: [
-      {
-        label: 'Ingresos',
-        data: [],
-        borderColor: BRAND,
-        backgroundColor: hexA(BRAND, 0.18),
-        pointBackgroundColor: BRAND,
-        pointRadius: 2,
-        borderWidth: 2,
-        tension: .35,
-        fill: true
-      },
-      {
-        label: 'Egresos',
-        data: [],
-        borderColor: EXPEN,
-        backgroundColor: hexA(EXPEN, 0.18),
-        pointBackgroundColor: EXPEN,
-        pointRadius: 2,
-        borderWidth: 2,
-        tension: .35,
-        fill: true
-      }
-    ]
+  // 1) Ingresos vs Egresos (tipo dinámico, usamos barras agregadas)
+  mainChartType: ChartType = 'bar';
+  lineData: ChartData = { labels: [], datasets: [] };
+  lineOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: true } },
+    scales: {
+      x: { ticks: { maxRotation: 0, autoSkip: true } },
+      y: { beginAtZero: true }
+    },
+    elements: { line: { tension: 0.25 } },
+    datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9, maxBarThickness: 36 } }
   };
-  lineOptions: ChartConfiguration<'line'>['options'] = {
+
+  // 2) Barras por categoría (MES)
+  barEgresoData:  ChartData<'bar'> = { labels: [], datasets: [] };
+  barIngresoData: ChartData<'bar'> = { labels: [], datasets: [] };
+  barOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true, maintainAspectRatio: false,
-    plugins:{ legend:{ position:'top' } },
-    scales:{
-      y:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,.06)' } },
-      x:{ grid:{ display:false } }
+    plugins: { legend: { display: true, position: 'bottom' } },
+    scales: { y: { beginAtZero: true } },
+    datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9, maxBarThickness: 36 } }
+  };
+
+  // Recientes
+  recientes: { id: string; tipo: 'ingreso'|'egreso'; categoria: string; fecha: string; monto: number }[] = [];
+
+  constructor(private dash: DashboardService) {}
+  async ngOnInit(){ await this.loadAll(); }
+
+  // ---- helpers ----
+  private iso(d: Date) { return d.toISOString().slice(0,10); }
+  private toNumber(n: any){ const x = Number(n); return isNaN(x) ? 0 : x; }
+  private hasNonZero(arr: number[]){ return arr.some(v => v !== 0); }
+
+  private rangeDates(kind: '3m'|'6m'|'12m'): { desde: string; hasta: string } {
+    const hasta = this.iso(new Date());
+    const d = new Date();
+    if (kind === '3m')  d.setMonth(d.getMonth() - 3);
+    if (kind === '6m')  d.setMonth(d.getMonth() - 6);
+    if (kind === '12m') d.setMonth(d.getMonth() - 12);
+    return { desde: this.iso(d), hasta };
+  }
+
+  private mesActualLabel(): string {
+    const now = new Date();
+    const txt = new Intl.DateTimeFormat('es-MX', { month: 'long', year: 'numeric' }).format(now);
+    return txt.charAt(0).toUpperCase() + txt.slice(1);
+  }
+  private rangoLabel(): string {
+    return this.range === '3m' ? '3 meses' : this.range === '6m' ? '6 meses' : '12 meses';
+  }
+
+  // Agregación (para no tener “mil” barras/días)
+  private weekKey(fechaISO: string): { key: string; label: string } {
+    const d = new Date(fechaISO + 'T00:00:00');
+    const day = (d.getDay() + 6) % 7; // 0=lunes
+    const monday = new Date(d); monday.setDate(d.getDate() - day);
+    const key = monday.toISOString().slice(0,10);
+    const lab = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short' }).format(monday);
+    return { key, label: `Sem ${lab}` };
+  }
+  private monthKey(fechaISO: string): { key: string; label: string } {
+    const key = fechaISO.slice(0,7); // YYYY-MM
+    const [y, m] = key.split('-').map(Number);
+    const lab = new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(new Date(y, m-1, 1));
+    return { key, label: lab };
+  }
+  private aggregate(serie: DashboardDay[], mode: 'weekly'|'monthly'){
+    const map = new Map<string, { ingresos: number; egresos: number; label: string }>();
+    for (const d of serie){
+      const sel = mode === 'weekly' ? this.weekKey(d.fecha) : this.monthKey(d.fecha);
+      const cur = map.get(sel.key) || { ingresos: 0, egresos: 0, label: sel.label };
+      cur.ingresos += this.toNumber(d.ingresos);
+      cur.egresos  += this.toNumber(d.egresos);
+      map.set(sel.key, cur);
     }
-  };
+    return Array.from(map.values());
+  }
 
-  // Dona: categorías del mes (paleta consistente)
-  doughnutData: ChartConfiguration<'doughnut'>['data'] = {
-    labels: [], datasets: [{ data: [], backgroundColor: [
-      hexA(BRAND, .9), '#00bcd4', '#ff9800', '#4caf50', '#ab47bc', '#8d6e63'
-    ] }]
-  };
-  doughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ position:'right' } }
-  };
+  // ---- carga de datos ----
+  async loadAll(){
+    try{
+      this.loading = true; this.error = undefined;
 
-  // Últimos movimientos
-  recientes: Movimiento[] = [];
+      const { desde, hasta } = this.rangeDates(this.range);
+      const resp: DashboardUIResponse = await this.dash.get({ desde, hasta, include: 'mes,recientes', limit_recientes: 10 });
 
-  constructor(private api: ApiClientService) {}
+      // KPIs
+      const k = resp.kpis_mes ?? { ingresos: 0, egresos: 0, balance: 0 };
+      this.ingresosMes = this.toNumber(k.ingresos);
+      this.egresosMes  = this.toNumber(k.egresos);
+      this.balanceMes  = this.toNumber(k.balance);
 
-  async ngOnInit() {
-    try {
-      const dash = await this.api.get<any>('/dashboard');
+      // Barras por categoría (MES)
+      const eg  = resp.por_categoria_mes?.egreso  ?? [];
+      const ing = resp.por_categoria_mes?.ingreso ?? [];
+      const mesLbl = this.mesActualLabel();
 
-      this.ingresosMes = dash?.kpis?.ingresosMes ?? 0;
-      this.egresosMes  = dash?.kpis?.egresosMes ?? 0;
-      this.balanceMes  = this.ingresosMes - this.egresosMes;
-
-      this.seriesFull = dash?.series ?? [];
-      this.applyRange(this.range);
-
-      const cat: CategoriaMonto[] = dash?.categoriasMes ?? [];
-      this.doughnutData = {
-        labels: cat.map(c => c.nombre),
-        datasets: [{ 
-          data: cat.map(c => c.monto),
-          backgroundColor: [
-            hexA(BRAND, .9), '#00bcd4', '#ff9800', '#4caf50', '#ab47bc', '#8d6e63'
-          ]
+      this.barEgresoData = {
+        labels: eg.map(c => c?.nombre || 'Sin categoría'),
+        datasets: [{
+          label: `Egresos (${mesLbl})`,
+          data: eg.map(c => this.toNumber(c?.total)),
+          backgroundColor: C_EGRESO_BG,
+          borderColor: C_EGRESO_LINE,
+          borderWidth: 1,
+          borderRadius: 6
+        }]
+      };
+      this.barIngresoData = {
+        labels: ing.map(c => c?.nombre || 'Sin categoría'),
+        datasets: [{
+          label: `Ingresos (${mesLbl})`,
+          data: ing.map(c => this.toNumber(c?.total)),
+          backgroundColor: C_INGRESO_BG,
+          borderColor: C_INGRESO_LINE,
+          borderWidth: 1,
+          borderRadius: 6
         }]
       };
 
-      this.recientes = dash?.ultimosMovimientos ?? [];
-    } catch {
-      // Fallback demo
-      const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-      this.seriesFull = meses.map((m,i) => ({
-        label: m,
-        ingresos: (12+i*2)*1000,
-        egresos : (8 +i*1 )*800
-      }));
-      this.applyRange(this.range);
+      // 1ª gráfica: Ingresos vs Egresos (agregado)
+      const mode = this.range === '3m' ? 'weekly' : 'monthly';
+      const serie = this.aggregate(resp.por_dia ?? [], mode);
+      const labels = serie.map(s => s.label);
+      const serieIng = serie.map(s => s.ingresos);
+      const serieEgr = serie.map(s => s.egresos);
 
-      this.doughnutData = {
-        labels: ['Lavado','Secado','Planchado','Tintorería'],
-        datasets: [{ data: [3200, 1800, 1200, 600],
-          backgroundColor: [hexA(BRAND,.9),'#00bcd4','#ff9800','#4caf50'] }]
-      };
+      const rangoLbl = this.rangoLabel();
+      const datasets: any[] = [];
+      if (this.hasNonZero(serieIng)) {
+        datasets.push({
+          label: `Ingresos (${rangoLbl})`,
+          data: serieIng,
+          backgroundColor: C_INGRESO_BG,
+          borderColor: C_INGRESO_LINE,
+          borderWidth: 1
+        });
+      }
+      if (this.hasNonZero(serieEgr)) {
+        datasets.push({
+          label: `Egresos (${rangoLbl})`,
+          data: serieEgr,
+          backgroundColor: C_EGRESO_BG,
+          borderColor: C_EGRESO_LINE,
+          borderWidth: 1
+        });
+      }
+      if (datasets.length === 0 && labels.length) {
+        datasets.push({
+          label: `Egresos (${rangoLbl})`,
+          data: new Array(labels.length).fill(0),
+          backgroundColor: C_EGRESO_BG,
+          borderColor: C_EGRESO_LINE,
+          borderWidth: 1
+        });
+      }
 
-      this.ingresosMes = 37000; this.egresosMes = 22000; this.balanceMes = 15000;
-      this.recientes = [
-        { id:'1', fecha: new Date().toISOString(), categoria:'Lavado', tipo:'ingreso', monto:120, nota:'Ticket 1032' },
-        { id:'2', fecha: new Date().toISOString(), categoria:'Detergente', tipo:'egreso', monto:-45, nota:'Compra insumo' },
-      ];
-    } finally {
+      this.mainChartType = 'bar'; // barras agrupadas
+      this.lineData = { labels, datasets };
+
+      // Recientes
+      this.recientes = resp.recientes ?? [];
+    }catch(e:any){
+      this.error = e?.message || 'Error cargando dashboard';
+    }finally{
       this.loading = false;
     }
   }
 
-  setRange(v: '12m'|'6m'|'3m') {
-    this.range = v;
-    this.applyRange(v);
-  }
-
-  private applyRange(v: '12m'|'6m'|'3m') {
-    const take = v === '12m' ? 12 : v === '6m' ? 6 : 3;
-    const data = this.seriesFull.slice(-take);
-    this.lineLabels = data.map(s => s.label);
-    (this.lineData.datasets[0].data as number[]) = data.map(s => s.ingresos);
-    (this.lineData.datasets[1].data as number[]) = data.map(s => s.egresos);
-    this.lineData = { ...this.lineData, labels: this.lineLabels };
+  async setRange(value: '3m'|'6m'|'12m'){
+    this.range = value;
+    await this.loadAll();
   }
 }

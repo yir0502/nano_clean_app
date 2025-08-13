@@ -21,34 +21,35 @@
       <mat-card-title>
         Ingresos vs Egresos
         <span class="spacer"></span>
-        <!-- Rango -->
-        <mat-button-toggle-group [value]="range" (change)="setRange($event.value)" exclusive>
-          <mat-button-toggle value="3m">3m</mat-button-toggle>
-          <mat-button-toggle value="6m">6m</mat-button-toggle>
-          <mat-button-toggle value="12m">12m</mat-button-toggle>
-        </mat-button-toggle-group>
       </mat-card-title>
 
+      <mat-button-toggle-group [value]="range" (change)="setRange($event.value)" exclusive>
+        <mat-button-toggle value="3m">3m</mat-button-toggle>
+        <mat-button-toggle value="6m">6m</mat-button-toggle>
+        <mat-button-toggle value="12m">12m</mat-button-toggle>
+      </mat-button-toggle-group>
+
       <div class="chart">
-        <canvas baseChart
-          [data]="lineData"
-          [options]="lineOptions"
-          chartType="line">
+        <canvas baseChart [data]="lineData" [options]="lineOptions" [type]="mainChartType">
         </canvas>
       </div>
     </mat-card>
 
-    <mat-card class="card card--doughnut">
-      <mat-card-title>Por categoría (mes)</mat-card-title>
+    <mat-card class="card card--bar">
+      <mat-card-title>Por categoría (Ingresos · mes)</mat-card-title>
       <div class="chart">
-        <canvas baseChart
-          [data]="doughnutData"
-          [options]="doughnutOptions"
-          chartType="doughnut">
-        </canvas>
+        <canvas baseChart [data]="barIngresoData" [options]="barOptions" type="bar"></canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="card card--bar">
+      <mat-card-title>Por categoría (Egresos · mes)</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="barEgresoData" [options]="barOptions" type="bar"></canvas>
       </div>
     </mat-card>
   </section>
+
 
   <!-- Recientes -->
   <section class="recientes" *ngIf="!loading">
@@ -63,5 +64,8 @@
     </mat-list>
   </section>
 
-  <ng-template #skeleton><div class="skeleton"></div></ng-template>
+  <ng-template #skeleton>
+    <div class="skeleton"></div>
+  </ng-template>
+  <div style="height: 30px;"></div>
 </div>
