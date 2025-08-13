@@ -1,19 +1,67 @@
-<section class="grid">
-  <mat-card>
-    <h3>Hoy</h3>
-    <p>Ingresos: {{ingHoy() | currency:'MXN':'symbol-narrow':'1.0-0'}}</p>
-    <p>Egresos: {{egHoy() | currency:'MXN':'symbol-narrow':'1.0-0'}}</p>
-    <p><b>Balance:</b> {{(ingHoy()-egHoy()) | currency:'MXN'}}</p>
-  </mat-card>
+<div class="resumen">
+  <!-- KPIs -->
+  <section class="kpis" *ngIf="!loading; else skeleton">
+    <article class="kpi">
+      <div class="kpi__label">Ingresos mes</div>
+      <div class="kpi__value">{{ ingresosMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </article>
+    <article class="kpi">
+      <div class="kpi__label">Egresos mes</div>
+      <div class="kpi__value">{{ egresosMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </article>
+    <article class="kpi kpi--balance">
+      <div class="kpi__label">Balance</div>
+      <div class="kpi__value">{{ balanceMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </article>
+  </section>
 
-  <mat-card>
-    <h3>Mes</h3>
-    <p>Ingresos: {{ingMes() | currency:'MXN'}}</p>
-    <p>Egresos: {{egMes() | currency:'MXN'}}</p>
-    <p><b>Balance:</b> {{(ingMes()-egMes()) | currency:'MXN'}}</p>
+  <!-- Charts -->
+  <section class="charts" *ngIf="!loading">
+    <mat-card class="card card--line">
+      <mat-card-title>
+        Ingresos vs Egresos
+        <span class="spacer"></span>
+        <!-- Rango -->
+        <mat-button-toggle-group [value]="range" (change)="setRange($event.value)" exclusive>
+          <mat-button-toggle value="3m">3m</mat-button-toggle>
+          <mat-button-toggle value="6m">6m</mat-button-toggle>
+          <mat-button-toggle value="12m">12m</mat-button-toggle>
+        </mat-button-toggle-group>
+      </mat-card-title>
 
-    <button mat-stroked-button (click)="exportarCSV()" style="margin-top:8px">
-      Exportar CSV del mes
-    </button>
-  </mat-card>
-</section>
+      <div class="chart">
+        <canvas baseChart
+          [data]="lineData"
+          [options]="lineOptions"
+          chartType="line">
+        </canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="card card--doughnut">
+      <mat-card-title>Por categoría (mes)</mat-card-title>
+      <div class="chart">
+        <canvas baseChart
+          [data]="doughnutData"
+          [options]="doughnutOptions"
+          chartType="doughnut">
+        </canvas>
+      </div>
+    </mat-card>
+  </section>
+
+  <!-- Recientes -->
+  <section class="recientes" *ngIf="!loading">
+    <h3>Últimos movimientos</h3>
+    <mat-list>
+      <mat-list-item *ngFor="let m of recientes">
+        <mat-icon matListItemIcon>{{ m.tipo === 'ingreso' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
+        <div matListItemTitle>{{ m.categoria }}</div>
+        <div matListItemLine>{{ m.fecha | date:'dd MMM, HH:mm' }}</div>
+        <div class="amount" [class.neg]="m.monto<0">{{ m.monto | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+      </mat-list-item>
+    </mat-list>
+  </section>
+
+  <ng-template #skeleton><div class="skeleton"></div></ng-template>
+</div>

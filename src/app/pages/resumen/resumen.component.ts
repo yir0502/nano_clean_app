@@ -1,56 +1,157 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
+import { Component, OnInit } from '@angular/core';
+import { SharedModule } from '../../shared/shared.module';
+import { NgIf, NgFor, DatePipe, CurrencyPipe } from '@angular/common';
+import { Chart, registerables } from 'chart.js';
+import { ChartConfiguration } from 'chart.js';
 import { ApiClientService } from '../../core/api-client.service';
-import { Movimiento } from '../../core/models';
+
+Chart.register(...registerables);
+
+type SerieMes = { label: string; ingresos: number; egresos: number; };
+type CategoriaMonto = { nombre: string; monto: number; };
+type Movimiento = { id: string; fecha: string; categoria: string; tipo: 'ingreso'|'egreso'; monto: number; nota?: string; };
+
+const BRAND = '#1e6bff'; // azul de marca
+const EXPEN = '#ff3b30'; // rojo egresos (iOS-like)
+const hexA = (hex: string, a: number) => {
+  const bigint = parseInt(hex.replace('#',''), 16);
+  const r = (bigint >> 16) & 255, g = (bigint >> 8) & 255, b = bigint & 255;
+  return `rgba(${r},${g},${b},${a})`;
+};
 
 @Component({
   selector: 'app-resumen',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatButtonModule],
+  imports: [SharedModule, NgIf, NgFor, DatePipe, CurrencyPipe],
   templateUrl: './resumen.component.html',
   styleUrls: ['./resumen.component.scss']
 })
 export class ResumenComponent implements OnInit {
-  movs = signal<Movimiento[]>([]);
-  private hoy = new Date().toISOString().slice(0,10);
-  private ym = this.hoy.slice(0,7);
+  loading = true;
 
-  ingHoy = computed(()=> this.movs().filter(m=>m.tipo==='ingreso' && m.fecha===this.hoy).reduce((a,b)=>a+b.monto,0));
-  egHoy  = computed(()=> this.movs().filter(m=>m.tipo==='egreso'  && m.fecha===this.hoy).reduce((a,b)=>a+b.monto,0));
-  ingMes = computed(()=> this.movs().filter(m=>m.tipo==='ingreso' && m.fecha.startsWith(this.ym)).reduce((a,b)=>a+b.monto,0));
-  egMes  = computed(()=> this.movs().filter(m=>m.tipo==='egreso'  && m.fecha.startsWith(this.ym)).reduce((a,b)=>a+b.monto,0));
+  // KPIs
+  ingresosMes = 0;
+  egresosMes  = 0;
+  balanceMes  = 0;
 
-  constructor(private api: ApiClientService){}
-  async ngOnInit(){ this.movs.set(await this.api.listMovimientos()); }
+  // Rango seleccionado (12m por defecto)
+  range: '12m'|'6m'|'3m' = '12m';
+  seriesFull: SerieMes[] = [];
 
-  async exportarCSV(){
-    const desde = `${this.ym}-01`;
-    const hasta = `${this.ym}-31`;
-    const rows = await this.api.listMovimientos({ desde, hasta });
-    const csv = this.toCSV(rows);
-    this.downloadFile(csv, `movimientos-${this.ym}.csv`, 'text/csv;charset=utf-8;');
+  // Line: Ingresos vs Egresos
+  lineLabels: string[] = [];
+  lineData: ChartConfiguration<'line'>['data'] = {
+    labels: this.lineLabels,
+    datasets: [
+      {
+        label: 'Ingresos',
+        data: [],
+        borderColor: BRAND,
+        backgroundColor: hexA(BRAND, 0.18),
+        pointBackgroundColor: BRAND,
+        pointRadius: 2,
+        borderWidth: 2,
+        tension: .35,
+        fill: true
+      },
+      {
+        label: 'Egresos',
+        data: [],
+        borderColor: EXPEN,
+        backgroundColor: hexA(EXPEN, 0.18),
+        pointBackgroundColor: EXPEN,
+        pointRadius: 2,
+        borderWidth: 2,
+        tension: .35,
+        fill: true
+      }
+    ]
+  };
+  lineOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true, maintainAspectRatio: false,
+    plugins:{ legend:{ position:'top' } },
+    scales:{
+      y:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,.06)' } },
+      x:{ grid:{ display:false } }
+    }
+  };
+
+  // Dona: categorías del mes (paleta consistente)
+  doughnutData: ChartConfiguration<'doughnut'>['data'] = {
+    labels: [], datasets: [{ data: [], backgroundColor: [
+      hexA(BRAND, .9), '#00bcd4', '#ff9800', '#4caf50', '#ab47bc', '#8d6e63'
+    ] }]
+  };
+  doughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'right' } }
+  };
+
+  // Últimos movimientos
+  recientes: Movimiento[] = [];
+
+  constructor(private api: ApiClientService) {}
+
+  async ngOnInit() {
+    try {
+      const dash = await this.api.get<any>('/dashboard');
+
+      this.ingresosMes = dash?.kpis?.ingresosMes ?? 0;
+      this.egresosMes  = dash?.kpis?.egresosMes ?? 0;
+      this.balanceMes  = this.ingresosMes - this.egresosMes;
+
+      this.seriesFull = dash?.series ?? [];
+      this.applyRange(this.range);
+
+      const cat: CategoriaMonto[] = dash?.categoriasMes ?? [];
+      this.doughnutData = {
+        labels: cat.map(c => c.nombre),
+        datasets: [{ 
+          data: cat.map(c => c.monto),
+          backgroundColor: [
+            hexA(BRAND, .9), '#00bcd4', '#ff9800', '#4caf50', '#ab47bc', '#8d6e63'
+          ]
+        }]
+      };
+
+      this.recientes = dash?.ultimosMovimientos ?? [];
+    } catch {
+      // Fallback demo
+      const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      this.seriesFull = meses.map((m,i) => ({
+        label: m,
+        ingresos: (12+i*2)*1000,
+        egresos : (8 +i*1 )*800
+      }));
+      this.applyRange(this.range);
+
+      this.doughnutData = {
+        labels: ['Lavado','Secado','Planchado','Tintorería'],
+        datasets: [{ data: [3200, 1800, 1200, 600],
+          backgroundColor: [hexA(BRAND,.9),'#00bcd4','#ff9800','#4caf50'] }]
+      };
+
+      this.ingresosMes = 37000; this.egresosMes = 22000; this.balanceMes = 15000;
+      this.recientes = [
+        { id:'1', fecha: new Date().toISOString(), categoria:'Lavado', tipo:'ingreso', monto:120, nota:'Ticket 1032' },
+        { id:'2', fecha: new Date().toISOString(), categoria:'Detergente', tipo:'egreso', monto:-45, nota:'Compra insumo' },
+      ];
+    } finally {
+      this.loading = false;
+    }
   }
 
-  private toCSV(data: Movimiento[]): string {
-    const headers = ['id','tipo','monto','fecha','categoria_id','metodo_pago','nota','created_at','updated_at'];
-    const esc = (v:any) => {
-      const s = v==null ? '' : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
-    };
-    const lines = [headers.join(',')].concat(
-      data.map(m => [m.id, m.tipo, m.monto, m.fecha, m.categoria_id||'', m.metodo_pago||'', m.nota||'', m.created_at||'', m.updated_at||'']
-        .map(esc).join(','))
-    );
-    return lines.join('\n');
+  setRange(v: '12m'|'6m'|'3m') {
+    this.range = v;
+    this.applyRange(v);
   }
 
-  private downloadFile(content: string, filename: string, type: string) {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
+  private applyRange(v: '12m'|'6m'|'3m') {
+    const take = v === '12m' ? 12 : v === '6m' ? 6 : 3;
+    const data = this.seriesFull.slice(-take);
+    this.lineLabels = data.map(s => s.label);
+    (this.lineData.datasets[0].data as number[]) = data.map(s => s.ingresos);
+    (this.lineData.datasets[1].data as number[]) = data.map(s => s.egresos);
+    this.lineData = { ...this.lineData, labels: this.lineLabels };
   }
 }

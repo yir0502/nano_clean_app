@@ -37,3 +37,52 @@ body {
 
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+/* Burbujas sutiles en la toolbar */
+@property --tbx { syntax: '<percentage>'; inherits: false; initial-value: 78%; }
+@property --tby { syntax: '<percentage>'; inherits: false; initial-value: 22%; }
+@property --tbx2 { syntax: '<percentage>'; inherits: false; initial-value: 58%; }
+@property --tby2 { syntax: '<percentage>'; inherits: false; initial-value: 28%; }
+
+mat-toolbar.bubbly {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #196aff, #1e6bff);
+  height: 45px;
+}
+mat-toolbar.bubbly::before {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(40px 40px at var(--tbx) var(--tby), rgba(0,0,0,.12) 0 60%, transparent 61%),
+    radial-gradient(28px 28px at var(--tbx2) var(--tby2), rgba(0,0,0,.10) 0 60%, transparent 61%);
+  background-repeat: no-repeat;
+  animation: tb-bubbles 16s ease-in-out infinite alternate;
+  opacity: .75;
+  filter: blur(.2px);
+}
+@keyframes tb-bubbles {
+  0%   { --tbx:78%; --tby:22%; --tbx2:58%; --tby2:28%; }
+  50%  { --tbx:82%; --tby:26%; --tbx2:54%; --tby2:24%; }
+  100% { --tbx:76%; --tby:20%; --tbx2:62%; --tby2:30%; }
+}
+
+.logo-toolbar { height: 60px; margin-right: 8px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.25)); }
+.spacer { flex: 1 1 auto; }
+/* Botón de salir blanco (texto + ícono) */
+.logout-btn {
+  color: #fff !important;                         /* texto e ícono */
+  --mdc-text-button-label-text-color: #fff;       /* asegura el label de MDC */
+  --mat-ripple-color: rgba(255,255,255,.25);      /* ripple claro */
+
+  /* feedback visual */
+  border-radius: 20px;
+}
+.logout-btn:hover { background: rgba(255,255,255,.10); }
+.logout-btn:focus-visible {
+  outline: 2px solid rgba(255,255,255,.85);
+  outline-offset: 2px;
+}
+
+/* (opcional) si quieres que cualquier botón de la toolbar sea blanco */
+mat-toolbar .mat-mdc-button { color: #fff; }

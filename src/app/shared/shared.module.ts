@@ -1,8 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { NgChartsModule } from 'ng2-charts';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
-// Angular Material (agrega/quita a gusto)
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,14 +16,16 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 
 @NgModule({
   imports: [
-    CommonModule, FormsModule, ReactiveFormsModule,
+    CommonModule, FormsModule, ReactiveFormsModule, NgChartsModule,
     MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatListModule, MatCardModule, MatToolbarModule, MatSnackBarModule
+    MatSelectModule, MatListModule, MatCardModule, MatToolbarModule, MatSnackBarModule,
+    MatButtonToggleModule
   ],
   exports: [
-    CommonModule, FormsModule, ReactiveFormsModule,
+    CommonModule, FormsModule, ReactiveFormsModule, NgChartsModule,
     MatIconModule, MatButtonModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatListModule, MatCardModule, MatToolbarModule, MatSnackBarModule
+    MatSelectModule, MatListModule, MatCardModule, MatToolbarModule, MatSnackBarModule,
+    MatButtonToggleModule
   ]
 })
 export class SharedModule {}

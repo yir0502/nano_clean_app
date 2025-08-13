@@ -13,14 +13,11 @@ import { NgIf } from '@angular/common';
   standalone: true,
   imports: [RouterOutlet, RouterLink, SharedModule, NgIf],
   template: `
-  <mat-toolbar *ngIf="!hideChrome()" color="primary">
-    <span>Nano Clean</span>
+  <mat-toolbar *ngIf="!hideChrome()" color="primary" class="bubbly">
+    <img class="logo-toolbar" src="images/logo_letras_blanco.png" alt="Nano Clean" />
     <span class="spacer"></span>
-
-    <!-- Botón de cerrar sesión (solo si hay sesión) -->
-    <button mat-button *ngIf="auth.isLoggedIn()" (click)="logout()">
-      <mat-icon>logout</mat-icon>
-      <span>Salir</span>
+    <button mat-button class="logout-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">
+      <mat-icon>logout</mat-icon><span>Salir</span>
     </button>
   </mat-toolbar>
 
@@ -38,6 +35,7 @@ import { NgIf } from '@angular/common';
     <mat-icon>add</mat-icon>
   </button>
 `,
+
 
   styles: [`
     :root { --nav-h: 64px; }
