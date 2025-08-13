@@ -29,7 +29,7 @@
 
       <!-- Password -->
       <mat-form-field appearance="outline">
-        <mat-label>Cnotraseña</mat-label>
+        <mat-label>Contraseña</mat-label>
         <mat-icon matPrefix>lock</mat-icon>
         <input matInput [type]="hide ? 'password':'text'" formControlName="password" autocomplete="current-password"
           required />
@@ -51,7 +51,7 @@
       <p *ngIf="err" style="color:#b00020; margin-top:4px; margin-bottom:0">{{ err }}</p>
       <button class="cta" mat-raised-button color="primary" type="submit" [class.pulse-error]="shake"
         [disabled]="fg.invalid || loading">
-        {{ loading ? 'Entrando...' : 'Log in' }}
+        {{ loading ? 'Entrando...' : 'Inicia' }}
       </button>
 
     </form>
