@@ -89,7 +89,7 @@ export class ApiClientService {
   }
 
   // Ajusta aquí la URL base de tu API (local o deploy)
-  private base = 'srv-d2e1aljuibrs738i9m9g';
+  private base = 'https://nanoclean-api.onrender.com';
 
   private listMovimientosRemote(params?: any){ 
     const qs = this.qs(params);
