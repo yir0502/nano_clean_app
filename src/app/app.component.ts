@@ -1,18 +1,18 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router, NavigationEnd, ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
+import { Router, NavigationEnd, ActivatedRoute, RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
 import { filter, map, startWith } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './core/auth.service';
 
-// UI: puedes usar tu SharedModule para no repetir imports de Material
 import { SharedModule } from './shared/shared.module';
 import { NgIf } from '@angular/common';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, SharedModule, NgIf],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SharedModule, NgIf],
   template: `
+  <!-- TOPBAR: tu diseño -->
   <mat-toolbar *ngIf="!hideChrome()" color="primary" class="bubbly">
     <img class="logo-toolbar" src="images/logo_letras_blanco.png" alt="Nano Clean" />
     <span class="spacer"></span>
@@ -25,37 +25,89 @@ import { NgIf } from '@angular/common';
     <router-outlet />
   </main>
 
-  <nav *ngIf="!hideChrome()" class="mobile-nav">
-    <a mat-button routerLink="/resumen"><mat-icon>insights</mat-icon><span>Resumen</span></a>
-    <a mat-button routerLink="/movimientos"><mat-icon>list_alt</mat-icon><span>Movs</span></a>
-    <a mat-button routerLink="/categorias"><mat-icon>category</mat-icon><span>Categorías</span></a>
+  <!-- NAV INFERIOR -->
+  <nav *ngIf="!hideChrome()" class="mobile-nav" role="navigation" aria-label="Navegación inferior">
+    <a mat-button routerLink="/resumen" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
+      <mat-icon>insights</mat-icon><span>Resumen</span>
+      <i class="indicator"></i>
+    </a>
+    <a mat-button routerLink="/movimientos" routerLinkActive="active">
+      <mat-icon>list_alt</mat-icon><span>Movs</span>
+      <i class="indicator"></i>
+    </a>
+    <a mat-button routerLink="/categorias" routerLinkActive="active">
+      <mat-icon>category</mat-icon><span>Categorías</span>
+      <i class="indicator"></i>
+    </a>
   </nav>
 
-  <button *ngIf="!hideChrome()" mat-fab color="primary" class="fab" routerLink="/movimientos/nuevo">
+  <!-- FAB -->
+  <button *ngIf="!hideChrome()" mat-fab color="primary" class="fab" routerLink="/movimientos/nuevo" aria-label="Nuevo movimiento">
     <mat-icon>add</mat-icon>
   </button>
 `,
-
-
   styles: [`
     :root { --nav-h: 64px; }
-    .page.with-nav { padding-bottom: calc(var(--nav-h) + 12px); }
 
+    /* TOPBAR: respeta tu clase .bubbly */
+    .bubbly { position: fixed; top: 0; z-index: 12; }
+
+    /* Contenido: deja espacio para la nav inferior + safe-area */
+    .page.with-nav { padding-bottom: calc(var(--nav-h) + max(12px, env(safe-area-inset-bottom))); }
+
+    /* ===== NAV INFERIOR ===== */
     .mobile-nav{
       position: fixed; left:0; right:0; bottom:0; height:var(--nav-h);
-      display:flex; justify-content:space-around; align-items:center;
-      background: var(--mat-sys-surface);
-      border-top: 1px solid rgba(0,0,0,.06);
-      padding-bottom: env(safe-area-inset-bottom);
+      display:grid; grid-template-columns: repeat(3,1fr);
+      align-items:center; gap: 6px;
+      background: rgba(255, 255, 255, 0.23);
+      backdrop-filter: saturate(150%) blur(20px);
+      border-top: 1px solid rgba(0, 0, 0, 0.48);
+      padding: 6px 8px max(6px, env(safe-area-inset-bottom));
       z-index: 10;
     }
-    .mobile-nav a{ display:flex; flex-direction:column; gap:4px; font-size:12px; text-decoration:none; }
-    .fab{ position: fixed; right:16px; bottom: calc(var(--nav-h) + 16px); z-index: 11; }
+    .mobile-nav a{
+      position: relative;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      gap:4px; text-decoration:none; border-radius:12px; padding:6px 4px; min-width:0;
+      color: var(--mat-sys-on-surface, rgba(0,0,0,.78));
+      transition: background .25s ease, color .25s ease;
+    }
 
+    .mobile-nav a:hover{
+      background: color-mix(in oklab, var(--mat-sys-primary, #3f51b5) 8%, transparent);
+    }
+    .mobile-nav a mat-icon{ font-size:22px; width:22px; height:22px; line-height:22px; }
+    .mobile-nav a span{ font-size:11px; line-height:1; }
+
+    /* Estado activo + indicador */
+    .mobile-nav a.active{ color: var(--mat-sys-primary, #3f51b5); font-variation-settings: 'wght' 600; }
+    .mobile-nav a .indicator {
+      position: absolute;
+      bottom: -5px;
+      left: -19px;
+      width: 25px;
+      height: 3px;
+      border-radius: 3px;
+      background: transparent;
+      transition: background .25s ease, transform .25s ease;
+    }
+
+    .mobile-nav a.active .indicator{ background: currentColor; transform: translateY(0); }
+
+    /* FAB */
+    .fab{ position: fixed; right:16px; bottom: 60px; z-index: 11;
+      box-shadow: 0 6px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.12); }
+
+    /* Responsive: si el ancho es muy pequeño, oculta labels */
+    @media (max-width: 360px){
+      .mobile-nav a span { display:none; }
+      .mobile-nav a { gap: 0; }
+    }
     @media (min-width: 900px){
       .mobile-nav{ display:none; }
       .page.with-nav{ padding-bottom: 12px; }
-      .fab{ bottom:16px; }
+      .fab{ bottom: 24px; }
     }
   `]
 })
@@ -63,7 +115,7 @@ export class AppComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
-  // Lee el data.hideChrome de la ruta activa más profunda
+  // Lee data.hideChrome de la ruta activa más profunda
   private hideSig = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -77,6 +129,7 @@ export class AppComponent {
   );
 
   hideChrome = computed(() => this.hideSig());
+
   constructor(public auth: AuthService) { }
 
   logout() {
