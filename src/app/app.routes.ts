@@ -5,6 +5,7 @@ export const routes: Routes = [
   { path: '', redirectTo: 'resumen', pathMatch: 'full' },
 
   { path: 'login',
+    data: { hideChrome: true },
     loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
 
   { path: 'resumen',

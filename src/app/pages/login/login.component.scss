@@ -1,0 +1,467 @@
+/* ===== Variables rápidas (puedes ajustar) ===== */
+$brand: #1e6bff; // azul principal
+$brand-dk: #1351d1; // azul más oscuro para detalles
+$radius: 18px;
+
+/* ===== Propiedades tipadas para animar posiciones de burbujas ===== */
+@property --b1x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 78%;
+}
+
+@property --b1y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 24%;
+}
+
+@property --b2x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 62%;
+}
+
+@property --b2y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 16%;
+}
+
+@property --b3x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 86%;
+}
+
+@property --b3y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 42%;
+}
+
+@property --b4x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 28%;
+}
+
+@property --b4y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 18%;
+}
+
+@property --b5x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 50%;
+}
+
+@property --b5y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 30%;
+}
+
+@property --b6x {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 10%;
+}
+
+@property --b6y {
+    syntax: '<percentage>';
+    inherits: false;
+    initial-value: 40%;
+}
+
+
+/* Altura a pantalla completa con fallback y soporte moderno */
+.login-page {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    background: #fff;
+}
+
+@supports (height: 100svh) {
+    .login-page {
+        min-height: 100svh;
+    }
+}
+
+/* ===== Cabecera azul con ondas y burbujas (centrado por grid) ===== */
+.hero {
+    position: relative;
+    height: clamp(280px, 42dvh, 380px);
+    padding: 16px 18px 24px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    /* centra logo + título */
+    overflow: hidden;
+    background: $brand;
+    /* color fijo */
+
+    /* botón atrás */
+    .back {
+        position: absolute;
+        top: 10px;
+        left: 6px;
+        color: #fff;
+    }
+
+    /* pila centrada: logo + título */
+    .hero__stack {
+        display: grid;
+        justify-items: center;
+        gap: 10px;
+        z-index: 1;
+    }
+
+    .logo {
+        width: clamp(180px, 30vw, 200px);
+        height: auto;
+        object-fit: contain;
+        pointer-events: none;
+        user-select: none;
+        filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); // contraste
+    }
+
+    .hero__copy h1 {
+        margin: 0;
+        font-size: clamp(25px, 7vw, 36px);
+        line-height: 1.05;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-align: center;
+    }
+
+    /* ===== Burbujas con movimiento real (animando el centro del radial) ===== */
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+
+        /* valores iniciales */
+        --b1x: 78%;
+        --b1y: 24%;
+        --b2x: 62%;
+        --b2y: 16%;
+        --b3x: 86%;
+        --b3y: 42%;
+        --b4x: 28%;
+        --b4y: 18%;
+        --b5x: 50%;
+        --b5y: 30%;
+        --b6x: 10%;
+        --b6y: 40%;
+
+        /* 6 burbujas: pon las grandes al fondo (al final de la lista) */
+        background-image:
+            radial-gradient(30px 30px at var(--b4x) var(--b4y), rgba(0, 0, 0, .08) 0 60%, transparent 61%),
+            radial-gradient(40px 40px at var(--b3x) var(--b3y), rgba(0, 0, 0, .12) 0 60%, transparent 61%),
+            radial-gradient(60px 60px at var(--b2x) var(--b2y), rgba(0, 0, 0, .12) 0 60%, transparent 61%),
+            radial-gradient(80px 80px at var(--b1x) var(--b1y), rgba(0, 0, 0, .10) 0 60%, transparent 61%),
+            radial-gradient(54px 54px at var(--b5x) var(--b5y), rgba(0, 0, 0, .09) 0 60%, transparent 61%),
+            radial-gradient(72px 72px at var(--b6x) var(--b6y), rgba(0, 0, 0, .06) 0 60%, transparent 61%);
+        background-repeat: no-repeat;
+        filter: blur(.2px);
+
+        /* un poco más rápida para que se note el cambio */
+        animation: bubbles-xy 12s ease-in-out infinite alternate,
+            bubbles-breathe 6.5s ease-in-out infinite;
+    }
+}
+
+
+/* Movimiento sutil de las burbujas (parallax en X/Y) */
+/* Movimiento sutil de las burbujas (parallax en X/Y) */
+@keyframes bubbles-xy {
+    0% {
+        --b1x: 84%;
+        --b1y: 34%;
+        --b2x: 52%;
+        --b2y: 16%;
+        --b3x: 86%;
+        --b3y: 42%;
+        --b4x: 28%;
+        --b4y: 18%;
+        --b5x: 50%;
+        --b5y: 30%;
+        --b6x: 10%;
+        --b6y: 40%;
+    }
+
+    50% {
+        --b1x: 76%;
+        --b1y: 22%;
+        --b2x: 66%;
+        --b2y: 12%;
+        --b3x: 82%;
+        --b3y: 38%;
+        --b4x: 32%;
+        --b4y: 22%;
+        --b5x: 56%;
+        --b5y: 33%;
+        --b6x: 18%;
+        --b6y: 46%;
+    }
+
+    100% {
+        --b1x: 78%;
+        --b1y: 24%;
+        --b2x: 62%;
+        --b2y: 16%;
+        --b3x: 86%;
+        --b3y: 42%;
+        --b4x: 28%;
+        --b4y: 18%;
+        --b5x: 48%;
+        --b5y: 27%;
+        --b6x: 8%;
+        --b6y: 36%;
+    }
+}
+
+/* “Respiración” leve de burbujas */
+@keyframes bubbles-breathe {
+
+    0%,
+    100% {
+        opacity: .9;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.01);
+    }
+}
+
+/* ===== OLA principal: radial que viaja en X + vaivén suave ===== */
+.hero::after {
+    content: '';
+    position: absolute;
+    left: -5%;
+    right: -5%;
+    bottom: -1px;
+    height: 140px;
+
+    background-image: radial-gradient(140% 130% at 50% 0%,
+            rgba(255, 255, 255, 0) 42%,
+            #ffffff 43%);
+    background-repeat: no-repeat;
+    background-size: 220% 100%;
+    /* lienzo amplio para viajar en X */
+    background-position: 42% 0%;
+    /* punto de partida */
+    filter: drop-shadow(0 -1px 0 rgba(255, 255, 255, .6));
+    will-change: background-position, transform;
+    animation: wave-flow 8s ease-in-out infinite;
+}
+
+/* Cresta viaja de izq→der→izq y “sube/baja” sutilmente */
+@keyframes wave-flow {
+    0% {
+        background-position: 48% 0%;
+        transform: translateY(0) scaleX(1);
+    }
+
+    25% {
+        background-position: 56% 0%;
+        transform: translateY(6px) scaleX(1.012);
+    }
+
+    50% {
+        background-position: 58% 0%;
+        transform: translateY(10px) scaleX(1.02);
+    }
+
+    75% {
+        background-position: 54% 0%;
+        transform: translateY(6px) scaleX(1.012);
+    }
+
+    100% {
+        background-position: 46% 0%;
+        transform: translateY(0) scaleX(1);
+    }
+}
+
+/* ===== Segunda ola (opcional) con desfase para más profundidad ===== */
+/* Requiere en el HTML: <i class="wave-overlay" aria-hidden="true"></i> */
+.hero .wave-overlay {
+    content: '';
+    position: absolute;
+    left: -5%;
+    right: -5%;
+    bottom: -1px;
+    height: 140px;
+
+    background-image: radial-gradient(140% 130% at 50% 0%,
+            rgba(255, 255, 255, 0) 44%,
+            rgba(255, 255, 255, .85) 45%);
+    background-repeat: no-repeat;
+    background-size: 260% 100%;
+    background-position: 60% 0%;
+    filter: drop-shadow(0 -1px 0 rgba(255, 255, 255, .35));
+    will-change: background-position, transform;
+    animation: wave-flow-2 10.5s cubic-bezier(.36, .07, .19, .97) -2.5s infinite;
+}
+
+@keyframes wave-flow-2 {
+    0% {
+        background-position: 60% 0%;
+        transform: translateY(2px) scaleX(1.004);
+    }
+
+    50% {
+        background-position: 40% 0%;
+        transform: translateY(12px) scaleX(1.016);
+    }
+
+    100% {
+        background-position: 60% 0%;
+        transform: translateY(2px) scaleX(1.004);
+    }
+}
+
+/* Respeta “reduced motion”: desactiva animaciones si el usuario lo pide */
+@media (prefers-reduced-motion: reduce) {
+
+    .hero::before,
+    .hero::after,
+    .hero .wave-overlay {
+        animation: none !important;
+    }
+}
+
+/* ===== Área del formulario ===== */
+.sheet {
+    position: relative;
+    margin-top: -16px;
+    /* pequeño solape */
+    padding: 18px 16px max(24px, calc(16px + env(safe-area-inset-bottom)));
+}
+
+.form {
+    display: grid;
+    gap: 14px;
+
+    mat-form-field {
+        width: 100%;
+    }
+
+    /* Botón CTA pegado abajo (mejor UX de pulgar) */
+    .cta {
+        position: sticky;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        width: 100%;
+        height: 48px;
+        border-radius: $radius;
+        font-weight: 600;
+        z-index: 1;
+    }
+}
+
+/* Pequeños toques y accesibilidad */
+button:focus-visible,
+.cta:focus-visible,
+.back:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, .85);
+    outline-offset: 2px;
+    border-radius: 12px;
+}
+
+/* Errores/hints compactos */
+:host ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    min-height: 16px;
+    /* compacto */
+}
+
+:host ::ng-deep .mat-mdc-form-field-error {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+/* Si no hay hint ni error, oculta el espacio subscript (cuando el navegador soporte :has) */
+:host ::ng-deep .mat-mdc-form-field-subscript-wrapper:has(.mat-mdc-form-field-error:empty):has(.mat-mdc-form-field-hint:empty) {
+    display: none;
+}
+
+/* Ajuste cuando el teclado reduce mucho el viewport (Android/iOS) */
+@media (max-height: 640px) {
+    .sheet {
+        padding-bottom: 72px;
+    }
+}
+
+/* ===== Shake sutil al fallar login ===== */
+@keyframes login-shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    15% {
+        transform: translateX(-5px);
+    }
+
+    30% {
+        transform: translateX(5px);
+    }
+
+    45% {
+        transform: translateX(-4px);
+    }
+
+    60% {
+        transform: translateX(4px);
+    }
+
+    75% {
+        transform: translateX(-2px);
+    }
+
+    90% {
+        transform: translateX(2px);
+    }
+}
+
+/* Aplica la animación cuando la clase .shake esté activa */
+.form.shake {
+    animation: login-shake 450ms cubic-bezier(.33, .07, .19, .97);
+    will-change: transform;
+}
+
+/* Feedback alternativo si el usuario reduce movimiento */
+@media (prefers-reduced-motion: reduce) {
+    .form.shake {
+        animation: none;
+        outline: 2px solid rgba(176, 0, 32, 0.6);
+        outline-offset: 2px;
+    }
+}
+
+/* Pulso en el botón (opcional, se activa con .pulse-error en el botón) */
+@keyframes pulse-error {
+    0% {
+        box-shadow: 0 0 0 0 rgba(176, 0, 32, .35);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(176, 0, 32, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(176, 0, 32, 0);
+    }
+}
+
+.pulse-error {
+    animation: pulse-error 600ms ease-out;
+}

@@ -1,19 +1,59 @@
-<h2>Iniciar sesión</h2>
+<div class="login-page">
+  <header class="hero">
+    <!-- pila centrada -->
+    <div class="hero__stack">
+      <img class="logo" src="images/logo_letras_blanco.png" alt="Nano Clean" />
+      <div class="hero__copy">
+        <h1>Iniciar sesión</h1>
+      </div>
+    </div>
+    <i class="wave-overlay" aria-hidden="true"></i>
+  </header>
 
-<form [formGroup]="fg" (ngSubmit)="submit()">
-  <mat-form-field style="width:100%" appearance="fill">
-    <mat-label>Email</mat-label>
-    <input matInput formControlName="email" type="email" autocomplete="email" />
-  </mat-form-field>
+  <section class="sheet">
+    <form [formGroup]="fg" (ngSubmit)="submit()" class="form" [class.shake]="shake" novalidate>
+      <!-- Email -->
+      <mat-form-field appearance="outline">
+        <mat-label>Correo</mat-label>
+        <mat-icon matPrefix>mail</mat-icon>
+        <input matInput formControlName="email" type="email" autocomplete="email" required />
+        <!-- errores bonitos -->
+        <mat-error
+          *ngIf="fg.get('email')?.hasError('required') && (fg.get('email')?.touched || fg.get('email')?.dirty)">
+          El correo es obligatorio.
+        </mat-error>
+        <mat-error *ngIf="fg.get('email')?.hasError('email') && (fg.get('email')?.touched || fg.get('email')?.dirty)">
+          Ingresa un correo válido.
+        </mat-error>
+      </mat-form-field>
 
-  <mat-form-field style="width:100%" appearance="fill">
-    <mat-label>Contraseña</mat-label>
-    <input matInput formControlName="password" type="password" autocomplete="current-password" />
-  </mat-form-field>
+      <!-- Password -->
+      <mat-form-field appearance="outline">
+        <mat-label>Cnotraseña</mat-label>
+        <mat-icon matPrefix>lock</mat-icon>
+        <input matInput [type]="hide ? 'password':'text'" formControlName="password" autocomplete="current-password"
+          required />
+        <button mat-icon-button matSuffix type="button" (click)="hide = !hide" aria-label="Mostrar/ocultar contraseña">
+          <mat-icon>{{ hide ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+        <!-- errores bonitos -->
+        <mat-error
+          *ngIf="fg.get('password')?.hasError('required') && (fg.get('password')?.touched || fg.get('password')?.dirty)">
+          La contraseña es obligatoria.
+        </mat-error>
+        <mat-error
+          *ngIf="fg.get('password')?.hasError('minlength') && (fg.get('password')?.touched || fg.get('password')?.dirty)">
+          Mínimo {{ fg.get('password')?.errors?.['minlength']?.requiredLength }} caracteres.
+        </mat-error>
+      </mat-form-field>
 
-  <button mat-raised-button color="primary" type="submit" [disabled]="fg.invalid || loading">
-    {{ loading ? 'Entrando...' : 'Entrar' }}
-  </button>
+      <!-- error general de login (servidor) -->
+      <p *ngIf="err" style="color:#b00020; margin-top:4px; margin-bottom:0">{{ err }}</p>
+      <button class="cta" mat-raised-button color="primary" type="submit" [class.pulse-error]="shake"
+        [disabled]="fg.invalid || loading">
+        {{ loading ? 'Entrando...' : 'Log in' }}
+      </button>
 
-  <p *ngIf="err" style="color:#b00020; margin-top:8px">{{err}}</p>
-</form>
+    </form>
+  </section>
+</div>

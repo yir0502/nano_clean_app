@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { ENV } from './env';
 
 type Mode = 'local' | 'remote';
-const MODE: Mode = 'remote'; // cámbialo a 'local' si quieres probar sin backend
+const MODE: Mode = 'local'; // cámbialo a 'local' si quieres probar sin backend
 
 const KEY_MOVS = 'nano_clean_movs';
 const KEY_CATS = 'nano_clean_cats';
