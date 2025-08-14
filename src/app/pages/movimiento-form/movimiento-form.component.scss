@@ -1,0 +1,57 @@
+.mv-card {
+  padding: 50px 12px;
+}
+
+.mv-title {
+  display: flex; align-items: center; gap: 8px;
+  .spacer { flex: 1 1 auto; }
+  button[mat-icon-button] { margin-inline-end: 4px; }
+}
+
+.mv-form {
+  display: grid; gap: 12px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.mv-form .full { grid-column: 1 / -1; }
+
+.lbl { font-size: 12px; opacity: .8; margin-bottom: 6px; display: inline-block; margin-right: 12px;}
+
+.monto span {
+  font-size: 14px; font-weight: 500; color: rgba(0, 0, 0, 0.6);
+    margin-right: 5px;
+}
+
+.tipo-toggle {
+  display: inline-flex;
+  border-radius: 999px; overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.412);
+  button { gap: 6px; }
+}
+
+/* Campos Material */
+mat-form-field { width: 100%; }
+
+/* Selector: icono en opción */
+.opt-ic { font-size: 18px; width: 18px; height: 18px; line-height: 18px; margin-right: 8px; vertical-align: -3px; }
+
+/* Footer de acciones pegajoso (sobre la tabbar) */
+.actions {
+  position: sticky; bottom: 0; left: 0;
+  display: flex; gap: 10px; justify-content: flex-start;
+  background: color-mix(in oklab, var(--mat-sys-surface, #fff) 92%, transparent);
+  backdrop-filter: saturate(160%) blur(10px);
+  padding: 12px; margin-top: 8px;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+
+/* Loading */
+.mv-loading {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap: 8px; min-height: 240px;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .mv-form { grid-template-columns: 1fr; }
+  .mv-card { padding-bottom: 96px; }
+}

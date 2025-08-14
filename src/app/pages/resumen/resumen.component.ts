@@ -9,10 +9,9 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 import { NgChartsModule } from 'ng2-charts';
-import type { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import type { ChartConfiguration, ChartData, ChartType, ChartOptions} from 'chart.js';
 import { Chart as ChartJS, registerables } from 'chart.js';
 ChartJS.register(...registerables);
-
 import { DashboardService, DashboardUIResponse, DashboardDay } from '../../core/dashboard.service';
 
 // 🎨 Colores (ajusta a tu marca)
@@ -58,6 +57,18 @@ export class ResumenComponent implements OnInit {
     },
     elements: { line: { tension: 0.25 } },
     datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9, maxBarThickness: 36 } }
+  };
+
+  // 1b) Barras por sucursal (MES)
+  sucursalBarData: ChartData<'bar'> = { labels: [], datasets: [] };
+  sucursalBarOptions: ChartOptions<'bar'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      x: { stacked: false },            // pon true si quieres apilar
+      y: { stacked: false, beginAtZero: true }
+    }
   };
 
   // 2) Barras por categoría (MES)
@@ -168,7 +179,35 @@ export class ResumenComponent implements OnInit {
         }]
       };
 
-      // 1ª gráfica: Ingresos vs Egresos (agregado)
+      // NUEVO: Barras por sucursal (MES)
+      const sucs = (resp as any).por_sucursal_mes ?? []; // ← evitar tocar tipos externos
+      const sucLabels = sucs.map((s: any) => s?.nombre || 'Sin sucursal');
+      const sucIng    = sucs.map((s: any) => this.toNumber(s?.ingresos));
+      const sucEgr    = sucs.map((s: any) => this.toNumber(s?.egresos));
+
+      this.sucursalBarData = {
+        labels: sucLabels,
+        datasets: [
+          {
+            label: `Ingresos (${mesLbl})`,
+            data: sucIng,
+            backgroundColor: C_INGRESO_BG,
+            borderColor: C_INGRESO_LINE,
+            borderWidth: 1,
+            borderRadius: 6
+          },
+          {
+            label: `Egresos (${mesLbl})`,
+            data: sucEgr,
+            backgroundColor: C_EGRESO_BG,
+            borderColor: C_EGRESO_LINE,
+            borderWidth: 1,
+            borderRadius: 6
+          }
+        ]
+      };
+
+      // 1ª gráfica: Ingresos vs Egresos (agregado semanal/mensual)
       const mode = this.range === '3m' ? 'weekly' : 'monthly';
       const serie = this.aggregate(resp.por_dia ?? [], mode);
       const labels = serie.map(s => s.label);

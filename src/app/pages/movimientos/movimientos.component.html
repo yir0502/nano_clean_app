@@ -1,18 +1,124 @@
-<div class="filters">
-  <button mat-stroked-button (click)="filtrar('hoy')">Hoy</button>
-  <button mat-stroked-button (click)="filtrar('semana')">Semana</button>
-  <button mat-stroked-button (click)="filtrar('mes')">Mes</button>
-  <button mat-stroked-button (click)="limpiar()">Todos</button>
+<div class="movs">
+  <!-- Filtros -->
+  <section class="filters">
+    <div class="row">
+      <mat-button-toggle-group class="tipo-toggle" [value]="tipo()" (change)="onTipoChange($event.value)" exclusive>
+        <mat-button-toggle value="todos">Todos</mat-button-toggle>
+        <mat-button-toggle value="ingreso">Ingresos</mat-button-toggle>
+        <mat-button-toggle value="egreso">Egresos</mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <span class="spacer"></span>
+
+      <!-- Presets -->
+      <div class="presets">
+        <button mat-stroked-button (click)="setPreset('hoy')">Hoy</button>
+        <button mat-stroked-button (click)="setPreset('7d')">7d</button>
+        <button mat-stroked-button (click)="setPreset('30d')">30d</button>
+        <button mat-stroked-button (click)="setPreset('mes')">Mes</button>
+      </div>
+    </div>
+
+    <!-- Rango -->
+    <div class="row">
+      <mat-form-field class="range-field" appearance="fill">
+        <mat-label>Rango de fechas</mat-label>
+        <mat-date-range-input [rangePicker]="picker" [comparisonStart]="desde()" [comparisonEnd]="hasta()">
+          <input matStartDate [value]="desde()" (dateChange)="onStartDateChange($event.value)" placeholder="Desde">
+          <input matEndDate [value]="hasta()" (dateChange)="onEndDateChange($event.value)" placeholder="Hasta">
+        </mat-date-range-input>
+        <button mat-icon-button matSuffix (click)="picker.open()" type="button" aria-label="Abrir calendario">
+          <mat-icon>event</mat-icon>
+        </button>
+        <mat-date-range-picker #picker [touchUi]="true"></mat-date-range-picker>
+      </mat-form-field>
+
+      <!-- Categoría -->
+      <mat-form-field appearance="fill">
+        <mat-label>Categoría</mat-label>
+        <mat-select [value]="categoriaId()" (selectionChange)="onCategoriaChange($event.value)">
+          <mat-option value="">Todas</mat-option>
+          <mat-option *ngFor="let c of catsFiltradas()" [value]="c.id">{{ c.nombre }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <!-- Sucursal -->
+      <mat-form-field appearance="fill">
+        <mat-label>Sucursal</mat-label>
+        <mat-select [value]="sucursalId()" (selectionChange)="sucursalId.set($event.value); reload()">
+          <mat-option value="">Todas</mat-option>
+          <mat-option *ngFor="let s of sucursales()" [value]="s.id">{{ s.nombre }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <!-- Método -->
+      <mat-form-field appearance="fill">
+        <mat-label>Método de pago</mat-label>
+        <mat-select [value]="metodoPago()" (selectionChange)="onMetodoChange($event.value)">
+          <mat-option *ngFor="let m of metodos" [value]="m.id">{{ m.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- Búsqueda -->
+      <mat-form-field appearance="fill" class="full">
+        <mat-label>Buscar</mat-label>
+        <input matInput type="search" (input)="onQInput($any($event.target).value)"
+          placeholder="Categoría, nota, método…">
+
+        <button mat-icon-button matSuffix disabled><mat-icon>search</mat-icon></button>
+      </mat-form-field>
+    </div>
+  </section>
+
+  <!-- Totales del filtro -->
+  <section class="kpis" *ngIf="!loading()">
+    <mat-card class="kpi">
+      <div class="kpi__label">Ingresos</div>
+      <div class="kpi__value">{{ totalIngresos() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </mat-card>
+    <mat-card class="kpi">
+      <div class="kpi__label">Egresos</div>
+      <div class="kpi__value">{{ totalEgresos() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </mat-card>
+    <mat-card class="kpi kpi--balance" [class.negativo]="totalBalance()<0">
+      <div class="kpi__label">Balance</div>
+      <div class="kpi__value">{{ totalBalance() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </mat-card>
+  </section>
+
+  <!-- Lista -->
+  <section class="list">
+    <div class="empty" *ngIf="!loading() && items().length===0">Sin movimientos en este rango.</div>
+
+    <mat-list *ngIf="items().length">
+      <mat-list-item *ngFor="let m of items()">
+        <mat-icon matListItemIcon [class.ingreso]="m.tipo==='ingreso'" [class.egreso]="m.tipo==='egreso'">
+          {{ iconoTipo(m) }}
+        </mat-icon>
+
+        <div matListItemTitle>{{ catNombre(m) }}</div>
+        <div matListItemLine>{{ m.fecha | date:'dd MMM, y' }}</div>
+
+        <div class="amount" [class.neg]="m.tipo==='egreso'">
+          {{ ((m.tipo==='egreso' ? -1 : 1) * (+m.monto || 0)) | currency:'MXN':'symbol-narrow':'1.0-0' }}
+        </div>
+
+        <div matListItemLine class="muted">
+          {{ m.fecha | date:'dd MMM, y' }} · {{ m.sucursal_nombre || 'Sin sucursal' }}
+        </div>
+
+      </mat-list-item>
+    </mat-list>
+
+    <div class="more">
+      <button mat-stroked-button *ngIf="hasMore()" (click)="loadMore()" [disabled]="loadingMore()">
+        <mat-spinner *ngIf="loadingMore()" [diameter]="18"></mat-spinner>
+        <span *ngIf="!loadingMore()">Cargar más</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading inicial -->
+  <div class="loading" *ngIf="loading()">
+    <mat-spinner [diameter]="32"></mat-spinner>
+    <div>Cargando…</div>
+  </div>
 </div>
-
-<mat-list>
-  <mat-list-item *ngFor="let m of data()" (click)="open(m.id)">
-    <div matListItemTitle>{{ m.tipo | titlecase }} • {{ m.monto | currency:'MXN' }}</div>
-    <div matListItemLine>{{ m.fecha }} · {{ m.nota || '—' }}</div>
-
-    <button mat-icon-button color="warn" matListItemMeta
-            (click)="eliminar(m.id, $event)" aria-label="Eliminar">
-      <mat-icon>delete</mat-icon>
-    </button>
-  </mat-list-item>
-</mat-list>

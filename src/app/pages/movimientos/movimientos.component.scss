@@ -1,1 +1,86 @@
-.filters{ display:flex; gap:8px; margin-bottom:8px; }
+.movs { display: grid; gap: 12px; padding: 60px 12px;}
+
+/* Filtros */
+.filters .row{
+  display: grid; gap: 8px;
+  grid-template-columns: 1fr;
+  align-items: center;
+}
+.filters .row:first-child{
+  grid-template-columns: auto 1fr auto;
+}
+mat-button-toggle-group {
+  background: rgba(0, 76, 255, 0.04);
+  border-radius: 999px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly
+}
+
+mat-button-toggle {
+  line-height: 32px;
+  width: 100%;
+  padding: 0;
+}
+
+.mdc-list-item.mdc-list-item--with-three-lines {
+  height: 100%;
+}
+.presets {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  justify-content: space-evenly;
+  margin-bottom: 15px;
+  button {
+    background: rgba(0, 76, 255, 0.04);
+    border-radius: 999px;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+    line-height: 32px;
+    &.active {
+      background: var(--mat-sys-primary, #3f51b5);
+      color: white;
+    }
+  }
+}
+
+/* Rango */
+.range-field { min-width: 240px; }
+
+/* KPIs */
+.kpis{
+  display: grid; gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+}
+.kpi{ padding: 10px; }
+.kpi__label{ font-size: 12px; opacity: .8; }
+.kpi__value{ font-size: 1.25rem; margin-top: 4px; }
+.kpi--balance .kpi__value{ color: var(--mat-sys-primary, #3f51b5); }
+.kpi--balance.negativo .kpi__value{ color: #b91c1c; }
+
+/* Lista */
+.list .empty{ opacity: .7; padding: 12px; text-align: center; }
+.amount{ margin-inline-start: auto; font-weight: 600; }
+.amount.neg{ color: #b91c1c; }
+mat-list-item mat-icon.ingreso{ color: #0f766e; }
+mat-list-item mat-icon.egreso{ color: #b91c1c; }
+
+.more{ display: flex; justify-content: center; padding: 8px; }
+
+.loading{
+  display:flex; gap:8px; align-items:center; justify-content:center;
+  min-height: 140px; opacity: .8;
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .filters .row{ grid-template-columns: 1fr 1fr; }
+  .filters .row:first-child{ grid-template-columns: 1fr auto; }
+  .range-field{ grid-column: span 2; }
+}
+@media (max-width: 520px){
+  .filters .row{ grid-template-columns: 1fr; }
+  .range-field{ grid-column: auto; }
+  .kpis{ grid-template-columns: 1fr; }
+}

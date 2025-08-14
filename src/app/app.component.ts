@@ -32,7 +32,7 @@ import { NgIf } from '@angular/common';
       <i class="indicator"></i>
     </a>
     <a mat-button routerLink="/movimientos" routerLinkActive="active">
-      <mat-icon>list_alt</mat-icon><span>Movs</span>
+      <mat-icon>list_alt</mat-icon><span>Movimientos</span>
       <i class="indicator"></i>
     </a>
     <a mat-button routerLink="/categorias" routerLinkActive="active">
@@ -68,10 +68,11 @@ import { NgIf } from '@angular/common';
     }
     .mobile-nav a{
       position: relative;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
       gap:4px; text-decoration:none; border-radius:12px; padding:6px 4px; min-width:0;
       color: var(--mat-sys-on-surface, rgba(0,0,0,.78));
       transition: background .25s ease, color .25s ease;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-variation-settings: 'wght' 500;
     }
 
     .mobile-nav a:hover{
@@ -82,18 +83,6 @@ import { NgIf } from '@angular/common';
 
     /* Estado activo + indicador */
     .mobile-nav a.active{ color: var(--mat-sys-primary, #3f51b5); font-variation-settings: 'wght' 600; }
-    .mobile-nav a .indicator {
-      position: absolute;
-      bottom: -5px;
-      left: -19px;
-      width: 25px;
-      height: 3px;
-      border-radius: 3px;
-      background: transparent;
-      transition: background .25s ease, transform .25s ease;
-    }
-
-    .mobile-nav a.active .indicator{ background: currentColor; transform: translateY(0); }
 
     /* FAB */
     .fab{ position: fixed; right:16px; bottom: 60px; z-index: 11;

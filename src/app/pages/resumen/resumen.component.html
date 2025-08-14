@@ -36,6 +36,15 @@
     </mat-card>
 
     <mat-card class="card card--bar">
+      <mat-card-title>Por sucursal (mes)</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="sucursalBarData" [options]="sucursalBarOptions" chartType="bar">
+        </canvas>
+      </div>
+    </mat-card>
+
+
+    <mat-card class="card card--bar">
       <mat-card-title>Por categoría (Ingresos · mes)</mat-card-title>
       <div class="chart">
         <canvas baseChart [data]="barIngresoData" [options]="barOptions" type="bar"></canvas>
