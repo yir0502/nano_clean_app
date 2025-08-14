@@ -71,8 +71,6 @@ import { NgIf } from '@angular/common';
       gap:4px; text-decoration:none; border-radius:12px; padding:6px 4px; min-width:0;
       color: var(--mat-sys-on-surface, rgba(0,0,0,.78));
       transition: background .25s ease, color .25s ease;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      font-variation-settings: 'wght' 500;
     }
 
     .mobile-nav a:hover{

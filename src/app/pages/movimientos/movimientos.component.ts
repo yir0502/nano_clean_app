@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { ApiClientService } from '../../core/api-client.service';
 import { Categoria, Movimiento } from '../../core/models';
@@ -27,12 +28,32 @@ type TipoFiltro = 'todos' | 'ingreso' | 'egreso';
     MatButtonModule, MatButtonToggleModule,
     MatSelectModule, MatFormFieldModule, MatInputModule,
     MatDatepickerModule, MatNativeDateModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule, MatSnackBarModule
   ],
   templateUrl: './movimientos.component.html',
   styleUrls: ['./movimientos.component.scss']
 })
 export class MovimientosComponent implements OnInit {
+  constructor(
+    // ...tus inyecciones actuales
+    private snack: MatSnackBar
+  ) {}
+
+   async onDelete(m: Movimiento, ev?: Event) {
+    ev?.stopPropagation(); // no navegar ni disparar otros clicks del item
+
+    const montoAbs = Math.abs(Number(m.monto) || 0);
+    const ok = confirm(`¿Eliminar el ${m.tipo} de ${montoAbs.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 })}?`);
+    if (!ok) return;
+
+    try {
+      await this.api.deleteMovimiento(m.id);
+      // Quita el registro de la lista actual sin recargar
+      this.items.set(this.items().filter(x => x.id !== m.id));
+      this.snack.open('Movimiento eliminado', 'OK', { duration: 2000 });
+    } catch (e: any) {
+      this.snack.open(e?.message || 'No se pudo eliminar', 'OK', { duration: 3000 });
+    } }
   private api = inject(ApiClientService);
 
   // Estado general
@@ -178,6 +199,10 @@ export class MovimientosComponent implements OnInit {
     // si tu API no manda el nombre de categoría, resolvemos localmente
     const all = [...this.catsIngreso(), ...this.catsEgreso()];
     return m.categoria_nombre || all.find(c => c.id === (m.categoria_id || ''))?.nombre || 'Sin categoría';
+  }
+  catNotas(m: Movimiento): string {
+    // si tu API no manda notas, resolvemos localmente "Sin nota"
+    return m?.nota || 'Sin nota';
   }
   iconoTipo(m: Movimiento){ return m.tipo==='ingreso' ? 'arrow_downward' : 'arrow_upward'; }
   esNegativo(m: Movimiento){ return m.tipo==='egreso'; }

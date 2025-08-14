@@ -1,4 +1,6 @@
 <div class="movs">
+  <h2>Movimientos Financieros</h2>
+  <p class="subtitle">Aquí puedes ver todos tus movimientos, filtrarlos y analizarlos.</p>
   <!-- Filtros -->
   <section class="filters">
     <div class="row">
@@ -89,13 +91,13 @@
     <div class="empty" *ngIf="!loading() && items().length===0">Sin movimientos en este rango.</div>
 
     <mat-list *ngIf="items().length">
-      <mat-list-item *ngFor="let m of items()">
+      <mat-list-item *ngFor="let m of items()" [class.ingreso]="m.tipo==='ingreso'" [class.egreso]="m.tipo==='egreso'">
         <mat-icon matListItemIcon [class.ingreso]="m.tipo==='ingreso'" [class.egreso]="m.tipo==='egreso'">
           {{ iconoTipo(m) }}
         </mat-icon>
 
         <div matListItemTitle>{{ catNombre(m) }}</div>
-        <div matListItemLine>{{ m.fecha | date:'dd MMM, y' }}</div>
+        <div matListItemLine>{{ catNotas(m) }}</div>
 
         <div class="amount" [class.neg]="m.tipo==='egreso'">
           {{ ((m.tipo==='egreso' ? -1 : 1) * (+m.monto || 0)) | currency:'MXN':'symbol-narrow':'1.0-0' }}
@@ -104,6 +106,15 @@
         <div matListItemLine class="muted">
           {{ m.fecha | date:'dd MMM, y' }} · {{ m.sucursal_nombre || 'Sin sucursal' }}
         </div>
+
+        <button
+          mat-icon-button
+          matListItemMeta
+          color="warn"
+          matTooltip="Eliminar"
+          (click)="onDelete(m, $event)">
+          <mat-icon>delete</mat-icon>
+        </button>
 
       </mat-list-item>
     </mat-list>
