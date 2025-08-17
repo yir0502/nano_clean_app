@@ -167,9 +167,6 @@ export class ApiClientService {
 
   // ===== REMOTO =====
   private async fetchJSON(path: string, init?: RequestInit) {
-    console.log(`ApiClientService: fetchJSON ${path}`, MODE);
-    console.log('token front', this.auth.token);
-
     const r = await fetch(path, {
       ...(init || {}),
       headers: {

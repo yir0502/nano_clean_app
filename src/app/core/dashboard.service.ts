@@ -1,4 +1,6 @@
+// src/app/core/dashboard.service.ts
 import { Injectable } from '@angular/core';
+import { ApiClientService } from './api-client.service';
 import { ENV } from './env';
 
 export interface DashboardRange { desde: string; hasta: string; dias: number; }
@@ -13,6 +15,7 @@ export interface DashboardUIResponse {
   por_categoria: { ingreso: DashboardCategory[]; egreso: DashboardCategory[]; };
   kpis_mes?: DashboardTotals;
   por_categoria_mes?: { ingreso: DashboardCategory[]; egreso: DashboardCategory[]; };
+  por_sucursal_mes?: { sucursal_id: string | null; nombre: string; ingresos: number; egresos: number; balance: number }[];
   recientes?: { id: string; tipo: 'ingreso'|'egreso'; categoria: string; fecha: string; monto: number }[];
   meta: { items: number };
 }
@@ -20,15 +23,14 @@ export interface DashboardUIResponse {
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   private base = ENV.API_URL || 'http://localhost:3000';
-  private get token(): string | undefined { return localStorage.getItem('sb_token') || undefined; }
+  constructor(private api: ApiClientService) {}
 
-  async get(params: { desde?: string; hasta?: string; org_id?: string; include?: string; limit_recientes?: number } = {}): Promise<DashboardUIResponse> {
-    const search = new URLSearchParams({ include: 'mes,recientes', ...params as any }).toString();
-    const url = `${this.base}/dashboard?${search}`;
-    const res = await fetch(url, {
-      headers: { 'Content-Type': 'application/json', ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}) }
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text().catch(()=>res.statusText)}`);
-    return res.json();
+  async get(params: {
+    desde?: string; hasta?: string; org_id?: string; include?: string; limit_recientes?: number
+  } = {}): Promise<DashboardUIResponse> {
+    // asegura include por defecto como antes
+    const merged = { include: 'mes,recientes', ...params };
+    // delega en ApiClientService para que maneje 401 y redireccione al login
+    return this.api.get<DashboardUIResponse>('/dashboard', merged);
   }
 }

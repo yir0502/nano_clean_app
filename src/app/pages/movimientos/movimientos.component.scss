@@ -84,7 +84,7 @@ mat-list-item {
 
 /* Lista */
 .list .empty{ opacity: .7; padding: 12px; text-align: center; }
-.amount{ margin-top: -15px; margin-inline-start: auto; font-weight: 600; color: #0c625b;}
+.amount{font-weight: 600; color: #0c625b;}
 .amount.neg{ color: #b91c1c; }
 mat-list-item mat-icon.ingreso{ color: #0f766e; }
 mat-list-item mat-icon.egreso{ color: #b91c1c; }
@@ -94,6 +94,19 @@ mat-list-item mat-icon.egreso{ color: #b91c1c; }
 .loading{
   display:flex; gap:8px; align-items:center; justify-content:center;
   min-height: 140px; opacity: .8;
+}
+
+// el texto debe de ser visible y claro, con un tamaño de fuente adecuado para facilitar la lectura. Asegúrate de que el contraste entre el texto y el fondo sea suficiente para que sea legible en diferentes condiciones de luz.
+.note {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;     /* moderno: permite cortar palabras largas */
+  word-wrap: break-word;       /* alias legacy */
+  word-break: break-word;      /* soporte adicional */
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.8);
+  margin-top: 5px;
 }
 
 /* Responsive */

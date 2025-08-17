@@ -96,15 +96,16 @@
           {{ iconoTipo(m) }}
         </mat-icon>
 
-        <div matListItemTitle>{{ catNombre(m) }}</div>
-        <div matListItemLine>{{ catNotas(m) }}</div>
-
-        <div class="amount" [class.neg]="m.tipo==='egreso'">
-          {{ ((m.tipo==='egreso' ? -1 : 1) * (+m.monto || 0)) | currency:'MXN':'symbol-narrow':'1.0-0' }}
-        </div>
+        <div matListItemTitle>{{ catNombre(m) }} </div>
 
         <div matListItemLine class="muted">
-          {{ m.fecha | date:'dd MMM, y' }} · {{ m.sucursal_nombre || 'Sin sucursal' }}
+          {{ m.sucursal_nombre || 'Sin sucursal' }} - {{ m.fecha | date:'dd MMM, y' }}
+        </div>
+        
+        <div matListItemLine class="note" *ngIf="m.nota">{{ m.nota }}</div>
+        
+        <div matListItemLine class="amount" [class.neg]="m.tipo==='egreso'">
+          {{ ((m.tipo==='egreso' ? -1 : 1) * (+m.monto || 0)) | currency:'MXN':'symbol-narrow':'1.0-0' }}
         </div>
 
         <button
