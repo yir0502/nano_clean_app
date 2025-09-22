@@ -97,7 +97,7 @@ export class CategoriasComponent implements OnInit {
   donaEgr: ChartData<'doughnut'> = { labels: [], datasets: [] };
   donaOpts: ChartOptions<'doughnut'> = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
 
-  // Reparto (3 miembros) — usa balance positivo; fuente: rango o mes actual según switch
+  // Reparto (4 miembros) — usa balance positivo; fuente: rango o mes actual según switch
   repartoForm = this.fb.group({
     aNombre: this.fb.nonNullable.control('Socio A', { validators: [Validators.maxLength(50)] }),
     aPct:    this.fb.nonNullable.control<number>(34, { validators: [Validators.min(0), Validators.max(100)] }),
@@ -105,11 +105,13 @@ export class CategoriasComponent implements OnInit {
     bPct:    this.fb.nonNullable.control<number>(33, { validators: [Validators.min(0), Validators.max(100)] }),
     cNombre: this.fb.nonNullable.control('Socio C', { validators: [Validators.maxLength(50)] }),
     cPct:    this.fb.nonNullable.control<number>(33, { validators: [Validators.min(0), Validators.max(100)] }),
+    dNombre: this.fb.nonNullable.control('Socio D', { validators: [Validators.maxLength(50)] }),
+    dPct:    this.fb.nonNullable.control<number>(0,  { validators: [Validators.min(0), Validators.max(100)] }),
   });
 
   repartoWarning = computed(() => {
     const v = this.repartoForm.getRawValue();
-    const sum = (v.aPct || 0) + (v.bPct || 0) + (v.cPct || 0);
+    const sum = (v.aPct || 0) + (v.bPct || 0) + (v.cPct || 0) + (v.dPct || 0);
     return sum !== 100 ? `Suma ${sum}%. Se recomienda 100%.` : '';
   });
 
@@ -126,6 +128,7 @@ export class CategoriasComponent implements OnInit {
       { nombre: v.aNombre || 'Socio A', monto: bal * ((v.aPct||0)/100) },
       { nombre: v.bNombre || 'Socio B', monto: bal * ((v.bPct||0)/100) },
       { nombre: v.cNombre || 'Socio C', monto: bal * ((v.cPct||0)/100) },
+      { nombre: v.dNombre || 'Socio D', monto: bal * ((v.dPct||0)/100) }
     ];
   });
 
@@ -182,13 +185,15 @@ export class CategoriasComponent implements OnInit {
   }
 
   equalSplit() {
-    const x = Math.floor(100/3);
-    this.repartoForm.patchValue({ aPct: x, bPct: x, cPct: 100 - 2*x });
+    const x = Math.floor(100/4);
+    this.repartoForm.patchValue({ aPct: x, bPct: x, cPct: x, dPct: 100 - 3*x });
     this.saveReparto();
   }
   saveReparto() {
     localStorage.setItem('nano_clean_reparto', JSON.stringify(this.repartoForm.getRawValue()));
     this.snack.open('Reparto guardado', 'OK', { duration: 1500 });
+    // recargar pagina para ver cambios
+    location.reload();
   }
   private restoreReparto() {
     const raw = localStorage.getItem('nano_clean_reparto');
@@ -227,20 +232,52 @@ export class CategoriasComponent implements OnInit {
     return Array.from(map.values());
   }
 
-  private buildDonuts(items: Movimiento[]){
-    const byIng = new Map<string, number>();
-    const byEgr = new Map<string, number>();
-    for (const m of items){
-      const name = (m as any).categoria_nombre || 'Sin categoría';
-      const acc = Math.abs(+m.monto || 0);
-      if (m.tipo==='ingreso') byIng.set(name, (byIng.get(name)||0)+acc);
-      else byEgr.set(name, (byEgr.get(name)||0)+acc);
-    }
-    const ingLabels = Array.from(byIng.keys());
-    const egrLabels = Array.from(byEgr.keys());
-    this.donaIng = { labels: ingLabels, datasets: [{ data: ingLabels.map(k=>byIng.get(k)!), backgroundColor: ingLabels.map((_ ,i)=> this.pickColor(i, true)) }] };
-    this.donaEgr = { labels: egrLabels, datasets: [{ data: egrLabels.map(k=>byEgr.get(k)!), backgroundColor: egrLabels.map((_ ,i)=> this.pickColor(i, false)) }] };
+  // helper: nombre del mes actual (para la leyenda)
+private mesActualLabel(): string {
+  const s = new Intl.DateTimeFormat('es-MX', { month:'long', year:'numeric' }).format(new Date());
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+// helper: asegura un nombre válido
+private safeCatName(raw: any, categoria_id?: string | null): string {
+  const s = (raw ?? '').toString().trim();
+  if (s) return s;
+  return categoria_id ? 'Desconocida' : 'Sin categoría';
+}
+
+private buildDonuts(items: Movimiento[]){
+  const byIng = new Map<string, number>();
+  const byEgr = new Map<string, number>();
+
+  for (const m of items){
+    const name = this.safeCatName((m as any).categoria_nombre, m.categoria_id);
+    const acc = Math.abs(Number(m.monto) || 0);
+    if (m.tipo === 'ingreso') byIng.set(name, (byIng.get(name) || 0) + acc);
+    else                      byEgr.set(name, (byEgr.get(name) || 0) + acc);
   }
+
+  const mes = this.mesActualLabel();
+
+  const ingLabels = Array.from(byIng.keys());
+  const egrLabels = Array.from(byEgr.keys());
+
+  this.donaIng = {
+    labels: ingLabels,
+    datasets: [{
+      label: `Ingresos (${mes})`,               // 👈 evita "undefined" en la leyenda
+      data: ingLabels.map(k => byIng.get(k)!),
+      backgroundColor: ingLabels.map((_, i) => this.pickColor(i, true))
+    }]
+  };
+
+  this.donaEgr = {
+    labels: egrLabels,
+    datasets: [{
+      label: `Egresos (${mes})`,                // 👈 evita "undefined"
+      data: egrLabels.map(k => byEgr.get(k)!),
+      backgroundColor: egrLabels.map((_, i) => this.pickColor(i, false))
+    }]
+  };
+}
 
   private pickColor(i: number, ingreso: boolean){
     const base = ingreso ? C_ING_LINE : C_EGR_LINE;

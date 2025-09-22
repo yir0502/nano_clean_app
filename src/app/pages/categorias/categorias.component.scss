@@ -11,8 +11,24 @@
 
 .presets {
   display: flex; gap: 8px; flex-wrap: wrap;
-  button { background: rgba(0, 76, 255, 0.04); }
-  .active { background: var(--mat-sys-primary, #3f51b5); color: white; }
+  justify-content: space-evenly;
+  margin-bottom: 15px;
+  button {
+    background: rgba(0, 76, 255, 0.04);
+    border-radius: 999px;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+    line-height: 32px;
+    &.active {
+      background: var(--mat-sys-primary, #3f51b5);
+      color: white;
+    }
+  }
+}
+
+.subtitle{
+  margin-top: 0px; margin-bottom: 12px;
 }
 
 /* KPIs */
@@ -57,6 +73,12 @@
 }
 .grid-resultados .label{ font-size: 12px; opacity: .8; }
 .grid-resultados .value{ font-size: 1.25rem; font-weight: 600; }
+
+.hint{ font-size: 12px; opacity: .7; margin-top: 12px; }
+
+.span-2 mat-slide-toggle{
+  margin-top: 12px;
+}
 
 /* Loading */
 .loading{ display:flex; gap:8px; align-items:center; opacity:.8; }

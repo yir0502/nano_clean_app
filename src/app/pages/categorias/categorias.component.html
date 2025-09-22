@@ -84,13 +84,12 @@
         </mat-slide-toggle>
       </mat-card-title>
 
-      <mat-divider></mat-divider>
-
       <!-- Hint fuente de balance -->
       <div class="hint">
         Fuente: <strong>{{ useMesActual() ? 'Balance del mes actual' : 'Balance del rango seleccionado' }}</strong>
         <ng-container *ngIf="useMesActual()">
           — Balance mes: <strong>{{ balanceMesActual() | currency:'MXN':'symbol-narrow':'1.0-0' }}</strong>
+          <p>Modifica los porcentajes en base al acuerdo actual de repartición de ganancias.</p>
         </ng-container>
       </div>
 
@@ -122,10 +121,19 @@
             <mat-label>% 3</mat-label>
             <input matInput type="number" min="0" max="100" formControlName="cPct">
           </mat-form-field>
+
+          <mat-form-field appearance="fill">
+            <mat-label>Nombre 4</mat-label>
+            <input matInput formControlName="dNombre" placeholder="Socio D">
+          </mat-form-field>
+          <mat-form-field appearance="fill">
+            <mat-label>% 4</mat-label>
+            <input matInput type="number" min="0" max="100" formControlName="dPct">
+          </mat-form-field>
         </div>
 
         <div class="actions">
-          <button mat-stroked-button type="button" (click)="equalSplit()">Dividir 1/3</button>
+          <button mat-stroked-button type="button" (click)="equalSplit()">Dividir 1/4</button>
           <span class="warn" *ngIf="repartoWarning()">{{ repartoWarning() }}</span>
           <span class="spacer"></span>
           <button mat-flat-button color="primary" type="button" (click)="saveReparto()">Guardar</button>

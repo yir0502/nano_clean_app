@@ -42,7 +42,7 @@ import { NgIf } from '@angular/common';
   </nav>
 
   <!-- FAB -->
-  <button *ngIf="!hideChrome()" mat-fab color="primary" class="fab" routerLink="/movimientos/nuevo" aria-label="Nuevo movimiento">
+  <button *ngIf="!hideChrome()" mat-fab class="fab" routerLink="/movimientos/nuevo" aria-label="Nuevo movimiento">
     <mat-icon>add</mat-icon>
   </button>
 `,
@@ -82,9 +82,58 @@ import { NgIf } from '@angular/common';
     /* Estado activo + indicador */
     .mobile-nav a.active{ color: var(--mat-sys-primary, #3f51b5); font-variation-settings: 'wght' 600; }
 
-    /* FAB */
-    .fab{ position: fixed; right:16px; bottom: 60px; z-index: 11;
-      box-shadow: 0 6px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.12); }
+    /* FAB cuadrado */
+    .fab { 
+      position: fixed;
+      right: 10px;
+      bottom: 60px; 
+      z-index: 11;
+      width: 70px;
+      height: 70px;
+      border-radius: 16px; /* esquinas redondeadas */
+      overflow: hidden; /* para que la ola se contenga dentro */
+      box-shadow: 0 6px 12px rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.12);
+      background: rgba(98, 212, 148, 1);
+    }
+
+    /* Onda animada */
+    .fab::before {
+      content: "";
+      position: absolute;
+      left: -50%;
+      bottom: -60%;
+      width: 200%;
+      height: 200%;
+      background: rgba(98, 212, 148, 1);
+      border-radius: 45%;
+      animation: waveMove 10s infinite ease-in-out;
+    }
+
+    /* Hacemos otra capa para más realismo */
+    .fab::after {
+      content: "";
+      position: absolute;
+      left: -60%;
+      bottom: -65%;
+      width: 220%;
+      height: 220%;
+      background: rgba(165, 245, 161, 1);
+      border-radius: 40%;
+      animation: waveMove 10s infinite ease-in-out reverse;
+    }
+
+    /* Animación */
+    @keyframes waveMove {
+      0% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-50%) rotate(180deg);
+      }
+      100% {
+        transform: translateY(0) rotate(360deg);
+      }
+    }
 
     /* Responsive: si el ancho es muy pequeño, oculta labels */
     @media (max-width: 360px){
