@@ -1,103 +1,98 @@
-<mat-card class="mv-card" *ngIf="!loading(); else loadingTpl">
-  <mat-card-title class="mv-title">
-    <button mat-icon-button type="button" (click)="close()" aria-label="Volver">
+<div class="screen-container" [class.theme-egreso]="form.get('tipo')?.value === 'egreso'"
+  [class.theme-ingreso]="form.get('tipo')?.value === 'ingreso'">
+
+  <div class="header" [formGroup]="form">
+    <button mat-icon-button (click)="close()">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <span>{{ titulo() }}</span>
-    <span class="spacer"></span>
-    <button *ngIf="isEdit()" mat-icon-button color="warn" (click)="delete()" aria-label="Eliminar">
-      <mat-icon>delete</mat-icon>
-    </button>
-  </mat-card-title>
-
-  <form class="mv-form" [formGroup]="form" (ngSubmit)="save()">
-    <!-- Tipo -->
-    <div class="row">
-      <label class="lbl">Tipo</label>
-      <mat-button-toggle-group formControlName="tipo" class="tipo-toggle" aria-label="Tipo de movimiento">
-        <mat-button-toggle value="ingreso">
-          <mat-icon>arrow_downward</mat-icon> Ingreso
-        </mat-button-toggle>
-        <mat-button-toggle value="egreso">
-          <mat-icon>arrow_upward</mat-icon> Egreso
-        </mat-button-toggle>
+    <div class="toggle-wrapper">
+      <mat-button-toggle-group formControlName="tipo" class="custom-toggle" aria-label="Tipo">
+        <mat-button-toggle value="ingreso">Ingreso</mat-button-toggle>
+        <mat-button-toggle value="egreso">Egreso</mat-button-toggle>
       </mat-button-toggle-group>
     </div>
+    <button *ngIf="isEdit()" mat-icon-button color="warn" (click)="delete()">
+      <mat-icon>delete_outline</mat-icon>
+    </button>
+    <div *ngIf="!isEdit()" style="width: 40px"></div>
+  </div>
 
-    <!-- Entre Categoría y Método de pago -->
-    <mat-form-field appearance="fill">
-      <mat-label>Sucursal</mat-label>
-      <mat-select formControlName="sucursal_id">
-        <mat-option [value]="null">Sin sucursal</mat-option>
-        <mat-option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</mat-option>
-      </mat-select>
-    </mat-form-field>
+  <form [formGroup]="form" (ngSubmit)="save()" class="main-form" *ngIf="!loading(); else loadingTpl">
 
+    <section class="hero-section">
+      <div class="hero-label">Monto</div>
+      <div class="hero-input-wrapper">
+        <span class="currency-symbol">$</span>
+        <input matInput formControlName="monto" type="number" inputmode="decimal" placeholder="0.00" class="giant-input"
+          autoFocus>
+      </div>
+      <span class="currency-code">MXN</span>
 
-    <!-- Monto -->
-    <mat-form-field class="monto" appearance="fill">
-      <mat-label>Monto</mat-label>
-      <input matInput formControlName="monto" type="number" inputmode="decimal" step="0.01" placeholder="0.00">
-      <span matSuffix>MXN</span>
-      <mat-error *ngIf="form.controls.monto.hasError('required')">Requerido</mat-error>
-      <mat-error *ngIf="form.controls.monto.hasError('min')">Debe ser mayor a 0</mat-error>
-    </mat-form-field>
+      <div class="error-msg" *ngIf="form.get('monto')?.touched && form.get('monto')?.invalid">
+        Requerido
+      </div>
+    </section>
 
-    <!-- Categoría -->
-    <mat-form-field appearance="fill">
-      <mat-label>Categoría</mat-label>
-      <mat-select formControlName="categoria_id">
-        <mat-option [value]="null" disabled>Selecciona una categoría</mat-option>
-        <mat-option *ngFor="let c of categorias()" [value]="c.id">{{ c.nombre }}</mat-option>
-      </mat-select>
-      <mat-error *ngIf="form.controls.categoria_id.hasError('required')">Requerido</mat-error>
-    </mat-form-field>
+    <section class="details-card">
 
-    <!-- Método de pago -->
-    <mat-form-field appearance="fill">
-      <mat-label>Método de pago</mat-label>
-      <mat-select formControlName="metodo_pago">
-        <mat-option *ngFor="let m of metodosPago" [value]="m.id">
-          <mat-icon class="opt-ic">{{ m.icon }}</mat-icon>
-          {{ m.label }}
-        </mat-option>
-      </mat-select>
-      <mat-error *ngIf="form.controls.metodo_pago.hasError('required')">Requerido</mat-error>
-    </mat-form-field>
+      <mat-form-field appearance="outline" class="clean-field">
+        <mat-label>Categoría</mat-label>
+        <mat-select formControlName="categoria_id">
+          <mat-option *ngFor="let c of categorias()" [value]="c.id">
+            {{ c.nombre }}
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix class="field-icon">category</mat-icon>
+        <mat-error>Requerido</mat-error>
+      </mat-form-field>
 
-    <!-- Fecha -->
-    <mat-form-field appearance="fill">
-      <mat-label>Fecha</mat-label>
-      <input matInput [matDatepicker]="picker" formControlName="fecha" placeholder="Selecciona fecha" readonly>
-      <button mat-icon-button matSuffix (click)="picker.open()" type="button" aria-label="Abrir calendario">
-        <mat-icon>event</mat-icon>
-      </button>
-      <mat-datepicker #picker startView="month" [touchUi]="true"></mat-datepicker>
-      <mat-error *ngIf="form.controls.fecha.hasError('required')">Requerido</mat-error>
-    </mat-form-field>
+      <mat-form-field appearance="outline" class="clean-field">
+        <mat-label>Método de pago</mat-label>
+        <mat-select formControlName="metodo_pago">
+          <mat-option *ngFor="let m of metodosPago" [value]="m.id">
+            {{ m.label }}
+          </mat-option>
+        </mat-select>
+        <mat-icon matPrefix class="field-icon">payments</mat-icon>
+      </mat-form-field>
 
-    <!-- Nota -->
-    <mat-form-field appearance="fill" class="full">
-      <mat-label>Nota</mat-label>
-      <textarea matInput rows="3" formControlName="nota"
-        placeholder="Detalle opcional (máx. 300 caracteres)"></textarea>
-      <mat-hint align="end">{{ form.controls.nota.value.length }}/300</mat-hint>
-    </mat-form-field>
+      <div class="row-dual">
+        <mat-form-field appearance="outline" class="clean-field">
+          <mat-label>Fecha</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="fecha" readonly>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker [touchUi]="true"></mat-datepicker>
+        </mat-form-field>
 
-    <!-- Acciones (footer pegajoso) -->
-    <div class="actions">
-      <button mat-stroked-button type="button" (click)="close()">Cancelar</button>
-      <button mat-flat-button color="primary" type="submit" [disabled]="saving() || form.invalid">
-        <mat-spinner *ngIf="saving()" [diameter]="20"></mat-spinner>
-        <span *ngIf="!saving()">Guardar</span>
+        <mat-form-field appearance="outline" class="clean-field">
+          <mat-label>Sucursal</mat-label>
+          <mat-select formControlName="sucursal_id">
+            <mat-option [value]="null">Ninguna</mat-option>
+            <mat-option *ngFor="let s of sucursales" [value]="s.id">{{ s.nombre }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field appearance="outline" class="clean-field">
+        <mat-label>Nota (Opcional)</mat-label>
+        <textarea matInput rows="2" formControlName="nota" maxlength="300"></textarea>
+      </mat-form-field>
+
+    </section>
+
+    <div class="sticky-footer">
+      <button mat-flat-button class="btn-save" type="submit" [disabled]="saving() || form.invalid">
+        <mat-spinner *ngIf="saving()" [diameter]="24" class="spinner-white"></mat-spinner>
+        <span *ngIf="!saving()">Guardar Movimiento</span>
+        <mat-icon *ngIf="!saving()">check</mat-icon>
       </button>
     </div>
+
   </form>
-</mat-card>
+</div>
 
 <ng-template #loadingTpl>
   <div class="mv-loading">
     <mat-spinner [diameter]="40"></mat-spinner>
-    <div>Cargando…</div>
   </div>
 </ng-template>

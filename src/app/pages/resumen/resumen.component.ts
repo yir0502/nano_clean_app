@@ -13,6 +13,7 @@ import type { ChartConfiguration, ChartData, ChartType, ChartOptions} from 'char
 import { Chart as ChartJS, registerables } from 'chart.js';
 ChartJS.register(...registerables);
 import { DashboardService, DashboardUIResponse, DashboardDay } from '../../core/dashboard.service';
+import { AuthService } from '../../core/auth.service';
 
 // 🎨 Colores (ajusta a tu marca)
 const C_INGRESO_BG   = 'hsla(158, 64%, 45%, .75)'; // verde
@@ -84,7 +85,7 @@ export class ResumenComponent implements OnInit {
   // Recientes
   recientes: { id: string; tipo: 'ingreso'|'egreso'; categoria: string; fecha: string; monto: number }[] = [];
 
-  constructor(private dash: DashboardService) {}
+  constructor(private dash: DashboardService, private auth: AuthService) {}
   async ngOnInit(){ await this.loadAll(); }
 
   // ---- helpers ----
@@ -143,7 +144,8 @@ export class ResumenComponent implements OnInit {
       this.loading = true; this.error = undefined;
 
       const { desde, hasta } = this.rangeDates(this.range);
-      const resp: DashboardUIResponse = await this.dash.get({ desde, hasta, include: 'mes,recientes', limit_recientes: 10 });
+      const org_id = this.auth.orgId;
+      const resp: DashboardUIResponse = await this.dash.get({ desde, hasta, org_id, include: 'mes,recientes', limit_recientes: 10 });
 
       // KPIs
       const k = resp.kpis_mes ?? { ingresos: 0, egresos: 0, balance: 0 };

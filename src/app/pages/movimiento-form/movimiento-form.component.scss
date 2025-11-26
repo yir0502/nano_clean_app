@@ -1,57 +1,200 @@
-.mv-card {
-  padding: 50px 12px;
+/* --- VARIABLES & THEME --- */
+:host {
+  --primary-color: #0f766e; /* Verde por defecto */
+  --bg-color: #f8fafc;
 }
 
-.mv-title {
-  display: flex; align-items: center; gap: 8px;
-  .spacer { flex: 1 1 auto; }
-  button[mat-icon-button] { margin-inline-end: 4px; }
+.theme-egreso { --primary-color: #dc2626; } /* Rojo */
+.theme-ingreso { --primary-color: #16a34a; } /* Verde */
+
+.screen-container {
+  background-color: var(--bg-color);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  font-family: 'Roboto', sans-serif; /* Asegura fuente limpia */
+  padding: 60px 0 0 0;
 }
 
-.mv-form {
-  display: grid; gap: 12px;
+/* --- HEADER --- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: transparent;
+  z-index: 10;
+}
+
+.toggle-wrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* Toggle Custom Style (Pill Shape) */
+.custom-toggle {
+  border: none;
+  background: #e2e8f0;
+  border-radius: 99px;
+  padding: 2px;
+  
+  mat-button-toggle {
+    background: transparent;
+    color: #64748b;
+    border-radius: 99px;
+    width: 100px;
+    font-weight: 500;
+    
+    &.mat-button-toggle-checked {
+      background-color: white;
+      color: var(--primary-color);
+    }
+  }
+}
+
+/* --- HERO SECTION (MONTO) --- */
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 40px 0;
+  background: var(--bg-color); /* Se funde con el fondo */
+}
+
+.hero-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.hero-input-wrapper {
+  display: flex;
+  align-items: baseline;
+  color: var(--primary-color);
+  position: relative;
+}
+
+.currency-symbol {
+  font-size: 32px;
+  font-weight: 300;
+  margin-right: 4px;
+}
+
+/* El truco del input gigante */
+.giant-input {
+  font-size: 56px;
+  font-weight: 700;
+  text-align: center;
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 240px; /* Ajustar según necesidad */
+  padding: 0;
+  color: var(--primary-color);
+  caret-color: var(--primary-color);
+  
+  /* Quitar flechas de número en Chrome/Safari */
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+.currency-code {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.error-msg {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+
+/* --- DETAILS CARD (Campos) --- */
+.details-card {
+  background: white;
+  border-radius: 24px 24px 0 0; /* Redondeado arriba */
+  padding: 24px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.03);
+  flex: 1; /* Ocupa el resto del espacio */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 100px; /* Espacio para el footer */
+}
+
+.row-dual {
+  display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
-.mv-form .full { grid-column: 1 / -1; }
-
-.lbl { font-size: 12px; opacity: .8; margin-bottom: 6px; display: inline-block; margin-right: 12px;}
-
-.monto span {
-  font-size: 14px; font-weight: 500; color: rgba(0, 0, 0, 0.6);
-    margin-right: 5px;
+/* Custom Material Field Overrides */
+.clean-field {
+  width: 100%;
 }
 
-.tipo-toggle {
-  display: inline-flex;
-  border-radius: 999px; overflow: hidden; border: 1px solid rgba(0, 0, 0, 0.412);
-  button { gap: 6px; }
+.field-icon {
+  color: #94a3b8;
+  margin-right: 8px;
 }
 
-/* Campos Material */
-mat-form-field { width: 100%; }
-
-/* Selector: icono en opción */
-.opt-ic { font-size: 18px; width: 18px; height: 18px; line-height: 18px; margin-right: 8px; vertical-align: -3px; }
-
-/* Footer de acciones pegajoso (sobre la tabbar) */
-.actions {
-  position: sticky; bottom: 0; left: 0;
-  display: flex; gap: 10px; justify-content: flex-start;
-  background: color-mix(in oklab, var(--mat-sys-surface, #fff) 92%, transparent);
-  backdrop-filter: saturate(160%) blur(10px);
-  padding: 12px; margin-top: 8px;
-  border-top: 1px solid rgba(0,0,0,.06);
+/* --- STICKY FOOTER --- */
+.sticky-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom)); /* Para iPhones modernos */
+  background: white;
+  border-top: 1px solid #f1f5f9;
+  z-index: 100;
 }
 
-/* Loading */
+.btn-save {
+  width: 100%;
+  height: 56px; /* Botón alto */
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  background-color: var(--primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s;
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    background-color: #cbd5e1;
+  }
+}
+
+.spinner-white ::ng-deep circle {
+  stroke: white !important;
+}
+
+/* Loading State */
 .mv-loading {
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap: 8px; min-height: 240px;
-}
-
-/* Responsive */
-@media (max-width: 700px) {
-  .mv-form { grid-template-columns: 1fr; }
-  .mv-card { padding-bottom: 96px; }
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

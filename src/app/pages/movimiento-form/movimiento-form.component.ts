@@ -60,7 +60,7 @@ sucursales: Sucursal[] = [];
   ];
 
 form = this.fb.group({
-  tipo: this.fb.nonNullable.control<'ingreso'|'egreso'>('egreso', { validators: [Validators.required] }),
+  tipo: this.fb.nonNullable.control<'ingreso'|'egreso'>('ingreso', { validators: [Validators.required] }),
   monto: this.fb.nonNullable.control<number | null>(null, { validators: [Validators.required, Validators.min(0.01)] }),
   categoria_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }),
   sucursal_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }), 
@@ -101,11 +101,20 @@ form = this.fb.group({
     try {
       const cats = await this.api.listCategorias(tipo);
       this.categorias.set(cats);
+
       // Si la categoría seleccionada ya no aplica para el nuevo tipo, límpiala
       const sel = this.form.controls.categoria_id.value;
       if (sel && !cats.some(c => c.id === sel)) {
         this.form.controls.categoria_id.setValue(null);
       }
+
+      // 1. Si no estamos en modo edición (o si la categoría es null)
+      // 2. Y si la nueva lista de categorías no está vacía
+      if (!this.isEdit() && !this.form.controls.categoria_id.value && cats.length > 0) {
+        this.form.controls.categoria_id.setValue(cats[1].id);
+      }
+      // ***************************************************************
+
     } catch (e) {
       this.snack.open('No se pudieron cargar las categorías', 'OK', { duration: 2500 });
     }

@@ -17,6 +17,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/movimientos/movimientos.component').then(m => m.MovimientosComponent) },
 
   { path: 'movimientos/nuevo',
+    data: { hideFab: true },
     canMatch: [authGuard],
     loadComponent: () => import('./pages/movimiento-form/movimiento-form.component').then(m => m.MovimientoFormComponent) },
 

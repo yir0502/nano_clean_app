@@ -19,7 +19,7 @@ export class LoginComponent implements OnInit {
   err = '';
   fg!: FormGroup;
   hide = true;
-shake = false;
+  shake = false;
 
   constructor(
     private fb: FormBuilder,
@@ -34,7 +34,7 @@ shake = false;
     });
   }
 
-async submit() {
+  async submit() {
     this.err = '';
     this.loading = true;
     try {
@@ -51,7 +51,7 @@ async submit() {
       });
 
       // (Opcional) vibración leve en móviles
-      if ('vibrate' in navigator) { try { navigator.vibrate?.(60); } catch {} }
+      if ('vibrate' in navigator) { try { navigator.vibrate?.(60); } catch { } }
     } finally {
       this.loading = false;
     }

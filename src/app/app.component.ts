@@ -42,7 +42,7 @@ import { NgIf } from '@angular/common';
   </nav>
 
   <!-- FAB -->
-  <button *ngIf="!hideChrome()" mat-fab class="fab" routerLink="/movimientos/nuevo" aria-label="Nuevo movimiento">
+  <button *ngIf="!hideFab()" mat-fab class="fab" routerLink="/movimientos/nuevo" aria-label="Nuevo movimiento">
     <mat-icon>add</mat-icon>
   </button>
 `,
@@ -164,8 +164,28 @@ export class AppComponent {
     )
   );
 
+  private fabSig = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => {
+        const url = this.router.url;
+        // Devuelve TRUE si la URL contiene '/movimientos/nuevo' o '/movimientos/' (edición)
+        return url.includes('/movimientos/nuevo') || 
+               (url.includes('/movimientos/') && url.length > '/movimientos/'.length);
+      }),
+      startWith(false) // Valor inicial
+    )
+  );
+
   hideChrome = computed(() => this.hideSig());
 
+  hideFab = computed(() => {
+    if (this.hideChrome()) { 
+        return true; 
+    }
+    return this.fabSig();
+  });
+  
   constructor(public auth: AuthService) { }
 
   logout() {
