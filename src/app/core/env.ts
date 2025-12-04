@@ -1,3 +1,3 @@
 export const ENV = {
-  API_URL: 'https://nanoclean-api.onrender.com' // cambia al dominio cuando despliegues
+  API_URL: 'http://localhost:3000' // cambia al dominio cuando despliegues
 };

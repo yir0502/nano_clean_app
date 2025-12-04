@@ -15,6 +15,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { AuthService } from '../../core/auth.service';
 
 import { ApiClientService } from '../../core/api-client.service';
 import { Categoria, Movimiento } from '../../core/models';
@@ -45,9 +46,7 @@ export class MovimientoFormComponent implements OnInit {
   loading = signal<boolean>(true);
   isEdit = signal<boolean>(false);
   movimientoId = signal<string | null>(null);
-sucursales: Sucursal[] = [];
-
-  // Catálogo dinámico por tipo
+  sucursales: Sucursal[] = [];
   categorias = signal<Categoria[]>([]);
 
   // Métodos de pago (ajústalos si quieres)
@@ -59,18 +58,18 @@ sucursales: Sucursal[] = [];
     { id: 'otro', label: 'Otro', icon: 'more_horiz' },
   ];
 
-form = this.fb.group({
-  tipo: this.fb.nonNullable.control<'ingreso'|'egreso'>('ingreso', { validators: [Validators.required] }),
-  monto: this.fb.nonNullable.control<number | null>(null, { validators: [Validators.required, Validators.min(0.01)] }),
-  categoria_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }),
-  sucursal_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }), 
-  fecha: this.fb.nonNullable.control<Date | null>(new Date(), { validators: [Validators.required] }),
-  metodo_pago: this.fb.nonNullable.control<string | null>('efectivo', { validators: [Validators.required] }),
-  nota: this.fb.nonNullable.control<string>('', { validators: [Validators.maxLength(300)] })
-});
+  form = this.fb.group({
+    tipo: this.fb.nonNullable.control<'ingreso'|'egreso'>('ingreso', { validators: [Validators.required] }),
+    monto: this.fb.nonNullable.control<number | null>(null, { validators: [Validators.required, Validators.min(0.01)] }),
+    categoria_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }),
+    sucursal_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }), 
+    fecha: this.fb.nonNullable.control<Date | null>(new Date(), { validators: [Validators.required] }),
+    metodo_pago: this.fb.nonNullable.control<string | null>('efectivo', { validators: [Validators.required] }),
+    nota: this.fb.nonNullable.control<string>('', { validators: [Validators.maxLength(300)] })
+  });
 
   titulo = computed(() => this.isEdit() ? 'Editar movimiento' : 'Nuevo movimiento');
-
+  constructor(private auth: AuthService) {}
   async ngOnInit(): Promise<void> {
     // Detecta si es edición
     const id = this.route.snapshot.paramMap.get('id');
@@ -176,7 +175,8 @@ form = this.fb.group({
       sucursal_id: v.sucursal_id,  
       fecha: fechaISO,             // YYYY-MM-DD
       metodo_pago: v.metodo_pago,
-      nota: v.nota?.trim() || ''
+      nota: v.nota?.trim() || '',
+      org_id: this.auth.orgId
     } as Omit<Movimiento, 'id' | 'org_id' | 'created_at' | 'updated_at'>;
 
     try {

@@ -1,0 +1,22 @@
+<div class="content">
+  <h2>Opciones de Gestión</h2>
+  <p class="subtitle">Configura tus parámetros de negocio.</p>
+
+  <mat-card>
+    <mat-card-content class="list-container">
+      <mat-nav-list>
+        
+        <ng-container *ngFor="let option of adminOptions; let last = last">
+          <a mat-list-item [routerLink]="option.path" class="admin-item">
+            <mat-icon matListItemIcon color="primary">{{ option.icon }}</mat-icon>
+            <div matListItemTitle class="item-title">{{ option.label }}</div>
+            <div matListItemLine>{{ option.description }}</div>
+            <mat-icon matListItemMeta>chevron_right</mat-icon>
+          </a>
+          <mat-divider *ngIf="!last"></mat-divider>
+        </ng-container>
+
+      </mat-nav-list>
+    </mat-card-content>
+  </mat-card>
+</div>

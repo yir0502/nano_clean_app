@@ -29,5 +29,29 @@ export const routes: Routes = [
     canMatch: [authGuard],
     loadComponent: () => import('./pages/categorias/categorias.component').then(m => m.CategoriasComponent) },
 
+{ 
+    path: 'administracion',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/administracion/admin-list/administracion.component').then(m => m.AdministracionComponent) 
+  },
+  
+  { 
+    path: 'administracion/sucursales/nuevo', 
+    data: { hideFab: true },
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/administracion/sucursales/sucursales-nuevo.component').then(m => m.SucursalesNuevoComponent) 
+  },
+  { 
+    path: 'administracion/categorias/nuevo', 
+    data: { hideFab: true },
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/administracion/categorias/categorias-nuevo.component').then(m => m.CategoriasNuevoComponent)
+  },
+  {
+    path: 'administracion/categorias/listado',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/administracion/categorias/categorias-listado.component').then(m => m.CategoriasListadoComponent)
+  },
+
   { path: '**', redirectTo: 'resumen' }
 ];

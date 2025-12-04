@@ -1,0 +1,40 @@
+.content { 
+  padding: 60px 12px;
+  max-width: 800px; 
+  margin: 0 auto; 
+}
+
+mat-card {
+  margin-top: 16px;
+}
+
+.list-container {
+  padding: 0;
+}
+
+.admin-item {
+  transition: background-color 0.2s;
+  margin-bottom: 8px;
+  margin-top: 8px;
+}
+
+.admin-item:last-child {
+  margin-bottom: 0;
+}
+
+.admin-item:first-child {
+  margin-top: 0;
+}
+
+.admin-item mat-icon {
+  margin-top: 22px;
+}
+
+.admin-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.item-title {
+  font-weight: 600;
+  font-size: 16px;
+}
