@@ -41,6 +41,11 @@ export const routes: Routes = [
     canMatch: [authGuard],
     loadComponent: () => import('./pages/administracion/sucursales/sucursales-nuevo.component').then(m => m.SucursalesNuevoComponent) 
   },
+  {
+    path: 'administracion/sucursales/listado',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/administracion/sucursales/sucursales-listado.component').then(m => m.SucursalesListadoComponent)
+  },
   { 
     path: 'administracion/categorias/nuevo', 
     data: { hideFab: true },

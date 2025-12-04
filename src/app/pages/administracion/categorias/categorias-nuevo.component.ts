@@ -27,20 +27,19 @@ import { ApiClientService } from '../../../core/api-client.service';
     MatButtonToggleModule
   ],
   template: `
-    <mat-toolbar color="primary" class="sticky-toolbar">
+    <div class="header-content">
       <button mat-icon-button (click)="close()">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <span>Nueva Categoría</span>
-    </mat-toolbar>
+      <h2>Nueva Categoría</h2>
+    </div>
 
     <div class="content-container">
       <mat-card>
-        <mat-card-header>
-          <mat-card-title>Detalles</mat-card-title>
-        </mat-card-header>
         
-        <mat-card-content>
+      <p class="form-title">Registrar Sucursal</p>
+
+      <mat-card-content>
           <form [formGroup]="form">
 
             <div class="type-selector">
@@ -63,22 +62,59 @@ import { ApiClientService } from '../../../core/api-client.service';
           </form>
         </mat-card-content>
 
-        <mat-card-actions align="end">
-          <button mat-button (click)="close()" [disabled]="saving()">Cancelar</button>
-          <button mat-raised-button color="primary" 
-                  (click)="save()" 
-                  [disabled]="form.invalid || saving()">
-            <mat-icon *ngIf="!saving()">save</mat-icon>
-            <mat-spinner *ngIf="saving()" diameter="20"></mat-spinner>
-            <span *ngIf="!saving()"> Guardar</span>
-            <span *ngIf="saving()"> Guardando...</span>
-          </button>
-        </mat-card-actions>
       </mat-card>
+      <div class="action-footer">
+        <button mat-button class="cancel-button" (click)="close()" [disabled]="saving()">
+          Cancelar
+        </button>
+        <button mat-flat-button class="save-button"
+              (click)="save()" 
+              [disabled]="form.invalid || saving()">
+          <mat-icon *ngIf="!saving()">save</mat-icon>
+          <mat-spinner *ngIf="saving()" diameter="20"></mat-spinner>
+          <span *ngIf="!saving()"> Guardar</span>
+        </button>
+      </div>
     </div>
   `,
   styles: [`
-    .sticky-toolbar { position: sticky; top: 0; z-index: 10; }
+    .header-content {
+      display: flex;
+      align-items: center;
+      padding: 8px 16px;
+      border-bottom: 1px solid #e0e0e0;
+      background-color: white;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-content h2 { margin: 0 0 0 16px; font-weight: 500; font-size: 20px; }
+    .form-title {
+      font-size: 1.1em;
+      font-weight: 600;
+      margin-top: 0;
+    }
+
+      .action-footer {
+        display: flex;
+        justify-content: flex-end; /* Alinear a la derecha */
+        padding: 8px 16px;
+        background: white;
+        border-top: 1px solid #e0e0e0;
+        gap: 8px; /* Espacio entre botones */
+      }
+
+      /* Estilo de los botones */
+      .save-button {
+        background-color: #4CAF50; /* Un color verde para guardar, similar al check de la imagen 1 */
+        color: white;
+        height: 48px;
+        padding: 0 24px;
+      }
+      .cancel-button {
+        color: rgba(0, 0, 0, 0.6);
+        height: 48px;
+      }
     .content-container { padding: 16px; max-width: 600px; margin: 0 auto; }
     .full-width { width: 100%; margin-bottom: 8px; }
     

@@ -21,61 +21,100 @@ import { ApiClientService } from '../../../core/api-client.service';
   standalone: true,
   imports: [
     CommonModule, ReactiveFormsModule,
-    MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule, 
+    MatCardModule, MatFormFieldModule, MatInputModule, MatButtonModule,
     MatToolbarModule, MatIconModule, MatSnackBarModule, MatProgressSpinnerModule
   ],
   template: `
-    <mat-toolbar color="primary" class="sticky-toolbar">
-      <button mat-icon-button (click)="close()">
-        <mat-icon>arrow_back</mat-icon>
-      </button>
-      <span>Nueva Sucursal</span>
-    </mat-toolbar>
+    <div class="header-content">
+   <button mat-icon-button (click)="close()">
+    <mat-icon>arrow_back</mat-icon>
+   </button>
+   <h2>Nueva Sucursal</h2>
+  </div>
 
     <div class="content-container">
-      <mat-card>
-        <mat-card-header>
-          <mat-card-title>Detalles</mat-card-title>
-        </mat-card-header>
-        
-        <mat-card-content>
-          <form [formGroup]="form">
-            
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Nombre de la Sucursal</mat-label>
-              <input matInput formControlName="nombre" placeholder="Ej. Sucursal Centro" autocomplete="off">
-              <mat-error *ngIf="form.controls.nombre.invalid">Requerido</mat-error>
-            </mat-form-field>
+   
+   <p class="form-title">Registrar Sucursal</p>
+   
+   <form [formGroup]="form">
+    
+        <mat-form-field appearance="outline" class="full-width">
+     <mat-label>Nombre de la Sucursal*</mat-label>
+     <input matInput formControlName="nombre" placeholder="Ej. Sucursal Centro" autocomplete="off">
+     <mat-error *ngIf="form.controls.nombre.invalid">El nombre es requerido</mat-error>
+    </mat-form-field>
 
-            <mat-form-field appearance="outline" class="full-width">
-              <mat-label>Dirección</mat-label>
-              <input matInput formControlName="direccion" placeholder="Ej. Av. Principal #123" autocomplete="off">
-            </mat-form-field>
+   </form>
+  </div>
 
-          </form>
-        </mat-card-content>
-
-        <mat-card-actions align="end">
-          <button mat-button (click)="close()" [disabled]="saving()">Cancelar</button>
-          <button mat-raised-button color="primary" 
-                  (click)="save()" 
-                  [disabled]="form.invalid || saving()">
-            <mat-icon *ngIf="!saving()">save</mat-icon>
-            <mat-spinner *ngIf="saving()" diameter="20"></mat-spinner>
-            <span *ngIf="!saving()"> Guardar</span>
-            <span *ngIf="saving()"> Guardando...</span>
-          </button>
-        </mat-card-actions>
-      </mat-card>
-    </div>
-  `,
+    <div class="action-footer">
+   <button mat-button class="cancel-button" (click)="close()" [disabled]="saving()">
+    Cancelar
+   </button>
+   <button mat-flat-button class="save-button"
+        (click)="save()" 
+        [disabled]="form.invalid || saving()">
+    <mat-icon *ngIf="!saving()">save</mat-icon>
+    <mat-spinner *ngIf="saving()" diameter="20"></mat-spinner>
+    <span *ngIf="!saving()"> Guardar</span>
+   </button>
+  </div>
+ `,
   styles: [`
-    .sticky-toolbar { position: sticky; top: 0; z-index: 10; }
-    .content-container { padding: 16px; max-width: 600px; margin: 0 auto; }
-    .full-width { width: 100%; margin-bottom: 8px; }
-    mat-card-actions button { min-width: 100px; }
-    mat-spinner { display: inline-block; margin-right: 8px; vertical-align: middle; }
-  `]
+  /* --- Estilo de Encabezado --- */
+  .header-content {
+   display: flex;
+   align-items: center;
+   padding: 8px 16px;
+   border-bottom: 1px solid #e0e0e0;
+   background-color: white;
+   position: sticky;
+   top: 0;
+   z-index: 10;
+  }
+  .header-content h2 { margin: 0 0 0 16px; font-weight: 500; font-size: 20px; }
+
+  /* --- Contenedor Principal --- */
+  .content-container { 
+   padding: 16px; 
+   max-width: 600px; 
+   margin: 0 auto; 
+  }
+  .form-title {
+   font-size: 1.1em;
+   font-weight: 600;
+   margin-top: 0;
+  }
+  .full-width { width: 100%; margin-bottom: 16px; }
+
+  /* --- Estilo del Pie de Acción (Action Footer) --- */
+  .action-footer {
+   display: flex;
+   justify-content: flex-end; /* Alinear a la derecha */
+   padding: 8px 16px;
+   background: white;
+   border-top: 1px solid #e0e0e0;
+   gap: 8px; /* Espacio entre botones */
+  }
+
+  /* Estilo de los botones */
+  .save-button {
+   background-color: #4CAF50; /* Un color verde para guardar, similar al check de la imagen 1 */
+   color: white;
+   height: 48px;
+   padding: 0 24px;
+  }
+  .cancel-button {
+   color: rgba(0, 0, 0, 0.6);
+   height: 48px;
+  }
+  
+  mat-spinner { 
+   display: inline-block; 
+   margin-right: 8px; 
+   vertical-align: middle; 
+  }
+ `]
 })
 export class SucursalesNuevoComponent {
   private fb = inject(FormBuilder);
@@ -84,7 +123,7 @@ export class SucursalesNuevoComponent {
   private snack = inject(MatSnackBar);
   private location = inject(Location);
   private auth = inject(AuthService);
-  
+
   saving = signal<boolean>(false);
 
   form = this.fb.group({
@@ -106,7 +145,7 @@ export class SucursalesNuevoComponent {
     try {
       // Asumiendo que existe este método en tu ApiClientService
       await this.api.createSucursal(v);
-      
+
       this.snack.open('Sucursal creada exitosamente', 'OK', { duration: 2500 });
       this.close();
     } catch (e: any) {
