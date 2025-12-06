@@ -101,7 +101,9 @@ export class ApiClientService {
     q?: string;
     limit?: number;
     offset?: number;
+    org_id?: string;
   }): Promise<Movimiento[]> {
+    params = { org_id: this.auth.orgId, ...params };
     return this.fetchJSON(this.url('/movimientos', params));
   }
 
@@ -120,7 +122,11 @@ export class ApiClientService {
   // --- CATEGORÍAS ---
 
   listCategorias(tipo?: 'ingreso' | 'egreso'): Promise<Categoria[]> {
-    const params = tipo ? { tipo } : undefined;
+    const params: { org_id: string; tipo?: 'ingreso' | 'egreso' } = {
+        org_id: this.auth.orgId 
+    };
+    if (tipo) params.tipo = tipo;
+    
     return this.fetchJSON(this.url('/categorias', params));
   }
 
@@ -135,8 +141,13 @@ export class ApiClientService {
   // --- SUCURSALES ---
 
   listSucursales(params?: { activo?: number }): Promise<Sucursal[]> {
-    return this.fetchJSON(this.url('/sucursales', params));
+    const baseParams: { org_id: string; activo?: number } = {
+        org_id: this.auth.orgId 
+    };
+    if (params?.activo !== undefined) baseParams.activo = params.activo;
+    return this.fetchJSON(this.url('/sucursales', baseParams));
   }
+
 
   createSucursal(payload: Omit<Sucursal, 'id' | 'org_id'>): Promise<Sucursal> {
     return this.fetchJSON(this.url('/sucursales'), { method: 'POST', body: JSON.stringify(payload) });
@@ -144,5 +155,21 @@ export class ApiClientService {
 
   deleteSucursal(id: string): Promise<{ ok: boolean }> {
     return this.deleteGeneric((`/sucursales/${id}`));
+  }
+
+  // --- CLIENTES ---
+
+  listClientes(params?: {
+    q?: string;
+    limit?: number;
+    offset?: number;
+    org_id?: string;
+  }): Promise<any[]> {
+    params = { org_id: this.auth.orgId, ...params };
+    return this.fetchJSON(this.url('/clientes', params));
+  }
+
+  deleteCliente(id: string): Promise<{ ok: boolean }> {
+    return this.deleteGeneric((`/clientes/${id}`));
   }
 }

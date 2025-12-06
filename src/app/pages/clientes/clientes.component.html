@@ -1,0 +1,105 @@
+<div class="clientes-container">
+    
+    <header class="page-header">
+        <h1><mat-icon>people_alt</mat-icon> Gestión de Clientes</h1>
+        <button mat-flat-button color="primary" (click)="onNewCliente()">
+            <mat-icon>add</mat-icon> Nuevo Cliente
+        </button>
+    </header>
+
+    <mat-card class="search-actions-card">
+        <mat-card-content>
+            <div class="search-bar">
+                <mat-form-field appearance="outline" style="width: 300px;">
+                    <mat-label>Buscar por Nombre o Email</mat-label>
+                    <input matInput 
+                           [ngModel]="q()" 
+                           (ngModelChange)="onQInput($event)"
+                           placeholder="Ej. Ana García">
+                    <mat-icon matPrefix>search</mat-icon>
+                    <button *ngIf="q()" matSuffix mat-icon-button (click)="onQInput('')">
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </mat-form-field>
+
+                <div class="mass-actions">
+                    <button mat-flat-button color="accent" (click)="onMassMessage()">
+                        <mat-icon>sms</mat-icon> 
+                        WhatsApp Masivo
+                    </button>
+                </div>
+            </div>
+        </mat-card-content>
+    </mat-card>
+
+    <div *ngIf="loading()" class="loading-spinner">
+        <mat-spinner></mat-spinner>
+        <p>Cargando lista de clientes...</p>
+    </div>
+
+    <mat-list *ngIf="!loading() && items().length > 0" class="cliente-list">
+        <h3 mat-subheader>Clientes Registrados ({{ items().length }})</h3>
+        
+        <mat-card *ngFor="let cliente of items()" class="cliente-item-card">
+            <div class="cliente-info" (click)="onEditCliente(cliente, $event)">
+                <div class="cliente-details">
+                    <mat-list-item>
+                        <mat-icon matListItemIcon>person</mat-icon>
+                        <div matListItemTitle class="name-status">
+                            <strong>{{ cliente.nombre }}</strong>
+                        </div>
+                        <div matListItemLine>Tel: {{ cliente.telefono }} | Email: {{ cliente.email }}</div>
+                    </mat-list-item>
+                </div>
+
+                <div class="cliente-tags">
+                    <span class="loyalty-tag status-{{ cliente.loyaltyStatus?.toLowerCase() }}">
+                        <mat-icon>stars</mat-icon> {{ cliente.loyaltyStatus || 'Sin Status' }}
+                    </span>
+                    
+                    <span *ngIf="cliente.permiteWhatsapp" class="whatsapp-tag allowed">
+                        <mat-icon>whatsapp</mat-icon> WA Permitido
+                    </span>
+                    <span *ngIf="!cliente.permiteWhatsapp" class="whatsapp-tag denied">
+                        <mat-icon>whatsapp</mat-icon> WA Bloqueado
+                    </span>
+                </div>
+
+                <div class="cliente-actions">
+                    <button mat-icon-button color="primary" title="Ver Pedidos" (click)="onViewOrders(cliente, $event)">
+                        <mat-icon>receipt_long</mat-icon>
+                    </button>
+                    
+                    <button mat-icon-button 
+                            [color]="cliente.permiteWhatsapp ? 'accent' : ''" 
+                            [disabled]="!cliente.permiteWhatsapp"
+                            title="Enviar Recordatorio WA Programado"
+                            (click)="onSendProgrammedReminder(cliente)">
+                        <mat-icon>schedule_send</mat-icon>
+                    </button>
+                    
+                    <button mat-icon-button title="Editar Cliente" (click)="onEditCliente(cliente, $event)">
+                        <mat-icon>edit</mat-icon>
+                    </button>
+
+                    <button mat-icon-button color="warn" title="Eliminar Cliente" (click)="onDelete(cliente, $event)">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
+            </div>
+        </mat-card>
+    </mat-list>
+    
+    <mat-card *ngIf="!loading() && items().length === 0 && q()">
+        <mat-card-content>
+            <p>No se encontraron clientes con el término de búsqueda: <strong>"{{ q() }}"</strong>.</p>
+        </mat-card-content>
+    </mat-card>
+
+    <mat-card *ngIf="!loading() && items().length === 0 && !q()">
+        <mat-card-content>
+            <p>Aún no tienes clientes registrados.</p>
+        </mat-card-content>
+    </mat-card>
+
+</div>

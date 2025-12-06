@@ -44,12 +44,6 @@ export class AdministracionComponent {
       icon: 'store',
       description: 'Define las sucursales y puntos de venta.',
       path: 'sucursales/listado'
-    },
-    {
-      label: 'Usuarios y Roles',
-      icon: 'people',
-      description: 'Configura permisos de acceso al sistema.',
-      path: 'usuarios'
-    }
+    } 
   ];
 }

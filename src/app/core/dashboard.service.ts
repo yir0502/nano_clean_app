@@ -22,7 +22,6 @@ export interface DashboardUIResponse {
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
-  private base = ENV.API_URL || 'http://localhost:3000';
   constructor(private api: ApiClientService) {}
 
   async get(params: {

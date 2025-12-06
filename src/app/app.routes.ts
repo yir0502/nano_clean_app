@@ -58,5 +58,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/administracion/categorias/categorias-listado.component').then(m => m.CategoriasListadoComponent)
   },
 
+  {
+    path: 'clientes',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/clientes/clientes.component').then(m => m.ClientesComponent)
+  },
+
   { path: '**', redirectTo: 'resumen' }
 ];

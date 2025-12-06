@@ -51,3 +51,22 @@ export interface Movimiento {
   categoria_nombre?: string;
   sucursal_nombre?: string;       // 👈 enriquecido por el backend
 }
+
+// Asumiendo que ya tienes otras interfaces en este archivo...
+
+export interface Cliente {
+    email?: string | null;
+    id: string;
+    nombre: string;
+    phone: string;
+    esVip: boolean;
+    tieneAlergia: boolean;
+    deudaPendiente: number;
+    recibirRecordatorio: boolean;
+    frecuenciaRecordatorio: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export type NuevoClienteDTO = Omit<Cliente, '_id' | 'createdAt' | 'updatedAt' | 'deudaPendiente'>;
+export type ClienteUpdateDTO = Partial<Cliente>;
