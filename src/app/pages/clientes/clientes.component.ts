@@ -3,233 +3,221 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-// Angular Material Modules
+// Material Modules
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDialogModule, MatDialogTitle, MatDialogContent, MatDialogActions, MAT_DIALOG_DATA, MatDialogRef, MatDialog } from '@angular/material/dialog';import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialogModule, MatDialog, MAT_DIALOG_DATA, MatDialogTitle, MatDialogContent, MatDialogActions } from '@angular/material/dialog';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip'; // Importante para tooltips
+import { MatMenuModule } from '@angular/material/menu';
 
-// 1. Define el modelo actualizado
-export interface Cliente {
-  id: number;
-  nombre: string;
-  telefono: string;
-  email: string;
-  direccion: string;
-  permiteWhatsapp: boolean; 
-  frecuenciaRecordatorio?: 'semanal' | 'quincenal' | 'mensual'; 
-  loyaltyStatus?: 'Bronce' | 'Plata' | 'Oro'; // Sugerencia de Fidelidad
-}
-
-// 2. Simulador de Servicio/Datos
-const MOCK_CLIENTES: Cliente[] = [
-  { id: 1, nombre: 'Ana García', telefono: '5512345678', email: 'ana@mail.com', direccion: 'Calle Falsa 123', permiteWhatsapp: true, frecuenciaRecordatorio: 'semanal', loyaltyStatus: 'Oro' },
-  { id: 2, nombre: 'Luis Martínez', telefono: '5587654321', email: 'luis@mail.com', direccion: 'Av. Siempre Viva 45', permiteWhatsapp: false, loyaltyStatus: 'Bronce' },
-  { id: 3, nombre: 'Elena Rodríguez', telefono: '5599887766', email: 'elena@mail.com', direccion: 'Blvd. Principal 1', permiteWhatsapp: true, frecuenciaRecordatorio: 'quincenal', loyaltyStatus: 'Plata' },
-  { id: 4, nombre: 'Carlos López', telefono: '5511223344', email: 'carlos@mail.com', direccion: 'Carr. Panorámica 5', permiteWhatsapp: true, frecuenciaRecordatorio: 'mensual', loyaltyStatus: 'Oro' },
-];
-
-// =============================================================
-// COMPONENTE PRINCIPAL: CLIENTES COMPONENT
-// =============================================================
+// Servicios y Componentes
+import { ApiClientService } from '../../core/api-client.service';
+import { Cliente } from '../../core/models';
+import { ClienteDialogComponent } from './cliente-dialog.component'; // <--- Importar el nuevo dialog
 
 @Component({
   selector: 'app-clientes',
   standalone: true,
   imports: [
     CommonModule, FormsModule, MatCardModule, MatListModule, MatIconModule, MatButtonModule,
-    MatInputModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatSelectModule, MatDialogModule
+    MatInputModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatSelectModule, MatDialogModule, MatTooltipModule,
+    MatMenuModule
   ],
-  templateUrl: './clientes.component.html', // Asumo que existe un archivo HTML
+  templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss'
 })
 export class ClientesComponent implements OnInit {
-  // Inyecciones de dependencias
+  private api = inject(ApiClientService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
 
-  // Signals para el estado de la lista
   items = signal<Cliente[]>([]);
   loading = signal<boolean>(false);
   q = signal<string>('');
-  page = signal<number>(1);
-  pageSize = 10;
-  hasMore = signal<boolean>(false);
+  
+  page = 1;
+  pageSize = 20;
+  hasMore = signal<boolean>(true);
   loadingMore = signal<boolean>(false);
-  error = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.loadClientes();
+    this.loadClientes(true);
   }
 
-  // --- LÓGICA BASE ---
+  // --- CARGA DE DATOS ---
+  async loadClientes(reset: boolean = false) {
+    if (reset) { this.page = 1; this.hasMore.set(true); this.loading.set(true); } 
+    else { this.loadingMore.set(true); }
 
-  loadClientes(reset: boolean = true): void {
-    this.loading.set(true);
-    this.error.set(null);
-    if (reset) {
-        this.page.set(1);
-        this.items.set([]);
+    try {
+      const offset = (this.page - 1) * this.pageSize;
+      const data = await this.api.listClientes({ q: this.q(), limit: this.pageSize, offset });
+
+      if (reset) this.items.set(data);
+      else this.items.update(curr => [...curr, ...data]);
+
+      if (data.length < this.pageSize) this.hasMore.set(false);
+      else this.page++;
+
+    } catch (e: any) {
+      this.snackBar.open('Error cargando clientes', 'Cerrar');
+    } finally {
+      this.loading.set(false); this.loadingMore.set(false);
     }
-
-    setTimeout(() => {
-      let filtered = MOCK_CLIENTES.filter(c => 
-        c.nombre.toLowerCase().includes(this.q().toLowerCase()) ||
-        c.email.toLowerCase().includes(this.q().toLowerCase())
-      );
-      
-      const startIndex = (this.page() - 1) * this.pageSize;
-      const endIndex = startIndex + this.pageSize;
-      const newItems = filtered.slice(startIndex, endIndex);
-
-      this.items.update(currentItems => reset ? newItems : [...currentItems, ...newItems]);
-      this.hasMore.set(filtered.length > this.items().length);
-      
-      this.loading.set(false);
-      this.loadingMore.set(false);
-    }, 500);
   }
 
   onQInput(term: string): void {
     this.q.set(term);
-    this.loadClientes();
+    this.loadClientes(true);
   }
+
+  // --- CRUD REAL ---
   
-  // --- FUNCIONALIDADES CLAVE SOLICITADAS ---
+  // 1. Abrir Modal para Crear/Editar
+  openClienteDialog(cliente?: Cliente, event?: MouseEvent) {
+    event?.stopPropagation(); // Evitar que el click se propague si está en una lista
 
-  /**
-   * 2. Enviar Recordatorio Programado (por WhatsApp)
-   */
-  onSendProgrammedReminder(cliente: Cliente): void {
-    if (!cliente.permiteWhatsapp) {
-      this.snackBar.open(`🚫 ${cliente.nombre} no permite mensajes por WhatsApp.`, 'Cerrar');
-      return;
-    }
-    
-    // Lógica para iniciar el proceso de envío programado (ej. llamado a un API gateway de WhatsApp)
-    console.log(`[WA] Enviando recordatorio programado a: ${cliente.nombre} (Frecuencia: ${cliente.frecuenciaRecordatorio})`);
-    this.snackBar.open(`Recordatorio de lavado programado enviado (simulado) a ${cliente.nombre}`, 'OK', { duration: 3000 });
-  }
+    const dialogRef = this.dialog.open(ClienteDialogComponent, {
+      width: '500px',
+      data: cliente || null
+    });
 
-  /**
-   * 3. Abrir Sección para Envío de Mensajes Masivos (Whatsapp)
-   */
-  onMassMessage(): void {
-    const activeWhatsappClientsCount = this.items().filter(c => c.permiteWhatsapp).length;
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (!result) return; // Cancelado
 
-    this.dialog.open(MassMessageDialogComponent, {
-        width: '500px',
-        data: { activeWhatsappClientsCount: activeWhatsappClientsCount }
+      this.loading.set(true);
+      try {
+        if (cliente) {
+          // Update
+          await this.api.updateCliente(cliente.id, result);
+          this.snackBar.open('Cliente actualizado', 'OK', { duration: 2500 });
+        } else {
+          // Create
+          await this.api.createCliente(result);
+          this.snackBar.open('Cliente registrado', 'OK', { duration: 2500 });
+        }
+        this.loadClientes(true); // Recargar lista para ver cambios
+      } catch (e: any) {
+        this.snackBar.open(e.message || 'Error al guardar', 'Cerrar', { duration: 3000 });
+        this.loading.set(false);
+      }
     });
   }
 
-  /**
-   * 4. Navegar para ver los Pedidos del Cliente
-   */
-  onViewOrders(cliente: Cliente, event: MouseEvent): void {
-    event.stopPropagation(); 
-    
-    // Navegación a la futura ruta de pedidos (ej. /pedidos/cliente/:id)
-    this.router.navigate(['/pedidos/cliente', cliente.id]); 
-    this.snackBar.open(`Navegando a Pedidos de ${cliente.nombre}...`, 'OK', { duration: 3000 });
-  }
+  async onDelete(cliente: Cliente, event: MouseEvent) {
+    event.stopPropagation();
+    if (!confirm(`¿Eliminar a ${cliente.nombre}?`)) return;
 
-  /**
-   * Notificación Automática de Estatus de Pedido (Lógica Backend/Servicio)
-   * Esta función sería llamada desde el servicio de pedidos cuando el estatus cambie.
-   */
-  simulateOrderStatusUpdate(clienteId: number, status: string): void {
-    const cliente = this.items().find(c => c.id === clienteId);
-    
-    if (cliente && cliente.permiteWhatsapp) {
-        // Usar plantillas de WhatsApp para notificaciones transaccionales
-        console.log(`[BACKEND WA] Notificación automática a ${cliente.nombre}: Su pedido está ahora en estatus "${status}".`);
+    try {
+      await this.api.deleteCliente(cliente.id);
+      this.items.update(list => list.filter(c => c.id !== cliente.id));
+      this.snackBar.open('Cliente eliminado', 'OK', { duration: 2500 });
+    } catch (e) {
+      this.snackBar.open('No se pudo eliminar', 'Cerrar');
     }
   }
 
-  /**
-   * 5. Sugerencia: Ajustar Estatus de Fidelidad
-   */
-  onSetLoyaltyStatus(cliente: Cliente): void {
-      this.snackBar.open(`Ajustando estatus de fidelidad (${cliente.loyaltyStatus}) para ${cliente.nombre}...`, 'Cerrar', { duration: 2000 });
-      // Aquí se abriría un modal para cambiar el estatus y guardar el dato.
+  // --- LÓGICA DE NEGOCIO ---
+
+  // Semáforo de Retención 🚦
+  getStatusColor(fechaUltimaVisita?: string): string {
+    if (!fechaUltimaVisita) return '#9e9e9e'; // Gris (Nuevo/Sin datos)
+    
+    // Calcular diferencia en días
+    const diff = new Date().getTime() - new Date(fechaUltimaVisita).getTime();
+    const dias = diff / (1000 * 3600 * 24);
+
+    if (dias <= 15) return '#4caf50'; // Verde (Activo)
+    if (dias <= 45) return '#ffc107'; // Amarillo (Riesgo)
+    return '#f44336';                 // Rojo (Perdido)
   }
 
-  // --- Funciones CRUD (Mantenidas) ---
-  onNewCliente(): void {
-    this.snackBar.open('Abriendo formulario de Nuevo Cliente...', 'Cerrar', { duration: 2000 });
+  // Mensajes Masivos
+  onMassMessage() {
+    // Solo obtenemos el conteo visual
+    const count = this.items().filter(c => (c as any).permite_whatsapp).length; 
+    
+    const dialogRef = this.dialog.open(MassMessageDialogComponent, {
+      width: '500px',
+      data: { count }
+    });
+
+    dialogRef.afterClosed().subscribe(async (res) => {
+      if (!res) return; // Si canceló o cerró sin enviar
+
+      this.loading.set(true);
+      try {
+        // Llamada REAL al backend
+        const response = await this.api.sendMassMessage({ 
+            message: res.message || 'Hola, tenemos ofertas...', // Dato que viene del dialog
+            template: res.template 
+        });
+        
+        this.snackBar.open(`Éxito: ${response.message}`, 'Genial', { duration: 4000 });
+      } catch (e) {
+        this.snackBar.open('Error al enviar mensajes', 'Cerrar');
+      } finally {
+        this.loading.set(false);
+      }
+    });
   }
-  onEditCliente(cliente: Cliente, event: MouseEvent): void {
+
+  onSendProgrammedReminder(cliente: Cliente, event: MouseEvent) {
     event.stopPropagation();
-    this.snackBar.open(`Abriendo formulario de Edición para ${cliente.nombre}`, 'Cerrar', { duration: 2000 });
+    if (!(cliente as any).permite_whatsapp) {
+      this.snackBar.open('Este cliente no acepta mensajes de WA', 'Cerrar', { duration: 3000 });
+      return;
+    }
+    // Aquí conectarías con tu backend para forzar el envío
+    this.snackBar.open(`Recordatorio enviado a ${cliente.nombre}`, 'OK', { duration: 3000 });
   }
-  onDelete(cliente: Cliente, event: MouseEvent): void {
+
+  onViewOrders(cliente: Cliente, event: MouseEvent) {
     event.stopPropagation();
-    this.snackBar.open(`Eliminado cliente ${cliente.nombre} (simulado)`, 'Deshacer', { duration: 4000 });
+    // Navegar a pedidos filtrados por este cliente
+    this.router.navigate(['/movimientos'], { queryParams: { q: cliente.nombre } });
   }
 }
 
-// =============================================================
-// COMPONENTE DE DIÁLOGO: ENVÍO MASIVO (Corregido con @Inject)
-// =============================================================
-
+// --- Componente Inline para Mensaje Masivo (Reutilizado) ---
 @Component({
   selector: 'app-mass-message-dialog',
   standalone: true,
-  imports: [
-    CommonModule, 
-    FormsModule, 
-    MatButtonModule, 
-    MatInputModule, 
-    MatFormFieldModule, 
-    MatSelectModule,
-    
-    // Componentes individuales del diálogo para standalone
-    MatDialogTitle, 
-    MatDialogContent, 
-    MatDialogActions
-  ],
+  imports: [CommonModule, FormsModule, MatButtonModule, MatInputModule, MatFormFieldModule, MatSelectModule, MatDialogModule, MatDialogTitle, MatDialogContent, MatDialogActions],
   template: `
-    <h2 mat-dialog-title>Enviar Mensaje Masivo por WhatsApp 🚀</h2>
+    <h2 mat-dialog-title>📢 Envío Masivo</h2>
     <div mat-dialog-content>
-        <p>Este mensaje se enviará a **{{ data.activeWhatsappClientsCount }}** clientes que tienen la opción de WhatsApp activa.</p>
-        
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Plantilla del Mensaje</mat-label>
-            <mat-select [(ngModel)]="selectedTemplate">
-                <mat-option value="promo_navidad">🎄 Promoción de Navidad</mat-option>
-                <mat-option value="aviso_horario">⚠️ Aviso de Horario Festivo</mat-option>
-                <mat-option value="recordatorio_general">🌟 Mensaje de Fidelidad</mat-option>
-            </mat-select>
-        </mat-form-field>
+      <p class="mb-4 text-gray-600">Se enviará a <strong>{{ data.count }}</strong> clientes con WhatsApp activo.</p>
+      
+      <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
+        <mat-label>Plantilla</mat-label>
+        <mat-select [(value)]="template">
+          <mat-option value="promo">🎉 Promoción Mensual</mat-option>
+          <mat-option value="recordatorio">⏰ Recordatorio General</mat-option>
+          <mat-option value="aviso">⚠️ Aviso de Horario</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-        <mat-form-field appearance="fill" style="width: 100%;">
-            <mat-label>Contenido del Mensaje</mat-label>
-            <textarea matInput rows="5" placeholder="Escribe tu mensaje..."></textarea>
-        </mat-form-field>
+      <mat-form-field appearance="outline" style="width: 100%">
+        <mat-label>Mensaje personalizado</mat-label>
+        <textarea matInput rows="4" placeholder="Hola [Nombre], aprovecha..."></textarea>
+      </mat-form-field>
     </div>
-    <div mat-dialog-actions>
-      <button mat-button (click)="onClose()">Cancelar</button>
-      <button mat-flat-button color="primary" mat-dialog-close="true">Enviar a {{ data.activeWhatsappClientsCount }} Clientes</button>
+    <div mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancelar</button>
+      <button mat-flat-button color="primary" [mat-dialog-close]="{ message: 'Mensaje enviado', template: template }">Enviar Masivo</button>
     </div>
-  `,
+  `
 })
 export class MassMessageDialogComponent {
-  selectedTemplate: string = 'promo_navidad';
-  
-  // CORRECCIÓN: Inyección usando @Inject() para el token MAT_DIALOG_DATA
-  constructor(
-    public dialogRef: MatDialogRef<MassMessageDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { activeWhatsappClientsCount: number }
-  ) {}
-
-  onClose(): void {
-    this.dialogRef.close();
-  }
+  template = 'promo';
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
 }

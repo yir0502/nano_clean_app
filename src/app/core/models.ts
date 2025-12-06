@@ -55,18 +55,18 @@ export interface Movimiento {
 // Asumiendo que ya tienes otras interfaces en este archivo...
 
 export interface Cliente {
-    email?: string | null;
-    id: string;
-    nombre: string;
-    phone: string;
-    esVip: boolean;
-    tieneAlergia: boolean;
-    deudaPendiente: number;
-    recibirRecordatorio: boolean;
-    frecuenciaRecordatorio: string;
-    createdAt: Date;
-    updatedAt: Date;
+  id: string; // UUID de Supabase
+  org_id?: string;
+  nombre: string;
+  telefono: string; // Crucial para WhatsApp
+  direccion?: string;
+  email?: string;
+  
+  // Configuración de Recordatorios
+  permite_whatsapp: boolean; // ¿Autorizó recibir mensajes?
+  frecuencia_recordatorio: number; // Días (ej: 7, 15, 30). 0 = Desactivado.
+  
+  // Métricas calculadas (backend o frontend)
+  ultima_visita?: string; // Fecha ISO del último pedido
+  total_gastado?: number; // Opcional: para ver clientes VIP
 }
-
-export type NuevoClienteDTO = Omit<Cliente, '_id' | 'createdAt' | 'updatedAt' | 'deudaPendiente'>;
-export type ClienteUpdateDTO = Partial<Cliente>;

@@ -1,175 +1,139 @@
 import { Injectable, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { HttpClient, HttpParams } from '@angular/common/http'; // <--- HttpClient
+import { firstValueFrom } from 'rxjs';
 import { Categoria, Movimiento, Sucursal } from './models';
 import { AuthService } from './auth.service';
 import { ENV } from './env';
 
 @Injectable({ providedIn: 'root' })
 export class ApiClientService {
-  private auth = inject(AuthService);
-  private router = inject(Router);
+  private http = inject(HttpClient);
+  private auth = inject(AuthService); // Se usa en el interceptor, pero quizás necesitemos orgId aquí para params
 
-  // URL base desde variables de entorno
   private base = ENV.API_URL || 'http://localhost:3000';
 
-  // ===== HELPERS PRIVADOS =====
+  // ===== HELPERS =====
 
-  /**
-   * Construye el Query String eliminando nulos/undefined
-   */
-  private qs(obj?: Record<string, any>) {
-    const p = new URLSearchParams();
-    for (const [k, v] of Object.entries(obj || {})) {
+  // Convierte objeto simple a HttpParams de Angular
+  private toHttpParams(params?: Record<string, any>): HttpParams {
+    let httpParams = new HttpParams();
+    if (!params) return httpParams;
+    
+    for (const [k, v] of Object.entries(params)) {
       if (v === undefined || v === null) continue;
       if (typeof v === 'string' && (v.trim() === '' || v === 'undefined' || v === 'null')) continue;
-      p.append(k, String(v));
+      httpParams = httpParams.set(k, String(v));
     }
-    const s = p.toString();
-    return s ? `?${s}` : '';
+    return httpParams;
   }
 
-  /**
-   * Construye la URL completa
-   */
-  private url(path: string, params?: Record<string, any>) {
-    const p = path.startsWith('/') ? path : `/${path}`;
-    return `${this.base}${p}${this.qs(params)}`;
-  }
-
-  /**
-   * Wrapper centralizado para fetch con manejo de Auth y Errores
-   */
-  private async fetchJSON(path: string, init?: RequestInit) {
-    const r = await fetch(path, {
-      ...(init || {}),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.auth.token}`, // Token siempre presente
-        ...(init?.headers || {})
-      }
+  // Wrapper para mantener tu estilo de Promesas y simplificar GET/POST
+  private async request<T>(method: 'GET'|'POST'|'PUT'|'DELETE', path: string, options?: { body?: any, params?: any }): Promise<T> {
+    const url = path.startsWith('/') ? `${this.base}${path}` : `${this.base}/${path}`;
+    
+    const obs$ = this.http.request<T>(method, url, {
+      body: options?.body,
+      params: this.toHttpParams(options?.params),
+      // headers: ya no son necesarias aquí, el interceptor las pone
     });
 
-    // Manejo de sesión expirada
-    if (r.status === 401) {
-      this.auth.logout();
-      this.router.navigateByUrl('/login');
-      throw new Error('Sesión expirada o no autorizada');
+    try {
+      return await firstValueFrom(obs$);
+    } catch (error: any) {
+      // Normalizar error para que tus componentes sigan recibiendo el mensaje limpio
+      const msg = error.error?.error || error.message || 'Error del servidor';
+      throw new Error(msg);
     }
-
-    // Manejo de errores del servidor
-    if (!r.ok) {
-      const e = await r.json().catch(() => ({ error: r.statusText }));
-      throw new Error(e.error || e.message || 'Error en la petición al servidor');
-    }
-
-    // Retornar JSON si hay contenido, sino null
-    if (r.status === 204) return null;
-    return r.json();
   }
 
   // ==========================================
-  // ===== MÉTODOS PÚBLICOS DE LA API =======
+  // ===== MÉTODOS PÚBLICOS (Interfaz intacta)
   // ==========================================
 
-  // --- MÉTODOS GENÉRICOS ---
-  // Útiles para endpoints como /dashboard que no tienen un método específico aquí
+  // Genéricos
   get<T>(path: string, params?: Record<string, any>): Promise<T> {
-    return this.fetchJSON(this.url(path, params));
+    return this.request<T>('GET', path, { params });
   }
 
   post<T>(path: string, body?: any): Promise<T> {
-    return this.fetchJSON(this.url(path), { method: 'POST', body: JSON.stringify(body) });
+    return this.request<T>('POST', path, { body });
   }
 
   put<T>(path: string, body?: any): Promise<T> {
-    return this.fetchJSON(this.url(path), { method: 'PUT', body: JSON.stringify(body) });
+    return this.request<T>('PUT', path, { body });
   }
 
   deleteGeneric<T>(path: string): Promise<T> {
-    return this.fetchJSON(this.url(path), { method: 'DELETE' });
+    return this.request<T>('DELETE', path);
   }
 
   // --- MOVIMIENTOS ---
-
-  listMovimientos(params?: {
-    desde?: string;
-    hasta?: string;
-    tipo?: 'ingreso' | 'egreso';
-    categoria_id?: string;
-    sucursal_id?: string;
-    metodo_pago?: string;
-    q?: string;
-    limit?: number;
-    offset?: number;
-    org_id?: string;
-  }): Promise<Movimiento[]> {
-    params = { org_id: this.auth.orgId, ...params };
-    return this.fetchJSON(this.url('/movimientos', params));
+  listMovimientos(params?: any): Promise<Movimiento[]> {
+    const p = { org_id: this.auth.orgId, ...params };
+    return this.get<Movimiento[]>('/movimientos', p);
   }
 
-  createMovimiento(payload: Omit<Movimiento, 'id' | 'org_id' | 'created_at' | 'updated_at'>): Promise<Movimiento> {
-    return this.fetchJSON(this.url('/movimientos'), { method: 'POST', body: JSON.stringify(payload) });
+  createMovimiento(payload: any): Promise<Movimiento> {
+    return this.post<Movimiento>('/movimientos', payload);
   }
 
   updateMovimiento(id: string, patch: Partial<Movimiento>): Promise<Movimiento> {
-    return this.fetchJSON(this.url(`/movimientos/${id}`), { method: 'PUT', body: JSON.stringify(patch) });
+    return this.put<Movimiento>(`/movimientos/${id}`, patch);
   }
 
   deleteMovimiento(id: string): Promise<{ ok: boolean }> {
-    return this.fetchJSON(this.url(`/movimientos/${id}`), { method: 'DELETE' });
+    return this.deleteGeneric<{ ok: boolean }>(`/movimientos/${id}`);
   }
 
   // --- CATEGORÍAS ---
-
   listCategorias(tipo?: 'ingreso' | 'egreso'): Promise<Categoria[]> {
-    const params: { org_id: string; tipo?: 'ingreso' | 'egreso' } = {
-        org_id: this.auth.orgId 
-    };
-    if (tipo) params.tipo = tipo;
-    
-    return this.fetchJSON(this.url('/categorias', params));
+    const p: any = { org_id: this.auth.orgId };
+    if (tipo) p.tipo = tipo;
+    return this.get<Categoria[]>('/categorias', p);
   }
 
-  createCategoria(payload: Omit<Categoria, 'id' | 'org_id'>): Promise<Categoria> {
-    return this.fetchJSON(this.url('/categorias'), { method: 'POST', body: JSON.stringify(payload) });
+  createCategoria(payload: any): Promise<Categoria> {
+    return this.post<Categoria>('/categorias', payload);
   }
 
   deleteCategoria(id: string): Promise<{ ok: boolean }> {
-    return this.deleteGeneric((`/categorias/${id}`));
+    return this.deleteGeneric<{ ok: boolean }>(`/categorias/${id}`);
   }
 
   // --- SUCURSALES ---
-
   listSucursales(params?: { activo?: number }): Promise<Sucursal[]> {
-    const baseParams: { org_id: string; activo?: number } = {
-        org_id: this.auth.orgId 
-    };
-    if (params?.activo !== undefined) baseParams.activo = params.activo;
-    return this.fetchJSON(this.url('/sucursales', baseParams));
+    const p: any = { org_id: this.auth.orgId };
+    if (params?.activo !== undefined) p.activo = params.activo;
+    return this.get<Sucursal[]>('/sucursales', p);
   }
 
-
-  createSucursal(payload: Omit<Sucursal, 'id' | 'org_id'>): Promise<Sucursal> {
-    return this.fetchJSON(this.url('/sucursales'), { method: 'POST', body: JSON.stringify(payload) });
+  createSucursal(payload: any): Promise<Sucursal> {
+    return this.post<Sucursal>('/sucursales', payload);
   }
 
   deleteSucursal(id: string): Promise<{ ok: boolean }> {
-    return this.deleteGeneric((`/sucursales/${id}`));
+    return this.deleteGeneric<{ ok: boolean }>(`/sucursales/${id}`);
   }
 
   // --- CLIENTES ---
-
-  listClientes(params?: {
-    q?: string;
-    limit?: number;
-    offset?: number;
-    org_id?: string;
-  }): Promise<any[]> {
-    params = { org_id: this.auth.orgId, ...params };
-    return this.fetchJSON(this.url('/clientes', params));
+  listClientes(params?: any): Promise<any[]> {
+    const p = { org_id: this.auth.orgId, ...params };
+    return this.get<any[]>('/clientes', p);
   }
 
   deleteCliente(id: string): Promise<{ ok: boolean }> {
-    return this.deleteGeneric((`/clientes/${id}`));
+    return this.deleteGeneric<{ ok: boolean }>(`/clientes/${id}`);
+  }
+
+  createCliente(payload: any): Promise<any> {
+    return this.post('/clientes', payload);
+  }
+
+  updateCliente(id: string, payload: any): Promise<any> {
+    return this.put(`/clientes/${id}`, payload);
+  }
+  
+  sendMassMessage(payload: { message: string, template?: string }): Promise<any> {
+    return this.post('/clientes/mass-message', payload);
   }
 }
