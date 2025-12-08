@@ -1,0 +1,87 @@
+.container {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 80px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  h2 { margin: 0; font-size: 20px; font-weight: 500; }
+}
+
+.section-card {
+  margin-bottom: 16px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.full-width { width: 100%; }
+.row { display: flex; gap: 12px; }
+.half-width { flex: 1; }
+
+/* Upload Area */
+.evidence-card {
+  border: 1px dashed #ccc;
+  background: #fafafa;
+}
+
+.upload-container {
+  margin-top: 12px;
+  width: 100%;
+  height: 200px;
+  background-color: #fff;
+  border: 2px dashed #e0e0e0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.2s;
+
+  &:active { background-color: #f0f0f0; }
+  &.has-image { border-style: solid; border-color: var(--mat-sys-primary); }
+}
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #9e9e9e;
+  gap: 8px;
+  .camera-icon { font-size: 48px; width: 48px; height: 48px; }
+}
+
+.preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mt-2 { margin-top: 16px; }
+
+/* Sticky Footer Button */
+.actions {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #eee;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+}
+
+.save-btn {
+  width: 100%;
+  max-width: 600px;
+  height: 48px;
+  font-size: 16px;
+}
+
+.spinner-white ::ng-deep circle { stroke: white !important; }

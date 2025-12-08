@@ -1,0 +1,79 @@
+<div class="list-container">
+  
+  <div class="top-bar">
+    <h1><mat-icon>local_laundry_service</mat-icon> Gestión de Pedidos</h1>
+    <button mat-fab extended color="primary" routerLink="/pedidos/nuevo">
+      <mat-icon>add</mat-icon> Nuevo Pedido
+    </button>
+  </div>
+
+  <mat-form-field appearance="outline" class="search-bar">
+    <mat-label>Buscar por folio...</mat-label>
+    <input matInput [(ngModel)]="q" (keyup.enter)="reload()" placeholder="Ej: ORD-A1B2">
+    <button mat-icon-button matSuffix (click)="reload()">
+      <mat-icon>search</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <mat-tab-group [selectedIndex]="activeTab()" (selectedIndexChange)="onTabChange($event)" animationDuration="0ms">
+    
+    <mat-tab label="Activos">
+      <ng-template matTabContent>
+        <div class="empty-state" *ngIf="!loading() && pedidos().length === 0">
+          <mat-icon>inbox</mat-icon>
+          <p>No hay pedidos pendientes.</p>
+        </div>
+        
+        <div class="order-grid">
+          <mat-card *ngFor="let p of pedidos()" class="order-card" (click)="goToDetail(p)">
+            <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
+            
+            <mat-card-header>
+              <mat-card-title>{{ p.folio }}</mat-card-title>
+              <mat-card-subtitle>{{ p.cliente_nombre }}</mat-card-subtitle>
+              <div class="status-chip" [ngClass]="getStatusColor(p.estado)">
+                {{ p.estado | titlecase }}
+              </div>
+            </mat-card-header>
+
+            <mat-card-content>
+              <p class="desc">{{ p.descripcion }}</p>
+              <div class="meta-row">
+                <span class="date"><mat-icon>event</mat-icon> {{ p.fecha_entrega_estimada | date:'d MMM' }}</span>
+                <span class="price">{{ p.monto_total | currency:'MXN' }}</span>
+              </div>
+            </mat-card-content>
+
+            <mat-card-actions align="end">
+              <button mat-button color="accent" (click)="sendWhatsapp(p, $event)">
+                <mat-icon>whatsapp</mat-icon> Enviar Estatus
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab label="Historial">
+      <ng-template matTabContent>
+        <div class="order-grid history">
+          <mat-card *ngFor="let p of pedidos()" class="order-card" (click)="goToDetail(p)">
+            <mat-card-header>
+              <mat-card-title class="crossed">{{ p.folio }}</mat-card-title>
+              <mat-card-subtitle>{{ p.cliente_nombre }}</mat-card-subtitle>
+              <div class="status-chip gray">Entregado</div>
+            </mat-card-header>
+            <mat-card-content>
+                <span class="date">Entregado: {{ p.fecha_entregado | date:'shortDate' }}</span>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </ng-template>
+    </mat-tab>
+
+  </mat-tab-group>
+
+  <div *ngIf="loading()" class="loading-shade">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+</div>

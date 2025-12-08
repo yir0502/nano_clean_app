@@ -64,5 +64,23 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/clientes/clientes.component').then(m => m.ClientesComponent)
   },
 
+  { 
+    path: 'pedidos',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/pedidos/pedidos-list/pedidos-list').then(m => m.PedidosListComponent)
+  },
+  { 
+    path: 'pedidos/nuevo',
+    canMatch: [authGuard],
+    data: { hideFab: true },
+    loadComponent: () => import('./pages/pedidos/pedido-form/pedido-form').then(m => m.PedidoFormComponent)
+  },
+  { 
+    path: 'pedidos/:id',
+    canMatch: [authGuard],
+    data: { hideFab: true },
+    loadComponent: () => import('./pages/pedidos/pedido-form/pedido-form').then(m => m.PedidoFormComponent)
+  },
+
   { path: '**', redirectTo: 'resumen' }
 ];

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http'; // <--- HttpClient
 import { firstValueFrom } from 'rxjs';
-import { Categoria, Movimiento, Sucursal } from './models';
+import { Categoria, Movimiento, Sucursal, Pedido, PedidoEvidencia} from './models';
 import { AuthService } from './auth.service';
 import { ENV } from './env';
 
@@ -18,7 +18,7 @@ export class ApiClientService {
   private toHttpParams(params?: Record<string, any>): HttpParams {
     let httpParams = new HttpParams();
     if (!params) return httpParams;
-    
+
     for (const [k, v] of Object.entries(params)) {
       if (v === undefined || v === null) continue;
       if (typeof v === 'string' && (v.trim() === '' || v === 'undefined' || v === 'null')) continue;
@@ -28,9 +28,9 @@ export class ApiClientService {
   }
 
   // Wrapper para mantener tu estilo de Promesas y simplificar GET/POST
-  private async request<T>(method: 'GET'|'POST'|'PUT'|'DELETE', path: string, options?: { body?: any, params?: any }): Promise<T> {
+  private async request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, options?: { body?: any, params?: any }): Promise<T> {
     const url = path.startsWith('/') ? `${this.base}${path}` : `${this.base}/${path}`;
-    
+
     const obs$ = this.http.request<T>(method, url, {
       body: options?.body,
       params: this.toHttpParams(options?.params),
@@ -132,8 +132,48 @@ export class ApiClientService {
   updateCliente(id: string, payload: any): Promise<any> {
     return this.put(`/clientes/${id}`, payload);
   }
-  
+
   sendMassMessage(payload: { message: string, template?: string }): Promise<any> {
     return this.post('/clientes/mass-message', payload);
+  }
+
+  // --- PEDIDOS Y TRACKING ---
+  listPedidos(params?: {
+    activo?: boolean; // true = pendientes/proceso, false = entregados/historial
+    q?: string;       // búsqueda por folio
+    limit?: number;
+    offset?: number;
+    org_id?: string;
+  }): Promise<Pedido[]> {
+    const p = { org_id: this.auth.orgId, ...params };
+    return this.get<Pedido[]>('/pedidos', p);
+  }
+
+  createPedido(payload: Partial<Pedido>): Promise<Pedido> {
+    return this.post<Pedido>('/pedidos', payload);
+  }
+
+  updatePedido(id: string, patch: Partial<Pedido>): Promise<Pedido> {
+    return this.put<Pedido>(`/pedidos/${id}`, patch);
+  }
+
+  // Subir foto de evidencia (Multipart File)
+  uploadEvidencia(pedidoId: string, file: File, tipo: 'ingreso' | 'resultado', nota?: string): Promise<PedidoEvidencia> {
+    const formData = new FormData();
+    formData.append('foto', file);
+    formData.append('tipo', tipo);
+    if (nota) formData.append('nota', nota);
+
+    // Nota: Usamos fetch directo o un wrapper especial porque 'request' usa JSON por defecto
+    // Aquí asumimos que tu método 'post' o 'request' maneja FormData si se lo pasas,
+    // o hacemos una pequeña adaptación para no enviar Content-Type: application/json
+    // Si usas HttpClient de Angular, él lo detecta solo.
+    
+    // Si estás usando mi implementación anterior de 'request' con HttpClient:
+    return this.request<PedidoEvidencia>('POST', `/pedidos/${pedidoId}/evidencia`, { body: formData });
+  }
+
+  listEvidencias(pedidoId: string): Promise<PedidoEvidencia[]> {
+    return this.get<PedidoEvidencia[]>(`/pedidos/${pedidoId}/evidencia`);
   }
 }

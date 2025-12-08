@@ -12,18 +12,17 @@ export interface Movimiento {
   id: string;
   org_id: string;
   tipo: 'ingreso' | 'egreso';
-  monto: number;                      // valor positivo; en UI ponemos signo si egreso
+  monto: number;                     
   categoria_id?: string | null;
-  fecha: string;                      // YYYY-MM-DD
-  metodo_pago?: string | null;
+  fecha: string;                     
   nota?: string | null;
   created_at?: string;
   updated_at?: string;
-  categoria_nombre?: string;          // nombre resuelto de la categoría
-  sucursal_id?: string | null;        // nuevo campo para sucursal
-  sucursal_nombre?: string;           // nombre resuelto de la sucursal
-  user_id?: string;               // ID del usuario que creó el movimiento
-  user_nombre?: string;           // Nombre del usuario que creó el movimiento
+  categoria_nombre?: string;         
+  sucursal_id?: string | null;
+  sucursal_nombre?: string;
+  user_id?: string;
+  user_nombre?: string;
 }
 
 export interface Sucursal {
@@ -41,32 +40,52 @@ export interface Movimiento {
   tipo: 'ingreso' | 'egreso';
   monto: number;
   categoria_id?: string | null;
-  sucursal_id?: string | null;    // 👈 nuevo
+  sucursal_id?: string | null;
   fecha: string;
   metodo_pago?: string | null;
   nota?: string | null;
   created_at?: string;
   updated_at?: string;
-
   categoria_nombre?: string;
-  sucursal_nombre?: string;       // 👈 enriquecido por el backend
+  sucursal_nombre?: string;
 }
 
-// Asumiendo que ya tienes otras interfaces en este archivo...
-
 export interface Cliente {
-  id: string; // UUID de Supabase
+  id: string;
   org_id?: string;
   nombre: string;
-  telefono: string; // Crucial para WhatsApp
+  telefono: string;
   direccion?: string;
   email?: string;
-  
-  // Configuración de Recordatorios
-  permite_whatsapp: boolean; // ¿Autorizó recibir mensajes?
-  frecuencia_recordatorio: number; // Días (ej: 7, 15, 30). 0 = Desactivado.
-  
-  // Métricas calculadas (backend o frontend)
-  ultima_visita?: string; // Fecha ISO del último pedido
-  total_gastado?: number; // Opcional: para ver clientes VIP
+  permite_whatsapp: boolean;
+  frecuencia_recordatorio: number; 
+  ultima_visita?: string;
+  total_gastado?: number;
+}
+
+export interface Pedido {
+  id: string;
+  org_id: string;
+  folio: string;
+  cliente_id: string | null;
+  sucursal_id?: string | null;
+  descripcion?: string;
+  estado: 'pendiente' | 'en_proceso' | 'listo' | 'entregado' | 'cancelado';
+  monto_total: number;
+  saldo_pendiente: number;
+  fecha_entrega_estimada?: string;
+  fecha_entregado?: string;
+  created_at?: string;
+  updated_at?: string;
+  cliente_nombre?: string;
+  cliente_telefono?: string;
+}
+
+export interface PedidoEvidencia {
+  id: string;
+  pedido_id: string;
+  url: string;
+  tipo: 'ingreso' | 'resultado';
+  nota?: string;
+  created_at?: string;
 }
