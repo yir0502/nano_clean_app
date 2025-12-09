@@ -1,33 +1,38 @@
 // src/app/pages/resumen/resumen.component.ts
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
 
 import { NgChartsModule } from 'ng2-charts';
-import type { ChartConfiguration, ChartData, ChartType, ChartOptions} from 'chart.js';
+import type { ChartConfiguration, ChartData, ChartType, ChartOptions } from 'chart.js';
 import { Chart as ChartJS, registerables } from 'chart.js';
 ChartJS.register(...registerables);
-import { DashboardService, DashboardUIResponse, DashboardDay } from '../../core/dashboard.service';
+import { DashboardService, DashboardDay } from '../../core/dashboard.service';
 import { AuthService } from '../../core/auth.service';
+import { ApiClientService } from '../../core/api-client.service';
+import { Pedido } from '../../core/models';
 
 // 🎨 Colores (ajusta a tu marca)
-const C_INGRESO_BG   = 'hsla(158, 64%, 45%, .75)'; // verde
+const C_INGRESO_BG = 'hsla(158, 64%, 45%, .75)'; // verde
 const C_INGRESO_LINE = 'hsl(158, 64%, 45%)';
-const C_EGRESO_BG    = 'hsla(0, 83%, 60%, .75)';   // rojo
-const C_EGRESO_LINE  = 'hsl(0, 83%, 60%)';
+const C_EGRESO_BG = 'hsla(0, 83%, 60%, .75)';   // rojo
+const C_EGRESO_LINE = 'hsl(0, 83%, 60%)';
 
 @Component({
   selector: 'app-resumen',
   standalone: true,
   imports: [
-    CommonModule,
+    CommonModule, RouterLink,
     MatCardModule, MatListModule, MatIconModule, MatDividerModule, MatButtonToggleModule,
-    NgChartsModule
+    NgChartsModule, MatButtonModule, MatChipsModule
   ],
   templateUrl: './resumen.component.html',
   styleUrls: ['./resumen.component.scss']
@@ -36,14 +41,15 @@ export class ResumenComponent implements OnInit {
   // Estado
   loading = true;
   error?: string;
+  pedidosActivos: Pedido[] = [];
 
   // KPIs (mes actual)
   ingresosMes = 0;
-  egresosMes  = 0;
-  balanceMes  = 0;
+  egresosMes = 0;
+  balanceMes = 0;
 
   // Rango de la 1ª gráfica
-  range: '3m'|'6m'|'12m' = '3m';
+  range: '3m' | '6m' | '12m' = '3m';
 
   // 1) Ingresos vs Egresos (tipo dinámico, usamos barras agregadas)
   mainChartType: ChartType = 'bar';
@@ -73,7 +79,7 @@ export class ResumenComponent implements OnInit {
   };
 
   // 2) Barras por categoría (MES)
-  barEgresoData:  ChartData<'bar'> = { labels: [], datasets: [] };
+  barEgresoData: ChartData<'bar'> = { labels: [], datasets: [] };
   barIngresoData: ChartData<'bar'> = { labels: [], datasets: [] };
   barOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true, maintainAspectRatio: false,
@@ -83,21 +89,21 @@ export class ResumenComponent implements OnInit {
   };
 
   // Recientes
-  recientes: { id: string; tipo: 'ingreso'|'egreso'; categoria: string; fecha: string; monto: number }[] = [];
+  recientes: { id: string; tipo: 'ingreso' | 'egreso'; categoria: string; fecha: string; monto: number }[] = [];
 
-  constructor(private dash: DashboardService, private auth: AuthService) {}
-  async ngOnInit(){ await this.loadAll(); }
+  constructor(private dash: DashboardService, private auth: AuthService, private api: ApiClientService) { }
+  async ngOnInit() { await this.loadAll(); }
 
   // ---- helpers ----
-  private iso(d: Date) { return d.toISOString().slice(0,10); }
-  private toNumber(n: any){ const x = Number(n); return isNaN(x) ? 0 : x; }
-  private hasNonZero(arr: number[]){ return arr.some(v => v !== 0); }
+  private iso(d: Date) { return d.toISOString().slice(0, 10); }
+  private toNumber(n: any) { const x = Number(n); return isNaN(x) ? 0 : x; }
+  private hasNonZero(arr: number[]) { return arr.some(v => v !== 0); }
 
-  private rangeDates(kind: '3m'|'6m'|'12m'): { desde: string; hasta: string } {
+  private rangeDates(kind: '3m' | '6m' | '12m'): { desde: string; hasta: string } {
     const hasta = this.iso(new Date());
     const d = new Date();
-    if (kind === '3m')  d.setMonth(d.getMonth() - 3);
-    if (kind === '6m')  d.setMonth(d.getMonth() - 6);
+    if (kind === '3m') d.setMonth(d.getMonth() - 3);
+    if (kind === '6m') d.setMonth(d.getMonth() - 6);
     if (kind === '12m') d.setMonth(d.getMonth() - 12);
     return { desde: this.iso(d), hasta };
   }
@@ -116,45 +122,65 @@ export class ResumenComponent implements OnInit {
     const d = new Date(fechaISO + 'T00:00:00');
     const day = (d.getDay() + 6) % 7; // 0=lunes
     const monday = new Date(d); monday.setDate(d.getDate() - day);
-    const key = monday.toISOString().slice(0,10);
+    const key = monday.toISOString().slice(0, 10);
     const lab = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short' }).format(monday);
     return { key, label: `Sem ${lab}` };
   }
   private monthKey(fechaISO: string): { key: string; label: string } {
-    const key = fechaISO.slice(0,7); // YYYY-MM
+    const key = fechaISO.slice(0, 7); // YYYY-MM
     const [y, m] = key.split('-').map(Number);
-    const lab = new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(new Date(y, m-1, 1));
+    const lab = new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(new Date(y, m - 1, 1));
     return { key, label: lab };
   }
-  private aggregate(serie: DashboardDay[], mode: 'weekly'|'monthly'){
+  private aggregate(serie: DashboardDay[], mode: 'weekly' | 'monthly') {
     const map = new Map<string, { ingresos: number; egresos: number; label: string }>();
-    for (const d of serie){
+    for (const d of serie) {
       const sel = mode === 'weekly' ? this.weekKey(d.fecha) : this.monthKey(d.fecha);
       const cur = map.get(sel.key) || { ingresos: 0, egresos: 0, label: sel.label };
       cur.ingresos += this.toNumber(d.ingresos);
-      cur.egresos  += this.toNumber(d.egresos);
+      cur.egresos += this.toNumber(d.egresos);
       map.set(sel.key, cur);
     }
     return Array.from(map.values());
   }
 
   // ---- carga de datos ----
-  async loadAll(){
-    try{
-      this.loading = true; this.error = undefined;
+  async loadAll() {
+    try {
+      this.loading = true;
+      this.error = undefined;
 
+      // 1. Preparar carga de Pedidos Activos
+      const pPedidos = this.api.listPedidos({
+        activo: true,
+        limit: 5 // Solo los 5 más recientes
+      });
+
+      // 2. Preparar carga del Dashboard (Tu lógica actual)
       const { desde, hasta } = this.rangeDates(this.range);
       const org_id = this.auth.orgId;
-      const resp: DashboardUIResponse = await this.dash.get({ desde, hasta, org_id, include: 'mes,recientes', limit_recientes: 10 });
+      const pDash = this.dash.get({ desde, hasta, org_id, include: 'mes,recientes', limit_recientes: 10 });
+
+      // 3. Ejecutar ambas peticiones en paralelo (esperar a las dos)
+      // 'pedidos' recibirá el resultado de pPedidos
+      // 'resp' recibirá el resultado de pDash (DashboardUIResponse)
+      const [pedidos, resp] = await Promise.all([pPedidos, pDash]);
+
+      // 4. Asignar los pedidos a la variable que usa el HTML
+      this.pedidosActivos = pedidos;
+
+      // -----------------------------------------------------------
+      // A PARTIR DE AQUÍ, ES TU LÓGICA DE GRÁFICAS ORIGINAL (usando 'resp')
+      // -----------------------------------------------------------
 
       // KPIs
       const k = resp.kpis_mes ?? { ingresos: 0, egresos: 0, balance: 0 };
       this.ingresosMes = this.toNumber(k.ingresos);
-      this.egresosMes  = this.toNumber(k.egresos);
-      this.balanceMes  = this.toNumber(k.balance);
+      this.egresosMes = this.toNumber(k.egresos);
+      this.balanceMes = this.toNumber(k.balance);
 
       // Barras por categoría (MES)
-      const eg  = resp.por_categoria_mes?.egreso  ?? [];
+      const eg = resp.por_categoria_mes?.egreso ?? [];
       const ing = resp.por_categoria_mes?.ingreso ?? [];
       const mesLbl = this.mesActualLabel();
 
@@ -182,10 +208,10 @@ export class ResumenComponent implements OnInit {
       };
 
       // NUEVO: Barras por sucursal (MES)
-      const sucs = (resp as any).por_sucursal_mes ?? []; // ← evitar tocar tipos externos
+      const sucs = (resp as any).por_sucursal_mes ?? [];
       const sucLabels = sucs.map((s: any) => s?.nombre || 'Sin sucursal');
-      const sucIng    = sucs.map((s: any) => this.toNumber(s?.ingresos));
-      const sucEgr    = sucs.map((s: any) => this.toNumber(s?.egresos));
+      const sucIng = sucs.map((s: any) => this.toNumber(s?.ingresos));
+      const sucEgr = sucs.map((s: any) => this.toNumber(s?.egresos));
 
       this.sucursalBarData = {
         labels: sucLabels,
@@ -249,17 +275,28 @@ export class ResumenComponent implements OnInit {
       this.mainChartType = 'bar'; // barras agrupadas
       this.lineData = { labels, datasets };
 
-      // Recientes
+      // Recientes (Movimientos financieros, no pedidos)
       this.recientes = resp.recientes ?? [];
-    }catch(e:any){
+
+    } catch (e: any) {
       this.error = e?.message || 'Error cargando dashboard';
-    }finally{
+    } finally {
       this.loading = false;
     }
   }
 
-  async setRange(value: '3m'|'6m'|'12m'){
+  async setRange(value: '3m' | '6m' | '12m') {
     this.range = value;
     await this.loadAll();
+  }
+  
+  getStatusColor(estado: string): string {
+    switch (estado) {
+      case 'pendiente': return 'warn';      // Rojo
+      case 'en_proceso': return 'accent';   // Amarillo/Naranja
+      case 'listo': return 'primary';       // Verde
+      case 'entregado': return 'gray';      // Gris
+      default: return '';
+    }
   }
 }

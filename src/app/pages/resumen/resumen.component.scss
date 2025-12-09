@@ -1,5 +1,92 @@
 $res-gap: 12px;
 
+.header-row {
+  display: flex; justify-content: space-between; align-items: center;
+  h2 { margin: 0; }
+}
+
+/* --- ESTILOS PEDIDOS ACTIVOS --- */
+.active-orders {
+  margin-bottom: 8px; /* Separación con KPIs */
+}
+
+.section-header {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 8px;
+  h3 { margin: 0; font-size: 16px; font-weight: 600; color: #444; }
+  .see-all { font-size: 13px; text-decoration: none; color: var(--mat-sys-primary); font-weight: 500; }
+}
+
+/* Estado Vacío */
+.empty-orders {
+  background: #fdfdfd;
+  border: 1px dashed #ccc;
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  
+  mat-icon { font-size: 32px; width: 32px; height: 32px; color: #bbb; }
+  p { margin: 0; font-size: 14px; color: #888; }
+}
+
+/* Lista Compacta */
+.orders-list {
+  display: grid; gap: 8px;
+  /* En escritorio muestra 2 columnas, en móvil 1 */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.order-item {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0 !important; /* Reset padding de mat-card */
+  display: flex; align-items: center;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: transform 0.2s;
+
+  &:hover { transform: translateY(-2px); }
+
+  .status-strip {
+    width: 5px; align-self: stretch;
+    &.warn { background: #f44336; }
+    &.accent { background: #ffc107; }
+    &.primary { background: #4caf50; }
+  }
+
+  .order-content {
+    flex: 1;
+    padding: 10px 12px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .order-main {
+    display: flex; flex-direction: column;
+    .folio { font-weight: 700; font-size: 14px; color: #333; }
+    .customer { font-size: 13px; color: #666; }
+  }
+
+  .order-meta {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+    
+    .status-badge {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      padding: 2px 6px; border-radius: 4px; background: #eee; color: #666;
+      
+      &.warn { background: #ffebee; color: #b71c1c; }
+      &.accent { background: #fff8e1; color: #ff6f00; }
+      &.primary { background: #e8f5e9; color: #1b5e20; }
+    }
+    
+    .date { font-size: 11px; color: #999; }
+  }
+
+  .arrow { color: #ccc; margin-right: 8px; font-size: 20px; }
+}
+
 .resumen {
   display: grid;
   gap: $res-gap;
