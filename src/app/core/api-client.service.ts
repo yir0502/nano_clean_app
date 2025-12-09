@@ -34,7 +34,6 @@ export class ApiClientService {
     const obs$ = this.http.request<T>(method, url, {
       body: options?.body,
       params: this.toHttpParams(options?.params),
-      // headers: ya no son necesarias aquí, el interceptor las pone
     });
 
     try {

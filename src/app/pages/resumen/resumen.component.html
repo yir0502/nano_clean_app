@@ -1,9 +1,9 @@
 <div class="resumen">
-  <!-- <section class="active-orders" *ngIf="!loading">
-    <div class="section-header">
-      <h3>Pedidos en Curso</h3>
-      <a routerLink="/pedidos" class="see-all" *ngIf="pedidosActivos.length > 0">Ver todos</a>
-    </div>
+  <div class="section-header">
+    <h2>Pedidos en Curso</h2>
+    <a routerLink="/pedidos" class="see-all" *ngIf="pedidosActivos.length > 0">Ver todos</a>
+  </div>
+  <section class="active-orders" *ngIf="!loading">
 
     <div class="empty-orders" *ngIf="pedidosActivos.length === 0">
       <mat-icon>check_circle_outline</mat-icon>
@@ -13,26 +13,30 @@
 
     <div class="orders-list" *ngIf="pedidosActivos.length > 0">
       <mat-card *ngFor="let p of pedidosActivos" class="order-item" [routerLink]="['/pedidos', p.id]">
-        <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
-        
-        <div class="order-content">
-          <div class="order-main">
-            <span class="folio">{{ p.folio }}</span>
-            <span class="customer">{{ p.cliente_nombre }}</span>
-          </div>
-          <div class="order-meta">
-            <span class="status-badge" [ngClass]="getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
-            <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
+        <div class="order-strip">
+          <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
+          <div class="order-content">
+            <div class="order-main">
+              <span class="customer">{{ p.cliente_nombre }}</span>
+              <span class="folio">{{ p.folio }}</span>
+            </div>
+            <div class="order-meta">
+              <span class="status-badge" [ngClass]="getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
+              <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
+            </div>
+            <div class="order-icon">
+              <mat-icon class="arrow">chevron_right</mat-icon>
+            </div>
           </div>
         </div>
-        
-        <mat-icon class="arrow">chevron_right</mat-icon>
+        <div class="order-actions">
+          <button (click)="sendWhatsapp(p, $event)" class="whatsapp-button">
+            <mat-icon>share</mat-icon> Compartir al cliente
+          </button>
+        </div>
       </mat-card>
     </div>
-    <button mat-mini-fab color="primary" routerLink="/pedidos/nuevo" aria-label="Nuevo Pedido">
-      <mat-icon>add</mat-icon>
-    </button>
-  </section> -->
+  </section>
   
   <h2>Resumen Financiero</h2>
   <!-- KPIs -->

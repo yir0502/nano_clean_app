@@ -98,6 +98,11 @@ import { NgIf, NgFor } from '@angular/common';
                   aria-label="Nuevo movimiento" class="fab-option">
             <span class="label"><mat-icon class="icon-label">payment</mat-icon>Movimiento</span>
           </button>
+          
+          <button mat-mini-fab (click)="navigateAndCloseFab('/pedidos/nuevo')" 
+                  aria-label="Agregar pedido" class="fab-option">
+            <span class="label"><mat-icon class="icon-label">work</mat-icon>Pedido</span>
+          </button>
         </div>
         
         <button mat-fab class="fab-main" color="primary" (click)="toggleFabMenu()" aria-label="Opciones rápidas">

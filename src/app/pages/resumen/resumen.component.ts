@@ -151,10 +151,7 @@ export class ResumenComponent implements OnInit {
       this.error = undefined;
 
       // 1. Preparar carga de Pedidos Activos
-      const pPedidos = this.api.listPedidos({
-        activo: true,
-        limit: 5 // Solo los 5 más recientes
-      });
+      const pPedidos = this.api.listPedidos({activo: true,limit: 4});
 
       // 2. Preparar carga del Dashboard (Tu lógica actual)
       const { desde, hasta } = this.rangeDates(this.range);
@@ -298,5 +295,33 @@ export class ResumenComponent implements OnInit {
       case 'entregado': return 'gray';      // Gris
       default: return '';
     }
+  }
+
+  sendWhatsapp(pedido: Pedido, event: MouseEvent) {
+    // 1. Evitamos que el click "atraviese" el botón y active el routerLink de la tarjeta
+    event.stopPropagation();
+    event.preventDefault();
+
+    // 2. Validación básica
+    if (!pedido.cliente_telefono) {
+      // Opcional: mostrar un aviso si no hay teléfono
+      // this.snackBar.open('Este pedido no tiene teléfono asociado', 'OK', { duration: 2000 });
+      return;
+    }
+    
+    // 3. Construcción del mensaje
+    // Nota: Ajusta 'micleanapp.com' por tu dominio real o localhost para pruebas
+    const urlRastreo = `https://nanoclean.app/rastreo/${pedido.folio}`; 
+    const estado = pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1); // Capitalizar
+    
+    const msg = `Hola ${pedido.cliente_nombre}, tu pedido *${pedido.folio}* está: *${estado}*.
+    
+Puedes ver el detalle y fotos aquí: ${urlRastreo}`;
+    
+    // 4. Limpieza del número y apertura
+    const telefono = pedido.cliente_telefono.replace(/\D/g,''); // Solo números
+    const link = `https://wa.me/${telefono}?text=${encodeURIComponent(msg)}`;
+    
+    window.open(link, '_blank');
   }
 }
