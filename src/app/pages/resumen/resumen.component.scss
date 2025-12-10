@@ -93,8 +93,31 @@ $res-gap: 12px;
   .arrow { color: #9c9c9c; font-size: 20px; }
 }
 
+.order-header {
+  display: flex; align-items: center;
+  font-size: 12px;
+  mat-icon { font-size: 14px; margin: 9px 0 0 8px; color: #555; }
+  height: 20px;
+  background-color: #ededed;
+  padding: 0 4px;
+}
+
+.delete-button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  padding-top: 8px;
+
+  mat-icon {
+    font-size: 14px;
+    color: #c4082b;
+  }
+}
+
 .whatsapp-button {
-  background-color: #46d57b;
+  background-color: #1ebe5d;
   color: white;
   border: none;
   font-size: 10px;
@@ -109,10 +132,6 @@ $res-gap: 12px;
   mat-icon {
     font-size: 13px;
     padding-top: 10px;
-  }
-
-  &:hover {
-    background-color: #1ebe5d;
   }
 }
 

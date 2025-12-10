@@ -79,6 +79,7 @@ export interface Pedido {
   updated_at?: string;
   cliente_nombre?: string;
   cliente_telefono?: string;
+  sucursal_nombre?: string;
 }
 
 export interface PedidoEvidencia {

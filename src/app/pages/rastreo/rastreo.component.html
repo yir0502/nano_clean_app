@@ -1,0 +1,83 @@
+<div class="tracking-container">
+  
+  <div class="center-msg" *ngIf="loading()">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Buscando tu pedido...</p>
+  </div>
+
+  <div class="center-msg error" *ngIf="!loading() && error()">
+    <mat-icon>search_off</mat-icon>
+    <h3>Lo sentimos</h3>
+    <p>{{ error() }}</p>
+    <button mat-stroked-button routerLink="/login">Soy Administrador</button>
+  </div>
+
+  <div class="content" *ngIf="!loading() && pedido()">
+    
+    <header class="brand-header">
+      <img src="images/logo_letras_blanco.png" alt="Nano Clean" class="logo"> <h1>Hola, {{ pedido().cliente }}</h1>
+      <p class="folio">Folio: {{ pedido().folio }}</p>
+    </header>
+
+    <mat-card class="status-card">
+      <div class="stepper">
+        <div class="step" *ngFor="let s of steps" [class.active]="isStepActive(s.id)">
+          <div class="icon-circle">
+            <mat-icon>{{ s.icon }}</mat-icon>
+          </div>
+          <span class="label">{{ s.label }}</span>
+          <div class="line" *ngIf="s.id !== 'entregado'"></div>
+        </div>
+      </div>
+      
+      <div class="main-status">
+        <p>Estado actual:</p>
+        <h2 [class.done]="pedido().estado === 'listo'">
+          {{ pedido().estado | titlecase }}
+        </h2>
+      </div>
+    </mat-card>
+
+    <mat-card class="details-card">
+      <mat-card-header><mat-card-title>Detalles</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <p class="desc">{{ pedido().descripcion }}</p>
+        
+        <div class="payment-row">
+          <span>Total:</span>
+          <strong>{{ pedido().total | currency:'MXN' }}</strong>
+        </div>
+        <div class="payment-row highlight" *ngIf="pedido().pendiente > 0">
+          <span>Pendiente de pago:</span>
+          <span class="debt">{{ pedido().pendiente | currency:'MXN' }}</span>
+        </div>
+        <div class="payment-row success" *ngIf="pedido().pendiente <= 0 && pedido().total > 0">
+          <span>Estatus Pago:</span>
+          <span class="paid">¡Pagado!</span>
+        </div>
+
+        <div class="date-info">
+          Entrega estimada: <strong>{{ pedido().fecha_entrega | date:'fullDate' }}</strong>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="evidence-section" *ngIf="pedido().fotos?.length">
+      <h3>Evidencia de recepción</h3>
+      <div class="photos-grid">
+        <div class="photo" *ngFor="let f of pedido().fotos">
+          <img [src]="f.url" alt="Evidencia">
+          <span class="note" *ngIf="f.nota">{{ f.nota }}</span>
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>¿Dudas?</p>
+      <button mat-flat-button class="whatsapp-btn" onclick="window.open('https://wa.me/5212227342492', '_blank')">
+        <mat-icon>chat</mat-icon> Contáctanos
+      </button>
+    </footer>
+
+  </div>
+</div>

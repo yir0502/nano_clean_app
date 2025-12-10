@@ -1,55 +1,94 @@
 <div class="container">
+  
   <div class="header">
-    <button mat-icon-button routerLink="/pedidos">
+    <button mat-icon-button (click)="location.back()">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <h2>{{ titulo() }}</h2>
+    <div class="title-col">
+      <h2>{{ titulo() }}</h2>
+      <span class="subtitle" *ngIf="isEdit()">Gestión y seguimiento</span>
+    </div>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="save()">
-    
-    <mat-card class="section-card">
+  <form [formGroup]="form" (ngSubmit)="save()" *ngIf="!loading(); else loadingTpl">
+
+    <div class="status-bar-container" *ngIf="isEdit()">
+      <p class="section-label">Estatus del Pedido</p>
+      <div class="status-stepper">
+        <div 
+          *ngFor="let st of ESTADOS" 
+          class="step" 
+          [class.active]="form.get('estado')?.value === st"
+          (click)="setStatus(st)">
+          <div class="circle">
+            <mat-icon *ngIf="st === 'recibido'">hourglass_empty</mat-icon>
+            <mat-icon *ngIf="st === 'lavando'">local_laundry_service</mat-icon>
+            <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
+            <mat-icon *ngIf="st === 'entregado'">inventory_2</mat-icon>
+            <mat-icon *ngIf="st === 'cancelado'">block</mat-icon>
+          </div>
+          <span class="label">{{ st | titlecase }}</span>
+        </div>
+      </div>
+    </div>
+
+    <mat-card class="form-card">
       <mat-card-header>
-        <mat-card-title>Cliente</mat-card-title>
+        <mat-card-title class="titulo-seccion">Cliente</mat-card-title>
       </mat-card-header>
-      <mat-card-content>
+      <mat-card-content class="card-content">
         <div class="row">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Nombre del Cliente</mat-label>
-            <input matInput formControlName="cliente_nombre" placeholder="Ej. Juan Pérez" autocomplete="off">
+            <input type="text"
+                   matInput
+                   formControlName="cliente_nombre"
+                   [matAutocomplete]="auto">
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCliente" (optionSelected)="selectCliente($event.option.value)">
+              <mat-option *ngFor="let c of clientesFiltrados()" [value]="c">
+                <span class="auto-name">{{ c.nombre }}</span>
+                <span class="auto-phone">{{ c.telefono }}</span>
+              </mat-option>
+            </mat-autocomplete>
             <mat-icon matPrefix>person</mat-icon>
-            <mat-error *ngIf="form.get('cliente_nombre')?.invalid">Requerido</mat-error>
+            <mat-error>Requerido</mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Teléfono (WhatsApp)</mat-label>
-            <input matInput formControlName="cliente_telefono" type="tel" placeholder="52..." autocomplete="off">
+            <input matInput formControlName="cliente_telefono" type="tel" placeholder="10 dígitos">
             <mat-icon matPrefix>phone</mat-icon>
-            <mat-error *ngIf="form.get('cliente_telefono')?.invalid">Mínimo 10 dígitos</mat-error>
+            <mat-error>Mínimo 10 dígitos</mat-error>
           </mat-form-field>
         </div>
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="section-card">
-      <mat-card-header>
-        <mat-card-title>Detalles del Servicio</mat-card-title>
-      </mat-card-header>
+    <mat-card class="form-card">
+      <mat-card-header><mat-card-title class="titulo-seccion">Detalles</mat-card-title></mat-card-header>
       <mat-card-content>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Sucursal</mat-label>
+          <mat-select formControlName="sucursal_id">
+            <mat-option *ngFor="let s of sucursales()" [value]="s.id">{{ s.nombre }}</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>store</mat-icon>
+        </mat-form-field>
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Descripción de prendas</mat-label>
-          <textarea matInput formControlName="descripcion" rows="3" placeholder="Ej: 3 Kilos de ropa, 1 Edredón King Size..."></textarea>
+          <textarea matInput formControlName="descripcion" rows="3"></textarea>
         </mat-form-field>
 
         <div class="row">
           <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Total a Pagar</mat-label>
-            <span matPrefix>$ &nbsp;</span>
-            <input matInput type="number" formControlName="monto_total" placeholder="0.00">
+            <mat-label>Total ($)</mat-label>
+            <input matInput type="number" formControlName="monto_total">
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Fecha de Entrega</mat-label>
+            <mat-label>Fecha Entrega</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="fecha_entrega_estimada">
             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-datepicker #picker></mat-datepicker>
@@ -58,40 +97,48 @@
       </mat-card-content>
     </mat-card>
 
-    <mat-card class="section-card evidence-card" *ngIf="!isEdit()">
+    <mat-card class="form-card">
       <mat-card-header>
-        <mat-card-title>Evidencia de Ingreso</mat-card-title>
-        <mat-card-subtitle>Toma una foto de las prendas o manchas</mat-card-subtitle>
+        <mat-card-title class="titulo-seccion">Evidencia Fotográfica</mat-card-title>
+        <button type="button" mat-stroked-button (click)="fileInput.click()">
+          <mat-icon>add_a_photo</mat-icon> Agregar
+        </button>
+        <input #fileInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" style="display:none">
       </mat-card-header>
+      
       <mat-card-content>
-        
-        <div class="upload-container" (click)="fileInput.click()" [class.has-image]="previewUrl">
-          <input #fileInput type="file" (change)="onFileSelected($event)" accept="image/*" style="display:none">
-          
-          <div class="placeholder" *ngIf="!previewUrl">
-            <mat-icon class="camera-icon">add_a_photo</mat-icon>
-            <span>Toque para subir foto</span>
+        <div class="photos-grid" *ngIf="fotos().length > 0; else noPhotos">
+          <div class="photo-item" *ngFor="let f of fotos(); let i = index">
+            <img [src]="f.url">
+            <button type="button" class="remove-btn" (click)="removeFoto(i)">
+              <mat-icon>close</mat-icon>
+            </button>
+            <span class="badge" *ngIf="f.id">Guardada</span>
+            <span class="badge new" *ngIf="!f.id">Nueva</span>
           </div>
-
-          <img *ngIf="previewUrl" [src]="previewUrl" class="preview-img">
         </div>
+        <ng-template #noPhotos>
+          <div class="empty-photos">Sin fotos adjuntas</div>
+        </ng-template>
 
-        <mat-form-field appearance="outline" class="full-width mt-2">
-          <mat-label>Nota de la evidencia (Opcional)</mat-label>
-          <input matInput formControlName="evidencia_nota" placeholder="Ej: Mancha visible en camisa blanca">
+        <mat-form-field appearance="outline" class="full-width mt-3">
+          <mat-label>Nota sobre la evidencia</mat-label>
+          <input matInput formControlName="evidencia_nota" placeholder="Ej: Mancha en manga derecha">
         </mat-form-field>
-
       </mat-card-content>
     </mat-card>
 
-    <div class="actions">
+    <div class="footer-actions">
       <button mat-flat-button color="primary" class="save-btn" [disabled]="form.invalid || saving()">
-        <mat-spinner *ngIf="saving()" diameter="24" class="spinner-white"></mat-spinner>
-        <span *ngIf="!saving()">
-          <mat-icon>save</mat-icon> {{ isEdit() ? 'Actualizar Pedido' : 'Generar Pedido' }}
-        </span>
+        <mat-spinner *ngIf="saving()" diameter="20" class="white-spinner"></mat-spinner>
+        <span *ngIf="!saving()">{{ isEdit() ? 'Guardar Cambios' : 'Crear Pedido' }}</span>
+        <mat-icon *ngIf="!saving()">check</mat-icon>
       </button>
     </div>
 
   </form>
+
+  <ng-template #loadingTpl>
+    <div class="loading-shade"><mat-spinner></mat-spinner></div>
+  </ng-template>
 </div>

@@ -162,17 +162,19 @@ export class ApiClientService {
     formData.append('foto', file);
     formData.append('tipo', tipo);
     if (nota) formData.append('nota', nota);
-
-    // Nota: Usamos fetch directo o un wrapper especial porque 'request' usa JSON por defecto
-    // Aquí asumimos que tu método 'post' o 'request' maneja FormData si se lo pasas,
-    // o hacemos una pequeña adaptación para no enviar Content-Type: application/json
-    // Si usas HttpClient de Angular, él lo detecta solo.
-    
-    // Si estás usando mi implementación anterior de 'request' con HttpClient:
     return this.request<PedidoEvidencia>('POST', `/pedidos/${pedidoId}/evidencia`, { body: formData });
+  }
+
+  deletePedido(id: string): Promise<{ ok: boolean }> {
+    return this.deleteGeneric<{ ok: boolean }>(`/pedidos/${id}`);
   }
 
   listEvidencias(pedidoId: string): Promise<PedidoEvidencia[]> {
     return this.get<PedidoEvidencia[]>(`/pedidos/${pedidoId}/evidencia`);
+  }
+
+  // --- RASTREO PÚBLICO ---
+  getPedidoPublico(folio: string): Promise<any> {
+    return this.get(`/rastreo/${folio}`);
   }
 }

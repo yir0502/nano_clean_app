@@ -272,6 +272,7 @@ export class AppComponent {
   additionalNavOptions = [
     { path: '/administracion', icon: 'category', label: 'Administración' },
     { path: '/clientes', icon: 'group', label: 'Clientes' },
+    { path: '/pedidos', icon: 'work', label: 'Pedidos' },
     { path: '/inventario', icon: 'inventory', label: 'Inventario' },
     { path: '/pedidos_proveedores', icon: 'local_shipping', label: 'Pedidos Proveedores' },
     // Agrega más opciones aquí

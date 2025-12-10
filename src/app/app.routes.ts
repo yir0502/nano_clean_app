@@ -82,5 +82,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/pedidos/pedido-form/pedido-form').then(m => m.PedidoFormComponent)
   },
 
+  {
+    path: 'rastreo/:folio',
+    data: { 
+      hideChrome: true,
+      hideFab: true
+    },
+    loadComponent: () => import('./pages/rastreo/rastreo.component').then(m => m.RastreoComponent)
+  },
+
   { path: '**', redirectTo: 'resumen' }
 ];

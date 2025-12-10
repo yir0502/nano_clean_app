@@ -13,6 +13,12 @@
 
     <div class="orders-list" *ngIf="pedidosActivos.length > 0">
       <mat-card *ngFor="let p of pedidosActivos" class="order-item" [routerLink]="['/pedidos', p.id]">
+        <div class="order-header">
+          <mat-icon>store</mat-icon> {{ p.sucursal_nombre }}
+          <button (click)="deletePedido(p, $event)" class="delete-button">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
         <div class="order-strip">
           <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
           <div class="order-content">

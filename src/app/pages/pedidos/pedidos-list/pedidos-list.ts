@@ -12,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { ApiClientService } from '../../../core/api-client.service';
 import { Pedido } from '../../../core/models';
@@ -30,7 +31,8 @@ import { Pedido } from '../../../core/models';
 export class PedidosListComponent implements OnInit {
   private api = inject(ApiClientService);
   private router = inject(Router);
-
+  private snack = inject(MatSnackBar);
+  
   // Estado
   activeTab = signal<number>(0); // 0 = Activos, 1 = Historial
   loading = signal<boolean>(true);
@@ -67,25 +69,65 @@ export class PedidosListComponent implements OnInit {
 
   // Helpers visuales
   getStatusColor(estado: string): string {
-    switch (estado) {
-      case 'pendiente': return 'warn';
-      case 'en_proceso': return 'accent';
+    console.log(estado);
+   switch (estado) {
+      case 'recibido': return 'warn';
+      case 'lavando': return 'accent';
       case 'listo': return 'primary';
-      default: return ''; // gris
+      case 'entregado': return 'completed';
+      case 'cancelado': return 'canceled';
+      default: return '';
+    }
+    
+  }
+
+  async deletePedido(pedido: Pedido, event: MouseEvent) {
+    event.stopPropagation(); // Evita entrar al detalle del pedido
+    
+    const confirmacion = confirm(`¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`);
+    if (!confirmacion) return;
+
+    try {
+      await this.api.deletePedido(pedido.id);
+      
+      // Actualizamos la lista localmente para que desaparezca al instante
+      this.pedidos.update(prev => prev.filter(p => p.id !== pedido.id));
+      
+      this.snack.open('Pedido eliminado correctamente', 'OK', { duration: 3000 });
+    } catch (e) {
+      this.snack.open('Error al eliminar el pedido', 'Cerrar', { duration: 3000 });
     }
   }
+
 
   // Acción rápida: Enviar WhatsApp
   sendWhatsapp(pedido: Pedido, event: MouseEvent) {
     event.stopPropagation();
+    
     if (!pedido.cliente_telefono) return;
+
+    const baseUrl = window.location.origin; 
+    const urlRastreo = `${baseUrl}/rastreo/${pedido.folio}`;
     
-    // Aquí irá la URL pública en el futuro
-    const urlRastreo = `https://micleanapp.com/rastreo/${pedido.folio}`; 
-    const msg = `Hola ${pedido.cliente_nombre}, tu pedido ${pedido.folio} está en estado: ${pedido.estado.toUpperCase()}. Ver detalles: ${urlRastreo}`;
+    const estadoLimpio = pedido.estado.replace('_', ' ');
+    const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
+
+    const msg = `Hola *${pedido.cliente_nombre}* \uD83D\uDC4B
+
+Tu pedido *${pedido.folio}* en Nano Clean está: *${estadoFormato}*.
+
+Puedes ver los detalles, saldo y fotos aquí \uD83D\uDC47:
+${urlRastreo}
+
+¡Gracias por tu confianza! \u2764\uFE0F
+- Lavandería Nano Clean \uD83E\uDD16`;
+
+    // Limpiar teléfono
+    const telefono = pedido.cliente_telefono.replace(/\D/g, '');
     
-    // Abrir API de WhatsApp directamente en el dispositivo
-    const link = `https://wa.me/${pedido.cliente_telefono.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+    // Usar api.whatsapp.com asegura mejor compatibilidad de codificación
+    const link = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(msg)}`;
+    
     window.open(link, '_blank');
   }
 

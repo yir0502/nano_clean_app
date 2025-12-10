@@ -10,6 +10,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { NgChartsModule } from 'ng2-charts';
 import type { ChartConfiguration, ChartData, ChartType, ChartOptions } from 'chart.js';
@@ -98,7 +99,8 @@ export class ResumenComponent implements OnInit {
   private iso(d: Date) { return d.toISOString().slice(0, 10); }
   private toNumber(n: any) { const x = Number(n); return isNaN(x) ? 0 : x; }
   private hasNonZero(arr: number[]) { return arr.some(v => v !== 0); }
-
+  private snack = inject(MatSnackBar);
+  
   private rangeDates(kind: '3m' | '6m' | '12m'): { desde: string; hasta: string } {
     const hasta = this.iso(new Date());
     const d = new Date();
@@ -289,38 +291,58 @@ export class ResumenComponent implements OnInit {
   
   getStatusColor(estado: string): string {
     switch (estado) {
-      case 'pendiente': return 'warn';      // Rojo
-      case 'en_proceso': return 'accent';   // Amarillo/Naranja
+      case 'recibido': return 'warn';      // Rojo
+      case 'lavando': return 'accent';   // Amarillo/Naranja
       case 'listo': return 'primary';       // Verde
       case 'entregado': return 'gray';      // Gris
       default: return '';
     }
   }
 
-  sendWhatsapp(pedido: Pedido, event: MouseEvent) {
-    // 1. Evitamos que el click "atraviese" el botón y active el routerLink de la tarjeta
-    event.stopPropagation();
-    event.preventDefault();
+  async deletePedido(pedido: Pedido, event: MouseEvent) {
+    event.stopPropagation(); // Evita entrar al detalle del pedido
+    
+    const confirmacion = confirm(`¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`);
+    if (!confirmacion) return;
 
-    // 2. Validación básica
-    if (!pedido.cliente_telefono) {
-      // Opcional: mostrar un aviso si no hay teléfono
-      // this.snackBar.open('Este pedido no tiene teléfono asociado', 'OK', { duration: 2000 });
-      return;
+    try {
+      await this.api.deletePedido(pedido.id);
+      
+      // Actualizamos la lista localmente para que desaparezca al instante
+      this.pedidosActivos = this.pedidosActivos.filter(p => p.id !== pedido.id);
+      
+      this.snack.open('Pedido eliminado correctamente', 'OK', { duration: 3000 });
+    } catch (e) {
+      this.snack.open('Error al eliminar el pedido', 'Cerrar', { duration: 3000 });
     }
+  }
+
+  sendWhatsapp(pedido: Pedido, event: MouseEvent) {
+    event.stopPropagation();
     
-    // 3. Construcción del mensaje
-    // Nota: Ajusta 'micleanapp.com' por tu dominio real o localhost para pruebas
-    const urlRastreo = `https://nanoclean.app/rastreo/${pedido.folio}`; 
-    const estado = pedido.estado.charAt(0).toUpperCase() + pedido.estado.slice(1); // Capitalizar
+    if (!pedido.cliente_telefono) return;
+
+    const baseUrl = window.location.origin; 
+    const urlRastreo = `${baseUrl}/rastreo/${pedido.folio}`;
     
-    const msg = `Hola ${pedido.cliente_nombre}, tu pedido *${pedido.folio}* está: *${estado}*.
+    const estadoLimpio = pedido.estado.replace('_', ' ');
+    const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
+
+    const msg = `Hola *${pedido.cliente_nombre}* \uD83D\uDC4B
+
+Tu pedido *${pedido.folio}* en Nano Clean está: *${estadoFormato}*.
+
+Puedes ver los detalles, saldo y fotos aquí \uD83D\uDC47:
+${urlRastreo}
+
+¡Gracias por tu confianza! \u2764\uFE0F
+- Lavandería Nano Clean \uD83E\uDD16`;
+
+    // Limpiar teléfono
+    const telefono = pedido.cliente_telefono.replace(/\D/g, '');
     
-Puedes ver el detalle y fotos aquí: ${urlRastreo}`;
-    
-    // 4. Limpieza del número y apertura
-    const telefono = pedido.cliente_telefono.replace(/\D/g,''); // Solo números
-    const link = `https://wa.me/${telefono}?text=${encodeURIComponent(msg)}`;
+    // Usar api.whatsapp.com asegura mejor compatibilidad de codificación
+    const link = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(msg)}`;
     
     window.open(link, '_blank');
   }
