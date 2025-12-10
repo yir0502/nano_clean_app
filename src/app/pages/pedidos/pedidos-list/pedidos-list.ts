@@ -114,7 +114,7 @@ export class PedidosListComponent implements OnInit {
 
     const msg = `Hola *${pedido.cliente_nombre}* \uD83D\uDC4B
 
-Tu pedido *${pedido.folio}* en Nano Clean está: *${estadoFormato}*.
+Tu pedido *${pedido.folio}* está: *${estadoFormato}*.
 
 Puedes ver los detalles, saldo y fotos aquí \uD83D\uDC47:
 ${urlRastreo}
