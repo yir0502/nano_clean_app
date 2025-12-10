@@ -21,10 +21,10 @@ import { Pedido } from '../../../core/models';
   selector: 'app-pedidos-list',
   standalone: true,
   imports: [
-    CommonModule, RouterLink, FormsModule,
+    CommonModule, FormsModule,
     MatCardModule, MatButtonModule, MatIconModule, MatListModule,
     MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatChipsModule
-  ],
+],
   templateUrl: './pedidos-list.html', // Asegúrate que exista
   styleUrls: ['./pedidos-list.scss']  // Asegúrate que exista
 })
