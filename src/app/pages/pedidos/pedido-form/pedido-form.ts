@@ -122,6 +122,14 @@ export class PedidoFormComponent implements OnInit {
             .onAction().subscribe(() => this.selectCliente(c));
         }
       });
+
+    this.form.get('monto_total')?.valueChanges
+    .pipe(distinctUntilChanged()) // Evita duplicados
+    .subscribe(total => {
+      // Solo actualizamos el saldo si el usuario está escribiendo.
+      // Asignamos el mismo valor del total al saldo automáticamente.
+      this.form.patchValue({ saldo_pendiente: total });
+    });
   }
 
   async ngOnInit() {
@@ -246,7 +254,7 @@ export class PedidoFormComponent implements OnInit {
         saldo_pendiente: Number(p.saldo_pendiente),
         fecha_entrega_estimada: p.fecha_entrega_estimada ? new Date(p.fecha_entrega_estimada + 'T00:00:00') : new Date(),
         estado: p.estado
-      });
+      }, { emitEvent: false });
 
       // Si tiene cliente ID, simulamos selección
       if (p.cliente_id) {
