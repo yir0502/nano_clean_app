@@ -88,6 +88,13 @@
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="half-width">
+            <mat-label>Saldo pendiente ($)</mat-label>
+            <input matInput type="number" formControlName="saldo_pendiente">
+          </mat-form-field>
+
+        </div>
+        <div class="row">
+          <mat-form-field appearance="outline" class="half-width">
             <mat-label>Fecha Entrega</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="fecha_entrega_estimada">
             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
@@ -98,8 +105,8 @@
     </mat-card>
 
     <mat-card class="form-card">
-      <mat-card-header>
-        <mat-card-title class="titulo-seccion">Evidencia Fotográfica</mat-card-title>
+      <mat-card-header class="card-header-with-button">
+        <mat-card-title>Evidencia Fotográfica</mat-card-title>
         <button type="button" mat-stroked-button (click)="fileInput.click()">
           <mat-icon>add_a_photo</mat-icon> Agregar
         </button>

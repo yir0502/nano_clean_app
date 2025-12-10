@@ -173,6 +173,10 @@ export class ApiClientService {
     return this.get<PedidoEvidencia[]>(`/pedidos/${pedidoId}/evidencia`);
   }
 
+  deleteEvidencia(pedidoId: string, evidenciaId: string): Promise<{ ok: boolean }> {
+    return this.deleteGeneric<{ ok: boolean }>(`/pedidos/${pedidoId}/evidencia/${evidenciaId}`);
+  }
+
   // --- RASTREO PÚBLICO ---
   getPedidoPublico(folio: string): Promise<any> {
     return this.get(`/rastreo/${folio}`);

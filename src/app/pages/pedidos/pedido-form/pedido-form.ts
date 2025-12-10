@@ -79,8 +79,8 @@ export class PedidoFormComponent implements OnInit {
     // Pedido
     sucursal_id: ['', Validators.required],
     descripcion: ['', ],
-    monto_total: [0],
-    saldo_pendiente: [0], // Nuevo campo para control de pagos
+    monto_total: [null as number | null],
+    saldo_pendiente: [null as number | null],
     fecha_entrega_estimada: [new Date(), Validators.required],
     estado: ['recibido'],
     
@@ -185,10 +185,35 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  removeFoto(index: number) {
-    // Nota: Si es una foto ya existente (con ID), idealmente deberíamos llamar a la API para borrarla.
-    // Por simplicidad, aquí solo la quitamos de la vista local.
-    this.fotos.update(prev => prev.filter((_, i) => i !== index));
+  async removeFoto(index: number) {
+    const foto = this.fotos()[index];
+
+    // CASO A: Es una foto YA guardada en el servidor (tiene ID)
+    if (foto.id && this.pedidoId()) {
+      
+      const confirmacion = confirm('¿Eliminar esta evidencia permanentemente?');
+      if (!confirmacion) return;
+
+      this.loading.set(true); // Bloqueamos un poco la UI para evitar doble click
+      try {
+        await this.api.deleteEvidencia(this.pedidoId()!, foto.id);
+        
+        this.snack.open('Evidencia eliminada', 'OK', { duration: 2000 });
+        
+        // Actualizamos la lista visualmente quitando el elemento
+        this.fotos.update(prev => prev.filter((_, i) => i !== index));
+        
+      } catch (e: any) {
+        this.snack.open('Error al eliminar evidencia', 'Cerrar');
+      } finally {
+        this.loading.set(false);
+      }
+
+    } else {
+      // CASO B: Es una foto nueva (local) que aún no se guarda
+      // Simplemente la sacamos del array
+      this.fotos.update(prev => prev.filter((_, i) => i !== index));
+    }
   }
 
   // --- CARGA DE DATOS ---
