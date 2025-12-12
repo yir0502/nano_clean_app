@@ -82,6 +82,27 @@ export class MovimientoFormComponent implements OnInit {
     this.loadCategorias(this.form.controls.tipo.value);
     this.form.controls.tipo.valueChanges.subscribe(t => this.loadCategorias(t));
 
+    // --- NUEVO: PRELLENADO DESDE URL (PEDIDOS) ---
+    // Esto captura los datos que enviaste desde el botón "REGISTRAR INGRESO"
+    this.route.queryParams.subscribe(params => {
+      // Solo aplicamos si NO es edición (es un movimiento nuevo) y viene un monto
+      if (!this.isEdit() && params['monto']) {
+        
+        this.form.patchValue({
+          tipo: 'ingreso', // Forzamos que sea ingreso
+          monto: Number(params['monto']),
+          nota: params['descripcion'] || '',
+          sucursal_id: params['sucursal_id'] || null,
+        });
+
+        // Recargamos categorías por si estaba en 'egreso' por defecto
+        this.loadCategorias('ingreso');
+        
+        // Opcional: Deshabilitar el monto para que no lo cambien por error
+        // this.form.controls.monto.disable(); 
+      }
+    });
+
     // Si edición, cargar datos y parchear
     if (this.isEdit()) {
       this.loadMovimiento(this.movimientoId()!);

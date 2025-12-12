@@ -278,8 +278,7 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  // --- GUARDADO ---
-
+// --- GUARDADO ---
   async save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -304,37 +303,74 @@ export class PedidoFormComponent implements OnInit {
       // 2. Preparar payload del pedido
       const payload: any = {
         cliente_id: clientId,
+        cliente_nombre: v.cliente_nombre,
         sucursal_id: v.sucursal_id,
         descripcion: v.descripcion,
         monto_total: v.monto_total,
-        saldo_pendiente: v.saldo_pendiente, // Guardamos saldo también
+        saldo_pendiente: v.saldo_pendiente,
         fecha_entrega_estimada: v.fecha_entrega_estimada ? new Date(v.fecha_entrega_estimada).toISOString().split('T')[0] : null,
         estado: v.estado
       };
 
       let pedidoId = this.pedidoId();
+      let folioGenerado = ''; // Variable auxiliar para el mensaje
 
       // 3. Crear o Actualizar Pedido
       if (this.isEdit() && pedidoId) {
         await this.api.updatePedido(pedidoId, payload);
-        this.snack.open('Pedido actualizado', 'OK', { duration: 2000 });
       } else {
         const nuevo = await this.api.createPedido(payload);
         pedidoId = nuevo.id;
-        this.snack.open('Pedido generado con folio: ' + nuevo.folio, 'OK', { duration: 3000 });
+        folioGenerado = nuevo.folio || ''; // Asumiendo que el back devuelve el folio
       }
 
-      // 4. Subir Fotos Nuevas (Las que tienen propiedad 'file')
+      // 4. Subir Fotos Nuevas
       const nuevasFotos = this.fotos().filter(f => f.file);
       if (pedidoId && nuevasFotos.length > 0) {
-        const uploads = nuevasFotos.map(f => 
+        const uploads = nuevasFotos.map(f =>
           this.api.uploadEvidencia(pedidoId!, f.file!, 'ingreso', v.evidencia_nota || '')
         );
         await Promise.all(uploads);
       }
 
-      this.router.navigateByUrl('/pedidos');
+      // --- LOGICA DE COBRO (NUEVO) ---
+      const esEntregado = v.estado === 'entregado';
+      const montoTotal = Number(v.monto_total) || 0;
+      
+      // Si se entrega y hay deuda, mostramos la opción de ir a Movimientos
+      if (esEntregado) {
+        
+        const snackRef = this.snack.open(
+          `Pedido guardado. ¿Agregar ingreso de $${montoTotal.toFixed(2)}?`,
+          'AGREGAR AHORA',
+          { duration: 8000 }
+        );
 
+        snackRef.onAction().subscribe(() => {
+          this.router.navigate(['/movimientos/nuevo'], {
+            queryParams: {
+              monto: montoTotal.toFixed(2), // Ojo: usa la variable numérica, no el objeto completo
+              
+              // AQUÍ ESTÁ EL TRUCO DEL SALTO DE LÍNEA
+              descripcion: payload.descripcion 
+                ? `Entrega: ${v.cliente_nombre} - ${payload.descripcion}` 
+                : `Cliente: ${v.cliente_nombre} - Pedido Folio: ${folioGenerado || pedidoId}`,
+              
+              tipo: 'ingreso',
+              cliente_id: clientId
+            }
+          });
+        });
+
+        // Navegamos a la lista de pedidos, pero el SnackBar se queda visible
+        this.router.navigateByUrl('/pedidos');
+
+      } else {
+        // Flujo normal: solo mensaje de éxito
+        const msj = this.isEdit() ? 'Pedido actualizado' : `Pedido generado ${folioGenerado}`;
+        this.snack.open(msj, 'OK', { duration: 3000 });
+        this.router.navigateByUrl('/pedidos');
+      }
     } catch (e: any) {
       console.error(e);
       this.snack.open('Error: ' + (e.message || 'Ocurrió un problema'), 'Cerrar');
@@ -342,7 +378,7 @@ export class PedidoFormComponent implements OnInit {
       this.saving.set(false);
     }
   }
-
+  
   // Helper para estado visual
   setStatus(estado: string) {
     this.form.patchValue({ estado });
