@@ -21,12 +21,17 @@
 
     <mat-card class="status-card">
       <div class="stepper">
-        <div class="step" *ngFor="let s of steps" [class.active]="isStepActive(s.id)">
+        <div class="track-line"></div>
+        
+        <div class="step" *ngFor="let s of steps" 
+            [class.active]="isStepActive(s.id)" 
+            [class.current]="isCurrent(s.id)">
+          
           <div class="icon-circle">
             <mat-icon>{{ s.icon }}</mat-icon>
           </div>
+          
           <span class="label">{{ s.label }}</span>
-          <div class="line" *ngIf="s.id !== 'entregado'"></div>
         </div>
       </div>
       

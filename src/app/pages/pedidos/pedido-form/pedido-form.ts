@@ -68,8 +68,8 @@ export class PedidoFormComponent implements OnInit {
   selectedCliente = signal<Cliente | null>(null);
 
   // Estados del pedido para la UI
-  readonly ESTADOS = ['recibido', 'lavando', 'listo', 'entregado', 'cancelado'];
-
+  readonly ESTADOS = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado', 'cancelado'];
+  
   form = this.fb.group({
     // Cliente
     cliente_nombre: ['', Validators.required],

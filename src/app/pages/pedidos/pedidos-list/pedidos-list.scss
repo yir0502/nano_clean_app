@@ -65,7 +65,9 @@
   .status-strip {
     width: 6px; flex-shrink: 0;
     &.warn { background: #f44336; }
-    &.accent { background: #ffc107; }
+    &.accent_1 { background: #ff9800; }
+    &.accent_2 { background: #ffb300; }
+    &.accent_3 { background: #ffeb3b; }
     &.primary { background: #4caf50; }
     &.gray { background: #9e9e9e; }
   }
@@ -94,7 +96,9 @@
       padding: 3px 8px; border-radius: 4px; background: #eee; color: #555;
       
       &.warn { background: #ffebee; color: #b71c1c; }
-      &.accent { background: #fff8e1; color: #ff6f00; }
+      &.accent_1 { background: #fff3e0; color: #ff9800; }
+      &.accent_2 { background: #fff8e1; color: #ffb300; }
+      &.accent_3 { background: #fffde7; color: #fbc02d; }
       &.primary { background: #e8f5e9; color: #1b5e20; }
       &.gray { background: #f5f5f5; color: #777; }
       &.completed { background: #e0e0e0; color: #555; }

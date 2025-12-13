@@ -292,7 +292,9 @@ export class ResumenComponent implements OnInit {
   getStatusColor(estado: string): string {
     switch (estado) {
       case 'recibido': return 'warn';      // Rojo
-      case 'lavando': return 'accent';   // Amarillo/Naranja
+      case 'lavando': return 'accent_1';   // Naranja
+      case 'secando': return 'accent_2';   // Amarillo
+      case 'doblando': return 'accent_3';  // Amarillo claro
       case 'listo': return 'primary';       // Verde
       case 'entregado': return 'gray';      // Gris
       default: return '';

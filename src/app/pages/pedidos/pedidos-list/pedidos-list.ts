@@ -72,7 +72,9 @@ export class PedidosListComponent implements OnInit {
     console.log(estado);
    switch (estado) {
       case 'recibido': return 'warn';
-      case 'lavando': return 'accent';
+      case 'lavando': return 'accent_1';
+      case 'secando': return 'accent_2';
+      case 'doblando': return 'accent_3';
       case 'listo': return 'primary';
       case 'entregado': return 'completed';
       case 'cancelado': return 'canceled';

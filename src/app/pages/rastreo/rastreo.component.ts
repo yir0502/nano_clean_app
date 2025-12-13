@@ -27,10 +27,12 @@ export class RastreoComponent implements OnInit {
   error = signal<string|null>(null);
   pedido = signal<any>(null);
 
-  // Pasos para la barra de progreso visual
+  // --- CAMBIO 1: Agregamos los pasos nuevos al Array visual ---
   steps = [
     { id: 'recibido', label: 'Recibido', icon: 'inventory' },
     { id: 'lavando', label: 'Lavando', icon: 'local_laundry_service' },
+    { id: 'secando', label: 'Secando', icon: 'dry' },       // <--- NUEVO
+    { id: 'doblando', label: 'Doblando', icon: 'layers' },  // <--- NUEVO
     { id: 'listo', label: 'Listo', icon: 'check_circle' },
     { id: 'entregado', label: 'Entregado', icon: 'sentiment_satisfied_alt' }
   ];
@@ -41,8 +43,6 @@ export class RastreoComponent implements OnInit {
     const folio = this.route.snapshot.paramMap.get('folio');
     if (!folio) {
       this.error.set('No se especificó un número de pedido.');
-      console.log('FOLIO NO ESPECIFICADO');
-      
       this.loading.set(false);
       return;
     }
@@ -59,8 +59,17 @@ export class RastreoComponent implements OnInit {
 
   // Calcula si un paso ya se completó para pintarlo de color
   isStepActive(stepId: string): boolean {
-    const estado = this.pedido()?.estado;
-    const estados = ['recibido', 'lavando', 'listo', 'entregado'];
-    return estados.indexOf(stepId) <= estados.indexOf(estado);
+    const estadoActual = this.pedido()?.estado;
+    
+    // --- CAMBIO 2: Actualizamos la lista lógica para que el cálculo funcione ---
+    // El orden aquí es CRÍTICO para saber qué círculos pintar
+    const estadosOrdenados = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado'];
+    
+    return estadosOrdenados.indexOf(stepId) <= estadosOrdenados.indexOf(estadoActual);
+  }
+
+  isCurrent(stepId: string): boolean {
+    // Compara si el ID del paso es IGUAL al estado del pedido
+    return this.pedido()?.estado === stepId;
   }
 }

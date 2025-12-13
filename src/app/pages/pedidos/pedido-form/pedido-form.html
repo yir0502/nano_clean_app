@@ -20,13 +20,16 @@
           class="step" 
           [class.active]="form.get('estado')?.value === st"
           (click)="setStatus(st)">
+          
           <div class="circle">
             <mat-icon *ngIf="st === 'recibido'">hourglass_empty</mat-icon>
             <mat-icon *ngIf="st === 'lavando'">local_laundry_service</mat-icon>
-            <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
+            
+            <mat-icon *ngIf="st === 'secando'">dry</mat-icon>   <mat-icon *ngIf="st === 'doblando'">layers</mat-icon> <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
             <mat-icon *ngIf="st === 'entregado'">inventory_2</mat-icon>
             <mat-icon *ngIf="st === 'cancelado'">block</mat-icon>
           </div>
+          
           <span class="label">{{ st | titlecase }}</span>
         </div>
       </div>

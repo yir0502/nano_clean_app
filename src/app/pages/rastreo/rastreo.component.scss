@@ -30,50 +30,101 @@ $success: #4caf50;
 }
 
 .status-card {
-  margin: -40px 16px 16px 16px; /* Efecto flotante sobre el header */
+  margin: -40px 16px 16px 16px;
   border-radius: 16px;
-  padding: 20px 10px;
-  
+  padding: 30px 10px 40px 10px; // Damos más espacio abajo para el texto flotante
+
   .stepper {
-    display: flex; justify-content: space-between; margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative; // Para contener la línea de fondo
+    margin-bottom: 10px;
   }
-  
+
+  // La línea gris que conecta todo
+  .track-line {
+    position: absolute;
+    top: 50%;
+    left: 20px;  // Margen para no salir de los círculos extremos
+    right: 20px;
+    height: 4px; // Un poco más gruesa
+    background: #e0e0e0;
+    transform: translateY(-50%);
+    z-index: 0;
+  }
+
   .step {
-    display: flex; flex-direction: column; align-items: center; flex: 1; position: relative;
-    opacity: 0.4;
-    transition: opacity 0.3s;
+    position: relative;
+    z-index: 1; // Para estar encima de la línea
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     
-    &.active { 
-      opacity: 1; 
-      .icon-circle { background: $primary; color: white; transform: scale(1.1); box-shadow: 0 4px 10px rgba($primary, 0.3); }
-      .label { color: $primary; font-weight: 600; }
-    }
-
+    // --- ESTADO 1: FUTURO (Defecto) ---
     .icon-circle {
-      width: 40px; height: 40px; border-radius: 50%;
-      background: #eee; color: #777;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #f5f7fa; // Mismo color de fondo de la app para "cortar" la línea
+      border: 3px solid #e0e0e0;
+      color: #ccc;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 6px;
-      z-index: 1;
-      transition: all 0.3s;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); // Efecto rebote suave
+      
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
     }
     
-    .label { font-size: 10px; text-transform: uppercase; }
+    .label {
+      position: absolute;
+      top: 45px; // Lo empujamos hacia abajo
+      width: 100px; // Ancho fijo para centrar texto
+      text-align: center;
+      font-size: 10px;
+      opacity: 1;           // Oculto por defecto
+      transform: translateY(-10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
 
-    .line {
-      position: absolute; top: 19px; left: 50%; width: 89%; height: 2px;
-      background: #e0e0e0; z-index: 0;
+    // --- ESTADO 2: PASADO (Activo pero pequeño) ---
+    &.active {
+      .icon-circle {
+        background: $primary;
+        border-color: $primary;
+        color: white;
+        transform: scale(1); // Tamaño normal
+      }
+    }
+
+    // --- ESTADO 3: ACTUAL (El Héroe) ---
+    &.current {
+      .icon-circle {
+        transform: scale(1.3); // Círculo MUY grande
+        background: white;     // Fondo blanco para resaltar icono
+        border: 2px solid $primary; // Borde grueso azul
+        color: $primary;       // Icono azul
+        box-shadow: 0 4px 15px rgba($primary, 0.2); // Sombra resplandor
+      }
+      
+      .label {
+        opacity: 1; // Texto visible
+        transform: translateY(0);
+        font-size: 12px;
+        top: 48px; // Ajuste por el tamaño del círculo grande
+        font-weight: bold;
+        color: $primary;
+      }
     }
   }
-  
-  /* Pinta la línea de progreso si el siguiente paso está activo */
-  .step.active .line { background: $primary; }
 
+  // Ocultamos la sección de "Estado actual" textual vieja porque ya se ve en el stepper
   .main-status {
-    text-align: center; border-top: 1px solid #eee; padding-top: 16px;
-    p { margin: 0; font-size: 12px; color: #888; }
-    h2 { margin: 4px 0 0 0; color: $primary; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; }
-    h2.done { color: $success; }
+    margin-top: 25px; // Separación extra
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+    text-align: center;
+    font-size: 16px;
+    color: $primary;
   }
 }
 
