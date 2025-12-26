@@ -1,5 +1,5 @@
 <div class="tracking-container">
-  
+
   <div class="center-msg" *ngIf="loading()">
     <mat-spinner diameter="50"></mat-spinner>
     <p>Buscando tu pedido...</p>
@@ -13,28 +13,27 @@
   </div>
 
   <div class="content" *ngIf="!loading() && pedido()">
-    
+
     <header class="brand-header">
-      <img src="images/logo_letras_blanco.png" alt="Nano Clean" class="logo"> <h1>Hola, {{ pedido().cliente }}</h1>
+      <img src="images/logo_letras_blanco.png" alt="Nano Clean" class="logo">
+      <h1>Hola, {{ pedido().cliente }}</h1>
       <p class="folio">Folio: {{ pedido().folio }}</p>
     </header>
 
     <mat-card class="status-card">
       <div class="stepper">
         <div class="track-line"></div>
-        
-        <div class="step" *ngFor="let s of steps" 
-            [class.active]="isStepActive(s.id)" 
-            [class.current]="isCurrent(s.id)">
-          
+
+        <div class="step" *ngFor="let s of steps" [class.active]="isStepActive(s.id)" [class.current]="isCurrent(s.id)">
+
           <div class="icon-circle">
             <mat-icon>{{ s.icon }}</mat-icon>
           </div>
-          
+
           <span class="label">{{ s.label }}</span>
         </div>
       </div>
-      
+
       <div class="main-status">
         <p>Estado actual:</p>
         <h2 [class.done]="pedido().estado === 'listo'">
@@ -47,7 +46,7 @@
       <mat-card-header><mat-card-title>Detalles</mat-card-title></mat-card-header>
       <mat-card-content>
         <p class="desc">{{ pedido().descripcion }}</p>
-        
+
         <div class="payment-row">
           <span>Total:</span>
           <strong>{{ pedido().total | currency:'MXN' }}</strong>
@@ -76,6 +75,59 @@
         </div>
       </div>
     </div>
+
+    <mat-card class="payment-info-card">
+
+      <p class="instruction-msg">¡También puedes pagar vía transferencia bancaria!</p>
+
+      <mat-card-header class="pay-header">
+        <div class="icon-box">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+        <div class="header-text">
+          <mat-card-title>Datos de Transferencia</mat-card-title>
+          <mat-card-subtitle>Banco NU MEXICO</mat-card-subtitle>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="pay-list">
+
+          <div class="pay-item ripple" (click)="copyToClipboard('01016008413', 'Cuenta')">
+            <div class="info">
+              <span class="label">Cuenta</span>
+              <span class="value">01016008413</span>
+            </div>
+            <button mat-icon-button class="copy-btn">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+
+          <div class="pay-item ripple" (click)="copyToClipboard('638180010160084138', 'CLABE')">
+            <div class="info">
+              <span class="label">CLABE Interbancaria</span>
+              <span class="value">638180010160084138</span>
+            </div>
+            <button mat-icon-button class="copy-btn">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+
+          <div class="pay-item">
+            <div class="info">
+              <span class="label">Beneficiario</span>
+              <span class="value text-wrap">Jair Daniel Santana Feliciano</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="payment-footer">
+          <mat-icon>info</mat-icon>
+          <p>Envía tu comprobante al WhatsApp para validar tu pago.</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
 
     <footer class="footer">
       <p>¿Dudas?</p>

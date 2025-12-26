@@ -8,13 +8,15 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-rastreo',
   standalone: true,
   imports: [
     CommonModule, RouterLink,
-    MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatChipsModule
+    MatCardModule, MatIconModule, MatButtonModule, MatProgressSpinnerModule, MatChipsModule,
+    MatSnackBarModule
   ],
   templateUrl: './rastreo.component.html',
   styleUrls: ['./rastreo.component.scss']
@@ -22,6 +24,7 @@ import { MatChipsModule } from '@angular/material/chips';
 export class RastreoComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiClientService);
+  private snack = inject(MatSnackBar);
 
   loading = signal(true);
   error = signal<string|null>(null);
@@ -66,6 +69,15 @@ export class RastreoComponent implements OnInit {
     const estadosOrdenados = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado'];
     
     return estadosOrdenados.indexOf(stepId) <= estadosOrdenados.indexOf(estadoActual);
+  }
+
+  copyToClipboard(text: string, label: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      this.snack.open(`${label} copiada al portapapeles`, 'OK', { duration: 2000 });
+    }).catch(err => {
+      console.error('Error al copiar', err);
+      this.snack.open('Error al copiar', 'Cerrar');
+    });
   }
 
   isCurrent(stepId: string): boolean {

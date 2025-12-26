@@ -67,6 +67,9 @@ export class PedidoFormComponent implements OnInit {
   // Cliente seleccionado del autocompletado
   selectedCliente = signal<Cliente | null>(null);
 
+  // Para guardar el folio y usarlo en el mensaje
+  currentFolio = signal<string>('');
+
   // Estados del pedido para la UI
   readonly ESTADOS = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado', 'cancelado'];
   
@@ -240,6 +243,9 @@ export class PedidoFormComponent implements OnInit {
       
       if (!p) throw new Error('Pedido no encontrado');
 
+      // Guardamos el folio en la señal
+      this.currentFolio.set(p.folio || '');
+
       // 2. Cargar Evidencias existentes
       const evidencias = await this.api.listEvidencias(id);
       
@@ -278,6 +284,44 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
+// Agregamos el parámetro 'total' al final
+abrirWhatsapp(telefono: string, nombre: string, folio: string, estado: string, total: number) {
+  if (!telefono) return;
+
+  // Formatear estado
+  const estadoLimpio = estado.replace('_', ' ');
+  const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
+  
+  // Formatear dinero
+  const totalFormato = total.toFixed(2);
+
+  // emoji de mano saludando, de agradecimiento, de fiesta, de celebración y otros
+  // \uD83D\uDC4B = 👋
+  // \uD83D\uDE4F = 🙏
+  // \uD83C\uDF89 =💃
+  // \uD83C\uDF89 =🎉
+
+  // NUEVO FORMATO DE MENSAJE
+  const msg = `Hola *${nombre}* \uD83D\uDC4B \uD83D\uDC4B
+
+Tu pedido *${folio}* está: *${estadoFormato}* \uD83C\uDF89
+Total a pagar: *$${totalFormato}*
+
+Podemos entregar a domicilio o puedes pasar a recogerlo en maximo 2 semanas.
+
+Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriormente.
+
+¡Gracias por confiar en nosotros! \uD83D\uDE4F`;
+
+  // Limpiar teléfono
+  let telLimpio = telefono.replace(/\D/g, '');
+  
+  // Generar link
+  const link = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
+  
+  window.open(link, '_blank');
+}
+
 // --- GUARDADO ---
   async save() {
     if (this.form.invalid) {
@@ -290,7 +334,7 @@ export class PedidoFormComponent implements OnInit {
       const v = this.form.getRawValue();
       let clientId = v.cliente_id;
 
-      // 1. Si no hay ID de cliente, creamos uno nuevo
+      // 1. Crear Cliente si no existe
       if (!clientId) {
         const nuevoCliente = await this.api.createCliente({
           nombre: v.cliente_nombre,
@@ -300,10 +344,10 @@ export class PedidoFormComponent implements OnInit {
         clientId = nuevoCliente.id;
       }
 
-      // 2. Preparar payload del pedido
+      // 2. Payload
       const payload: any = {
         cliente_id: clientId,
-        cliente_nombre: v.cliente_nombre,
+        cliente_nombre: v.cliente_nombre, // Importante para el mensaje
         sucursal_id: v.sucursal_id,
         descripcion: v.descripcion,
         monto_total: v.monto_total,
@@ -313,18 +357,18 @@ export class PedidoFormComponent implements OnInit {
       };
 
       let pedidoId = this.pedidoId();
-      let folioGenerado = ''; // Variable auxiliar para el mensaje
+      let folioFinal = this.currentFolio(); // Usamos el que ya teníamos
 
-      // 3. Crear o Actualizar Pedido
+      // 3. Guardar / Actualizar
       if (this.isEdit() && pedidoId) {
         await this.api.updatePedido(pedidoId, payload);
       } else {
         const nuevo = await this.api.createPedido(payload);
         pedidoId = nuevo.id;
-        folioGenerado = nuevo.folio || ''; // Asumiendo que el back devuelve el folio
+        folioFinal = nuevo.folio || ''; // Si es nuevo, tomamos el folio generado
       }
 
-      // 4. Subir Fotos Nuevas
+      // 4. Subir Fotos
       const nuevasFotos = this.fotos().filter(f => f.file);
       if (pedidoId && nuevasFotos.length > 0) {
         const uploads = nuevasFotos.map(f =>
@@ -333,44 +377,64 @@ export class PedidoFormComponent implements OnInit {
         await Promise.all(uploads);
       }
 
-      // --- LOGICA DE COBRO (NUEVO) ---
-      const esEntregado = v.estado === 'entregado';
-      const montoTotal = Number(v.monto_total) || 0;
+      // --- LOGICA DE NOTIFICACIONES Y FLUJO ---
       
-      // Si se entrega y hay deuda, mostramos la opción de ir a Movimientos
+      const esEntregado = v.estado === 'entregado';
+      const esListo = v.estado === 'listo'; // <--- NUEVA CONDICIÓN
+      const montoTotal = Number(v.monto_total) || 0;
+      const nombreCliente = v.cliente_nombre || 'Cliente';
+      const telefonoCliente = v.cliente_telefono || '';
+
+      // CASO 1: ENTREGADO -> Sugerir Ingreso
       if (esEntregado) {
-        
         const snackRef = this.snack.open(
-          `Pedido guardado. ¿Agregar ingreso de $${montoTotal.toFixed(2)}?`,
-          'AGREGAR AHORA',
+          `Pedido guardado. ¿Registrar ingreso de $${montoTotal.toFixed(2)}?`,
+          'REGISTRAR',
           { duration: 8000 }
         );
 
         snackRef.onAction().subscribe(() => {
           this.router.navigate(['/movimientos/nuevo'], {
             queryParams: {
-              monto: montoTotal.toFixed(2), // Ojo: usa la variable numérica, no el objeto completo
-              
-              // AQUÍ ESTÁ EL TRUCO DEL SALTO DE LÍNEA
+              monto: montoTotal.toFixed(2),
               descripcion: payload.descripcion 
-                ? `Entrega: ${v.cliente_nombre} - ${payload.descripcion}` 
-                : `Cliente: ${v.cliente_nombre} - Pedido Folio: ${folioGenerado || pedidoId}`,
-              
+                ? `Entrega: ${nombreCliente} - ${payload.descripcion}` 
+                : `Cliente: ${nombreCliente} - Folio: ${folioFinal}`,
               tipo: 'ingreso',
               cliente_id: clientId
             }
           });
         });
-
-        // Navegamos a la lista de pedidos, pero el SnackBar se queda visible
         this.router.navigateByUrl('/pedidos');
 
+      // CASO 2: LISTO -> Sugerir WhatsApp (NUEVO)
+      } else if (esListo) {
+      const snackRef = this.snack.open(
+        'Pedido marcado como LISTO. ¿Avisar al cliente?', 
+        'ENVIAR WHATSAPP', 
+        { duration: 8000 }
+      );
+
+      snackRef.onAction().subscribe(() => {
+        // AHORA PASAMOS EL 'montoTotal' AL FINAL
+        this.abrirWhatsapp(
+          telefonoCliente, 
+          nombreCliente, 
+          folioFinal, 
+          v.estado || 'listo', 
+          montoTotal // <--- AQUÍ VA EL TOTAL
+        );
+      });
+
+      this.router.navigateByUrl('/pedidos');
+
       } else {
-        // Flujo normal: solo mensaje de éxito
-        const msj = this.isEdit() ? 'Pedido actualizado' : `Pedido generado ${folioGenerado}`;
+        // CASO 3: OTROS ESTADOS
+        const msj = this.isEdit() ? 'Pedido actualizado' : `Pedido generado ${folioFinal}`;
         this.snack.open(msj, 'OK', { duration: 3000 });
         this.router.navigateByUrl('/pedidos');
       }
+
     } catch (e: any) {
       console.error(e);
       this.snack.open('Error: ' + (e.message || 'Ocurrió un problema'), 'Cerrar');
