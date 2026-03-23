@@ -36,10 +36,7 @@ import { Sucursal } from '../../../core/models'; // **Asegúrate de que este mod
 
     <div class="content-container">
 
-    <div *ngIf="loading()">
-        <mat-spinner diameter="30"></mat-spinner>
-        <p>Cargando sucursales...</p>
-    </div>
+
 
     <div *ngIf="!loading() && sucursales().length === 0" class="empty-state">
         <mat-icon>store_mall_directory</mat-icon>

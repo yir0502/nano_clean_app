@@ -36,10 +36,7 @@ import { Categoria } from '../../../core/models';
 
     <div class="content-container">
       
-      <div *ngIf="loading()">
-        <mat-spinner diameter="30"></mat-spinner>
-        <p>Cargando categorías...</p>
-      </div>
+
 
       <div *ngIf="!loading() && categorias().length === 0" class="empty-state">
         <mat-icon>sentiment_dissatisfied</mat-icon>
