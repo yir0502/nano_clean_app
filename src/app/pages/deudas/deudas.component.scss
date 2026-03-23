@@ -1,12 +1,4 @@
-.page-header {
-  margin-bottom: 24px;
-
-  h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 500;
-  }
-}
+/* Utilizando contenedores globales (.page-container, .page-header) */
 
 .kpis {
   display: grid;
@@ -45,19 +37,19 @@
 
     &.negativo {
       background: linear-gradient(135deg, #fff 0%, #fff0f0 100%);
-      border-left: 4px solid #f44336;
+      border-left: 4px solid var(--brand-danger);
 
       .kpi__value {
-        color: #d32f2f;
+        color: var(--brand-danger);
       }
     }
 
     &.kpi--count {
       background: linear-gradient(135deg, #fff 0%, #f0f7ff 100%);
-      border-left: 4px solid #2196f3;
+      border-left: 4px solid var(--brand-primary);
 
       .kpi__value {
-        color: #1976d2;
+        color: var(--brand-primary);
       }
     }
   }
@@ -111,12 +103,14 @@
     ::ng-deep .mat-mdc-list-item-unscoped-content {
       display: contents !important;
     }
+
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
     height: auto !important;
     padding: 12px 65px 12px 10px;
     position: relative;
     overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.2s,
+    box-shadow 0.2s;
     cursor: pointer;
 
     &:hover {
@@ -125,20 +119,17 @@
     }
 
     &.atraso-leve {
-      border-left: 4px solid #ff9800;
-      /* Naranja */
+      border-left: 4px solid #ff9800; // Podríamos usar una variable de warning futura
       background: linear-gradient(90deg, #fffcf5 0%, white 100%);
     }
 
     &.atraso-grave {
-      border-left: 4px solid #f44336;
-      /* Rojo */
+      border-left: 4px solid var(--brand-danger);
       background: linear-gradient(90deg, #fffafa 0%, white 100%);
     }
 
     &.atraso-normal {
-      border-left: 4px solid #4caf50;
-      /* Verde */
+      border-left: 4px solid var(--brand-accent);
       background: linear-gradient(90deg, #f1f8e9 0%, white 100%);
     }
 
@@ -181,10 +172,10 @@
           align-items: center;
           gap: 2px;
           font-size: 11px;
-          background: #e3f2fd;
+          background: var(--brand-primary-alpha-light);
           padding: 2px 8px;
           border-radius: 9999px;
-          color: #1565c0;
+          color: var(--brand-primary);
           font-weight: 500;
 
           mat-icon {
@@ -210,8 +201,8 @@
 
         .badge {
           font-size: 11px;
-          background: #e3f2fd;
-          color: #1976d2;
+          background: var(--brand-primary-alpha-light);
+          color: var(--brand-primary);
           padding: 2px 8px;
           border-radius: 9999px;
           font-weight: 500;
@@ -325,7 +316,7 @@
       }
 
       .btn-wa {
-        background-color: #25D366;
+        background-color: var(--brand-accent);
         clip-path: polygon(0 0, 100% 0, 100% 45%, 0 55%);
         align-items: flex-start;
         padding-top: 15px;
@@ -333,7 +324,7 @@
       }
 
       .btn-pay {
-        background-color: #196aff; // Nano Clean Blue
+        background-color: var(--brand-primary);
         clip-path: polygon(0 55%, 100% 45%, 100% 100%, 0 100%);
         align-items: flex-end;
         padding-bottom: 15px;

@@ -1,6 +1,4 @@
-.clientes-container { padding: 16px; max-width: 1000px; margin: 0 auto; padding-bottom: 80px; }
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; h1 { margin: 0; display: flex; gap: 8px; font-size: 24px; } }
-
+/* Usando .page-container y .page-header globales */
 .search-actions-card { margin-bottom: 16px; }
 .search-content { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .search-field { flex: 1; min-width: 200px; font-size: 14px; }

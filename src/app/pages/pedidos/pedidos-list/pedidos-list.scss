@@ -1,20 +1,4 @@
-.list-container {
-  padding: 0px 12px 140px 12px;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  h2 {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 20px; font-weight: 600; color: #333;
-    mat-icon { font-size: 28px; width: 28px; height: 28px; }
-  }
-}
+/* Usando contenedor global .page-container y .page-header */
 
 .search-bar { width: 100%; }
 

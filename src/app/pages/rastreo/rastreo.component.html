@@ -15,7 +15,7 @@
   <div class="content" *ngIf="!loading() && pedido()">
 
     <header class="brand-header">
-      <img src="images/logo_letras_blanco.png" alt="Nano Clean" class="logo">
+      <div class="logo" role="img" aria-label="Logo principal"></div>
       <h1>Hola, {{ pedido().cliente }}</h1>
       <p class="folio">Folio: {{ pedido().folio }}</p>
     </header>

@@ -28,7 +28,7 @@ import { NgIf, NgFor } from '@angular/common';
                  class="bubbly-drawer">
       
       <div class="drawer-header">
-        <img class="logo-drawer" src="images/logo_letras_blanco.png" alt="Nano Clean" />
+        <div class="logo-drawer" role="img" aria-label="Logo principal"></div>
         <button mat-icon-button (click)="toggleMenu()">
           <mat-icon>close</mat-icon>
         </button>
@@ -54,7 +54,7 @@ import { NgIf, NgFor } from '@angular/common';
     <mat-sidenav-content>
       
       <mat-toolbar *ngIf="!hideChrome()" color="primary" class="bubbly">
-        <img class="logo-toolbar" src="images/logo_letras_blanco.png" alt="Nano Clean" />
+        <div class="logo-toolbar" role="img" aria-label="Logo principal"></div>
         <span class="spacer"></span>
         <button mat-button class="logout-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">
           <mat-icon>logout</mat-icon><span>Salir</span>
@@ -151,17 +151,24 @@ import { NgIf, NgFor } from '@angular/common';
 
     .drawer-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 5px;
-      background: linear-gradient(90deg, rgba(0, 115, 255, 0.8), rgba(0, 89, 255, 0.6));
+      padding: 5px 12px;
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-light));
       color: white;
-      height: 35px;
+      height: 40px;
     }
 
     .drawer-header button {
       color: white;
     }
 
-    .logo-drawer { height: 35px; }
+    .logo-drawer { 
+      height: 35px; 
+      width: 140px; 
+      background-image: var(--brand-logo-url);
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: left center;
+    }
 
     .drawer-list .mat-mdc-list-item {
       border-radius: 0 24px 24px 0;
@@ -178,8 +185,8 @@ import { NgIf, NgFor } from '@angular/common';
     /* Efecto hover y active en los items del menú */
     .drawer-list .mat-mdc-list-item:hover,
     .active-drawer-link {
-        background: rgba(0, 115, 255, 0.15); /* Azul muy claro */
-        color: var(--mat-sys-primary, #3f51b5);
+        background: var(--brand-primary-alpha-light);
+        color: var(--brand-primary);
     }
 
     /* ===== NAV INFERIOR (Con el fix previo) ===== */
@@ -215,11 +222,11 @@ import { NgIf, NgFor } from '@angular/common';
     .fab-main { 
       position: fixed; right: 10px; bottom: 60px; z-index: 11; width: 70px; height: 70px;
       border-radius: 16px; overflow: hidden; box-shadow: 0 6px 12px rgba(0,0,0,.15), 0 2px 4px rgba(0,0,0,.12);
-      background: linear-gradient(90deg, #0073ffff, #0059ff4f); color: black;
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-alpha)); color: black;
     }
     .fab-main::before {
       content: ""; position: absolute; left: -50%; bottom: -60%; width: 200%; height: 200%;
-      background: linear-gradient(90deg, #0073ffff, #0059ff4f); border-radius: 45%;
+      background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-alpha)); border-radius: 45%;
       animation: waveMove 10s infinite ease-in-out;
     }
     .fab-main::after {

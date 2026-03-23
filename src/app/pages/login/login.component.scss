@@ -1,6 +1,6 @@
 /* ===== Variables rápidas (puedes ajustar) ===== */
-$brand: #196aff; // azul principal
-$brand-dk: #1351d1; // azul más oscuro para detalles
+$brand: var(--brand-primary); // azul principal
+$brand-dk: var(--brand-primary-light); // azul más oscuro para detalles
 $radius: 18px;
 
 /* ===== Propiedades tipadas para animar posiciones de burbujas ===== */
@@ -122,8 +122,11 @@ $radius: 18px;
 
     .logo {
         width: clamp(180px, 30vw, 200px);
-        height: auto;
-        object-fit: contain;
+        height: 60px; /* Al ser un div ahora, requiere altura */
+        background-image: var(--brand-logo-url);
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
         pointer-events: none;
         user-select: none;
         filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); // contraste

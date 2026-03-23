@@ -1,6 +1,6 @@
 @use 'sass:color';
-$primary: #196aff; 
-$success: #4caf50;
+$primary: var(--brand-primary); 
+$success: var(--brand-accent);
 
 .tracking-container {
   min-height: 100vh;
@@ -15,12 +15,20 @@ $success: #4caf50;
 }
 
 .brand-header {
-  background: linear-gradient(135deg, $primary, color.mix(black, $primary, 10%));  color: white;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));  color: white;
   padding: 30px 20px 60px 20px;
   text-align: center;
   border-radius: 0 0 24px 24px;
   
-  .logo { margin-bottom: 12px; width: 100px; max-width: 150px; }
+  .logo { 
+    margin: 0 auto 12px auto; 
+    width: 140px; 
+    height: 45px; 
+    background-image: var(--brand-logo-url);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
   h1 { margin: 0; font-size: 22px; font-weight: 500; }
   .folio { opacity: 0.8; font-size: 14px; margin-top: 4px; letter-spacing: 1px; }
 }
@@ -253,5 +261,5 @@ $success: #4caf50;
 .footer {
   text-align: center; padding: 40px 16px;
   p { margin-bottom: 8px; color: #888; font-size: 14px; }
-  .whatsapp-btn { background-color: #25D366; color: white; border-radius: 99px; }
+  .whatsapp-btn { background-color: var(--brand-accent); color: white; border-radius: 99px; }
 }
