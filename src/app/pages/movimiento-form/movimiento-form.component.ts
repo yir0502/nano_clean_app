@@ -65,7 +65,8 @@ export class MovimientoFormComponent implements OnInit {
     sucursal_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }), 
     fecha: this.fb.nonNullable.control<Date | null>(new Date(), { validators: [Validators.required] }),
     metodo_pago: this.fb.nonNullable.control<string | null>('efectivo', { validators: [Validators.required] }),
-    nota: this.fb.nonNullable.control<string>('', { validators: [Validators.maxLength(300)] })
+    nota: this.fb.nonNullable.control<string>('', { validators: [Validators.maxLength(300)] }),
+    pedido_id: this.fb.control<string | null>(null)
   });
 
   titulo = computed(() => this.isEdit() ? 'Editar movimiento' : 'Nuevo movimiento');
@@ -93,24 +94,27 @@ export class MovimientoFormComponent implements OnInit {
           monto: Number(params['monto']),
           nota: params['descripcion'] || '',
           sucursal_id: params['sucursal_id'] || null,
+          pedido_id: params['pedido_id'] || null
         });
 
         // Recargamos categorías por si estaba en 'egreso' por defecto
         this.loadCategorias('ingreso');
         
-        // Opcional: Deshabilitar el monto para que no lo cambien por error
-        // this.form.controls.monto.disable(); 
+        // Bloquear switch de Tipo para no romper semántica contable si proviene de Pedido
+        if (params['pedido_id']) {
+          this.form.controls.tipo.disable();
+        }
       }
     });
 
     // Si edición, cargar datos y parchear
     if (this.isEdit()) {
-      this.loadMovimiento(this.movimientoId()!);
+      await this.loadMovimiento(this.movimientoId()!);
     } else {
       this.loading.set(false);
     }
 
-    // Cargar sucursales
+    // Cargar sucursales de forma asíncrona pero asegurando que termine tras inicializar
     await this.loadSucursales();
     if (!this.isEdit()) {
       this.form.controls.sucursal_id.setValue(this.sucursales.length > 0 ? this.sucursales[0].id : null);
@@ -161,16 +165,22 @@ export class MovimientoFormComponent implements OnInit {
       const found = all.find(m => m.id === id);
       if (!found) throw new Error('No encontrado');
 
-      // Parchea formulario
+      // Revisamos si la ruta traía intención de inyectar montos o notas combinadas (como liquidaciones)
+      const queryPayload = this.route.snapshot.queryParams;
+
+      // Parchea formulario con datos remotos + overrides guiados por URL
       this.form.patchValue({
         tipo: found.tipo as any,
-        monto: Number(found.monto),
+        monto: queryPayload['monto'] ? Number(queryPayload['monto']) : Number(found.monto),
         categoria_id: found.categoria_id || null,
         sucursal_id: found.sucursal_id || null,
+        pedido_id: found.pedido_id || null,
         fecha: found.fecha ? new Date(found.fecha + 'T00:00:00') : new Date(),
         metodo_pago: found.metodo_pago || 'efectivo',
-        nota: found.nota || ''
+        nota: queryPayload['nota'] ? queryPayload['nota'] : (found.nota || '')
       });
+      // Bloquear seguridad contable
+      if (found.pedido_id) this.form.controls.tipo.disable();
     } catch (e) {
       this.snack.open('No se pudo cargar el movimiento', 'OK', { duration: 2500 });
       this.router.navigateByUrl('/movimientos');
@@ -193,7 +203,8 @@ export class MovimientoFormComponent implements OnInit {
       tipo: v.tipo,
       monto: Number(v.monto),
       categoria_id: v.categoria_id,
-      sucursal_id: v.sucursal_id,  
+      sucursal_id: v.sucursal_id,
+      pedido_id: v.pedido_id,
       fecha: fechaISO,             // YYYY-MM-DD
       metodo_pago: v.metodo_pago,
       nota: v.nota?.trim() || '',

@@ -7,6 +7,15 @@ import { AuthService } from './auth.service';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+  
+  // 0. Validar proactivamente antes de enviar nada
+  // Evitas que la app se quede colgada esperando al server si el token ya murió localmente
+  if (auth.token && auth.isTokenExpired()) {
+    auth.logout();
+    router.navigateByUrl('/login');
+    return throwError(() => new Error('Sesión expirada de manera local'));
+  }
+
   const token = auth.token;
 
   // 1. Clonar la petición e inyectar el token si existe

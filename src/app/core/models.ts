@@ -14,6 +14,7 @@ export interface Movimiento {
   tipo: 'ingreso' | 'egreso';
   monto: number;                     
   categoria_id?: string | null;
+  pedido_id?: string | null;
   fecha: string;                     
   nota?: string | null;
   created_at?: string;
@@ -41,6 +42,7 @@ export interface Movimiento {
   monto: number;
   categoria_id?: string | null;
   sucursal_id?: string | null;
+  pedido_id?: string | null;
   fecha: string;
   metodo_pago?: string | null;
   nota?: string | null;

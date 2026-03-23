@@ -11,6 +11,21 @@ export class AuthService {
   get token() { return localStorage.getItem(this.tokenKey) || ''; }
   get orgId() { return localStorage.getItem(this.orgKey) || ''; }
 
+  isTokenExpired(): boolean {
+    const t = this.token;
+    if (!t) return true;
+    try {
+      const payloadBase64 = t.split('.')[1];
+      const decodedJson = atob(payloadBase64);
+      const payload = JSON.parse(decodedJson);
+      if (!payload.exp) return false; 
+      // Si la fecha actual en segundos supera la fecha exp (menos 5s de margen), expiró
+      return (Date.now() / 1000) > (payload.exp - 5);
+    } catch (e) {
+      return true; // Token malformado
+    }
+  }
+
   async login(email: string, password: string) {
     const r = await fetch(`${ENV.API_URL}/auth/login`, {
       method: 'POST',

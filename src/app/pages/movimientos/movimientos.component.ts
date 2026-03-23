@@ -4,6 +4,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
+import { RouterModule } from '@angular/router';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -23,7 +24,7 @@ type TipoFiltro = 'todos' | 'ingreso' | 'egreso';
   selector: 'app-movimientos',
   standalone: true,
   imports: [
-    CommonModule,
+    CommonModule, RouterModule,
     MatCardModule, MatListModule, MatIconModule,
     MatButtonModule, MatButtonToggleModule,
     MatSelectModule, MatFormFieldModule, MatInputModule,
@@ -63,9 +64,6 @@ export class MovimientosComponent implements OnInit {
 
   // Datos
   items = signal<Movimiento[]>([]);
-  hasMore = signal<boolean>(false);
-  pageSize = 25;
-  offset = 0;
 
   // Catálogos
   catsIngreso = signal<Categoria[]>([]);
@@ -159,19 +157,12 @@ export class MovimientosComponent implements OnInit {
   }
 
   async reload(){
-    this.offset = 0;
-    await this.fetchPage(true);
+    await this.fetchPage();
   }
 
-  async loadMore(){
-    if (this.loadingMore() || !this.hasMore()) return;
-    this.offset += this.pageSize;
-    await this.fetchPage(false);
-  }
-
-  private async fetchPage(replace: boolean){
+  private async fetchPage(){
     try{
-      if (replace) this.loading.set(true); else this.loadingMore.set(true);
+      this.loading.set(true);
       const tipoValue = this.tipo();
       const params = {
         desde: this.iso(this.desde()),
@@ -180,17 +171,16 @@ export class MovimientosComponent implements OnInit {
         categoria_id: this.categoriaId() || undefined,
         sucursal_id: this.sucursalId() || undefined,
         metodo_pago: this.metodoPago() || undefined,
-        q: this.q() || undefined,
-        limit: this.pageSize,
-        offset: this.offset
+        q: this.q() || undefined
+        // Eliminamos limit y offset para que el server retorne la verdad absoluta del periodo
       };
+      
       const page = await this.api.listMovimientos(params);
-      this.hasMore.set(page.length === this.pageSize);
-      this.items.set(replace ? page : [...this.items(), ...page]);
+      this.items.set(page);
     }catch(e:any){
       this.error.set(e?.message || 'Error cargando movimientos');
     }finally{
-      this.loading.set(false); this.loadingMore.set(false);
+      this.loading.set(false);
     }
   }
 

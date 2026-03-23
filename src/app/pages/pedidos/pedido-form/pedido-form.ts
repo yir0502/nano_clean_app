@@ -41,7 +41,7 @@ interface FotoPreview {
     MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule,
     MatAutocompleteModule, MatChipsModule,
     A11yModule
-],
+  ],
   templateUrl: './pedido-form.html',
   styleUrls: ['./pedido-form.scss']
 })
@@ -58,12 +58,12 @@ export class PedidoFormComponent implements OnInit {
   saving = signal<boolean>(false);
   isEdit = signal<boolean>(false);
   pedidoId = signal<string | null>(null);
-  
+
   // Datos
   sucursales = signal<Sucursal[]>([]);
   clientesFiltrados = signal<Cliente[]>([]);
   fotos = signal<FotoPreview[]>([]); // Lista de fotos (nuevas y existentes)
-  
+
   // Cliente seleccionado del autocompletado
   selectedCliente = signal<Cliente | null>(null);
 
@@ -72,7 +72,7 @@ export class PedidoFormComponent implements OnInit {
 
   // Estados del pedido para la UI
   readonly ESTADOS = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado', 'cancelado'];
-  
+
   form = this.fb.group({
     // Cliente
     cliente_nombre: ['', Validators.required],
@@ -81,14 +81,14 @@ export class PedidoFormComponent implements OnInit {
 
     // Pedido
     sucursal_id: ['', Validators.required],
-    descripcion: ['', ],
+    descripcion: ['',],
     monto_total: [null as number | null],
     saldo_pendiente: [null as number | null],
     fecha_entrega_estimada: [new Date(), Validators.required],
     estado: ['recibido'],
-    
+
     // Nota global para evidencias nuevas
-    evidencia_nota: [''] 
+    evidencia_nota: ['']
   });
 
   titulo = computed(() => this.isEdit() ? `Editar Pedido` : 'Nuevo Pedido');
@@ -121,18 +121,19 @@ export class PedidoFormComponent implements OnInit {
         // Si encontramos un cliente por teléfono y NO hemos seleccionado uno explícitamente
         if (matches.length > 0 && !this.selectedCliente()) {
           const c = matches[0];
-          this.snack.open(`El cliente ${c.nombre} ya existe con este número.`, 'Usar', { duration: 5000 })
-            .onAction().subscribe(() => this.selectCliente(c));
+          // Autocompletamos instantáneamente en lugar de arrojar una alerta
+          this.selectCliente(c);
+          this.snack.open(`Cliente vinculado con exito`, 'Cerrar', { duration: 3000 });
         }
       });
 
     this.form.get('monto_total')?.valueChanges
-    .pipe(distinctUntilChanged()) // Evita duplicados
-    .subscribe(total => {
-      // Solo actualizamos el saldo si el usuario está escribiendo.
-      // Asignamos el mismo valor del total al saldo automáticamente.
-      this.form.patchValue({ saldo_pendiente: total });
-    });
+      .pipe(distinctUntilChanged()) // Evita duplicados
+      .subscribe(total => {
+        // Solo actualizamos el saldo si el usuario está escribiendo.
+        // Asignamos el mismo valor del total al saldo automáticamente.
+        this.form.patchValue({ saldo_pendiente: total });
+      });
   }
 
   async ngOnInit() {
@@ -142,6 +143,7 @@ export class PedidoFormComponent implements OnInit {
     if (id && id !== 'nuevo') {
       this.isEdit.set(true);
       this.pedidoId.set(id);
+      this.form.controls.saldo_pendiente.disable(); // El motor bidireccional se encargará de esto en edición
       await this.loadPedido(id);
     } else {
       // Default: sucursal 1 y fecha +3 días
@@ -153,7 +155,9 @@ export class PedidoFormComponent implements OnInit {
 
   // --- LOGICA CLIENTES ---
 
-  displayCliente(cliente: Cliente): string {
+  displayCliente(cliente: any): string {
+    // Angular Material le pasará el objeto del evento OptionSelected, o un string si se patchea
+    if (typeof cliente === 'string') return cliente;
     return cliente && cliente.nombre ? cliente.nombre : '';
   }
 
@@ -166,7 +170,7 @@ export class PedidoFormComponent implements OnInit {
     });
     // Bloqueamos edición rápida para no corromper datos del cliente accidentalmente
     // (Si quieren editar cliente, mejor ir a la sección clientes)
-    this.form.controls.cliente_nombre.disable(); 
+    this.form.controls.cliente_nombre.disable();
     this.form.controls.cliente_telefono.disable();
   }
 
@@ -201,19 +205,19 @@ export class PedidoFormComponent implements OnInit {
 
     // CASO A: Es una foto YA guardada en el servidor (tiene ID)
     if (foto.id && this.pedidoId()) {
-      
+
       const confirmacion = confirm('¿Eliminar esta evidencia permanentemente?');
       if (!confirmacion) return;
 
       this.loading.set(true); // Bloqueamos un poco la UI para evitar doble click
       try {
         await this.api.deleteEvidencia(this.pedidoId()!, foto.id);
-        
+
         this.snack.open('Evidencia eliminada', 'OK', { duration: 2000 });
-        
+
         // Actualizamos la lista visualmente quitando el elemento
         this.fotos.update(prev => prev.filter((_, i) => i !== index));
-        
+
       } catch (e: any) {
         this.snack.open('Error al eliminar evidencia', 'Cerrar');
       } finally {
@@ -230,7 +234,7 @@ export class PedidoFormComponent implements OnInit {
   // --- CARGA DE DATOS ---
 
   async loadSucursales() {
-    try { this.sucursales.set(await this.api.listSucursales({ activo: 1 })); } catch {}
+    try { this.sucursales.set(await this.api.listSucursales({ activo: 1 })); } catch { }
   }
 
   async loadPedido(id: string) {
@@ -238,9 +242,9 @@ export class PedidoFormComponent implements OnInit {
     try {
       // 1. Cargar Pedido
       // (Usamos listPedidos porque no tenemos getById, idealmente crear getPedido(id))
-      const lista = await this.api.listPedidos({ limit: 1000, q: '' }); 
+      const lista = await this.api.listPedidos({ limit: 1000, q: '' });
       const p = lista.find(x => x.id === id);
-      
+
       if (!p) throw new Error('Pedido no encontrado');
 
       // Guardamos el folio en la señal
@@ -248,7 +252,7 @@ export class PedidoFormComponent implements OnInit {
 
       // 2. Cargar Evidencias existentes
       const evidencias = await this.api.listEvidencias(id);
-      
+
       // 3. Patch Formulario
       this.form.patchValue({
         cliente_nombre: p.cliente_nombre,
@@ -284,25 +288,25 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-// Agregamos el parámetro 'total' al final
-abrirWhatsapp(telefono: string, nombre: string, folio: string, estado: string, total: number) {
-  if (!telefono) return;
+  // Agregamos el parámetro 'total' al final
+  abrirWhatsapp(telefono: string, nombre: string, folio: string, estado: string, total: number) {
+    if (!telefono) return;
 
-  // Formatear estado
-  const estadoLimpio = estado.replace('_', ' ');
-  const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
-  
-  // Formatear dinero
-  const totalFormato = total.toFixed(2);
+    // Formatear estado
+    const estadoLimpio = estado.replace('_', ' ');
+    const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
 
-  // emoji de mano saludando, de agradecimiento, de fiesta, de celebración y otros
-  // \uD83D\uDC4B = 👋
-  // \uD83D\uDE4F = 🙏
-  // \uD83C\uDF89 =💃
-  // \uD83C\uDF89 =🎉
+    // Formatear dinero
+    const totalFormato = total.toFixed(2);
 
-  // NUEVO FORMATO DE MENSAJE
-  const msg = `Hola *${nombre}* \uD83D\uDC4B \uD83D\uDC4B
+    // emoji de mano saludando, de agradecimiento, de fiesta, de celebración y otros
+    // \uD83D\uDC4B = 👋
+    // \uD83D\uDE4F = 🙏
+    // \uD83C\uDF89 =💃
+    // \uD83C\uDF89 =🎉
+
+    // NUEVO FORMATO DE MENSAJE
+    const msg = `Hola *${nombre}* \uD83D\uDC4B \uD83D\uDC4B
 
 Tu pedido *${folio}* está: *${estadoFormato}* \uD83C\uDF89
 Total a pagar: *$${totalFormato}*
@@ -313,16 +317,16 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
 
 ¡Gracias por confiar en nosotros! \uD83D\uDE4F`;
 
-  // Limpiar teléfono
-  let telLimpio = telefono.replace(/\D/g, '');
-  
-  // Generar link
-  const link = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
-  
-  window.open(link, '_blank');
-}
+    // Limpiar teléfono
+    let telLimpio = telefono.replace(/\D/g, '');
 
-// --- GUARDADO ---
+    // Generar link
+    const link = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
+
+    window.open(link, '_blank');
+  }
+
+  // --- GUARDADO ---
   async save() {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -378,17 +382,61 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
       }
 
       // --- LOGICA DE NOTIFICACIONES Y FLUJO ---
-      
+
       const esEntregado = v.estado === 'entregado';
-      const esListo = v.estado === 'listo'; // <--- NUEVA CONDICIÓN
+      const esListo = v.estado === 'listo';
       const montoTotal = Number(v.monto_total) || 0;
+      const saldoPend = Number(v.saldo_pendiente) || 0;
+      const anticipo = montoTotal - saldoPend;
       const nombreCliente = v.cliente_nombre || 'Cliente';
       const telefonoCliente = v.cliente_telefono || '';
+      const todayShort = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+      const detalleStr = payload.descripcion ? `(${payload.descripcion})` : `(Folio: ${folioFinal})`;
 
-      // CASO 1: ENTREGADO -> Sugerir Ingreso
-      if (esEntregado) {
+      // CASO 1: ENTREGADO -> Sugerir cobro de liquidación solo si hay saldo pendiente
+      if (esEntregado && saldoPend > 0) {
         const snackRef = this.snack.open(
-          `Pedido guardado. ¿Registrar ingreso de $${montoTotal.toFixed(2)}?`,
+          `Pedido entregado. ¿Registrar liquidación de $${saldoPend.toFixed(2)}?`,
+          'REGISTRAR',
+          { duration: 8000 }
+        );
+
+        snackRef.onAction().subscribe(async () => {
+          // Buscamos dinámicamente si ya hay un movimiento (anticipo previo)
+          const movs = await this.api.listMovimientos({ pedido_id: pedidoId });
+          if (movs && movs.length > 0) {
+            // Editar movimiento existente (agregando monto y juntando las notas)
+            const targetMov = movs[0];
+            const oldNota = targetMov.nota ? targetMov.nota : `Pedido ${nombreCliente} ${detalleStr}`;
+            const nuevaNota = `${oldNota} | Liquidacion: $${saldoPend.toFixed(2)} (${todayShort})`;
+            const globalTotal = Number(targetMov.monto) + saldoPend;
+
+            this.router.navigate(['/movimientos', targetMov.id], {
+              queryParams: {
+                monto: globalTotal.toFixed(2),
+                nota: nuevaNota
+              }
+            });
+          } else {
+            // Nuevo movimiento independiente si no había anticipo
+            this.router.navigate(['/movimientos/nuevo'], {
+              queryParams: {
+                monto: saldoPend.toFixed(2),
+                descripcion: `Pedido ${nombreCliente} ${detalleStr}. Liquidacion: $${saldoPend.toFixed(2)} (${todayShort})`,
+                tipo: 'ingreso',
+                cliente_id: clientId,
+                pedido_id: pedidoId,
+                sucursal_id: v.sucursal_id || undefined
+              }
+            });
+          }
+        });
+        this.router.navigateByUrl('/pedidos');
+
+      // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Sugerir registro manual de anticipo
+      } else if (!this.isEdit() && anticipo > 0) {
+        const snackRef = this.snack.open(
+          `Pedido guardado con abono. ¿Registrar ingreso de $${anticipo.toFixed(2)}?`,
           'REGISTRAR',
           { duration: 8000 }
         );
@@ -396,40 +444,38 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
         snackRef.onAction().subscribe(() => {
           this.router.navigate(['/movimientos/nuevo'], {
             queryParams: {
-              monto: montoTotal.toFixed(2),
-              descripcion: payload.descripcion 
-                ? `Entrega: ${nombreCliente} - ${payload.descripcion}` 
-                : `Cliente: ${nombreCliente} - Folio: ${folioFinal}`,
+              monto: anticipo.toFixed(2),
+              descripcion: `Pedido ${nombreCliente} ${detalleStr}. Anticipo: $${anticipo.toFixed(2)} (${todayShort})`,
               tipo: 'ingreso',
-              cliente_id: clientId
+              cliente_id: clientId,
+              pedido_id: pedidoId,
+              sucursal_id: v.sucursal_id || undefined
             }
           });
         });
         this.router.navigateByUrl('/pedidos');
 
-      // CASO 2: LISTO -> Sugerir WhatsApp (NUEVO)
+      // CASO 3: LISTO -> Sugerir WhatsApp
       } else if (esListo) {
-      const snackRef = this.snack.open(
-        'Pedido marcado como LISTO. ¿Avisar al cliente?', 
-        'ENVIAR WHATSAPP', 
-        { duration: 8000 }
-      );
-
-      snackRef.onAction().subscribe(() => {
-        // AHORA PASAMOS EL 'montoTotal' AL FINAL
-        this.abrirWhatsapp(
-          telefonoCliente, 
-          nombreCliente, 
-          folioFinal, 
-          v.estado || 'listo', 
-          montoTotal // <--- AQUÍ VA EL TOTAL
+        const snackRef = this.snack.open(
+          'Pedido marcado como LISTO. ¿Avisar al cliente?',
+          'ENVIAR WHATSAPP',
+          { duration: 8000 }
         );
-      });
 
-      this.router.navigateByUrl('/pedidos');
+        snackRef.onAction().subscribe(() => {
+          this.abrirWhatsapp(
+            telefonoCliente,
+            nombreCliente,
+            folioFinal,
+            v.estado || 'listo',
+            montoTotal
+          );
+        });
+        this.router.navigateByUrl('/pedidos');
 
       } else {
-        // CASO 3: OTROS ESTADOS
+        // CASO 4: OTROS ESTADOS
         const msj = this.isEdit() ? 'Pedido actualizado' : `Pedido generado ${folioFinal}`;
         this.snack.open(msj, 'OK', { duration: 3000 });
         this.router.navigateByUrl('/pedidos');
@@ -442,7 +488,7 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
       this.saving.set(false);
     }
   }
-  
+
   // Helper para estado visual
   setStatus(estado: string) {
     this.form.patchValue({ estado });

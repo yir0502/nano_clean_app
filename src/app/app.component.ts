@@ -9,6 +9,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatButtonModule } from '@angular/material/button';
 import { SharedModule } from './shared/shared.module';
+import { LoaderComponent } from './shared/components/loader.component';
 import { NgIf, NgFor } from '@angular/common';
 
 @Component({
@@ -16,7 +17,7 @@ import { NgIf, NgFor } from '@angular/common';
   standalone: true,
   imports: [
     RouterOutlet, RouterLink, RouterLinkActive, SharedModule, NgIf, NgFor,
-    MatSidenavModule, MatListModule, MatButtonModule
+    MatSidenavModule, MatListModule, MatButtonModule, LoaderComponent
   ],
   template: `
   <mat-sidenav-container class="app-container" autosize>
@@ -113,6 +114,9 @@ import { NgIf, NgFor } from '@angular/common';
 
     </mat-sidenav-content>
   </mat-sidenav-container>
+
+  <!-- Loader Global Overlay (Fuera del contenedor material para evitar bloqueos de z-index y transforms) -->
+  <app-loader />
 `,
   styles: [`
     :root { --nav-h: 64px; }

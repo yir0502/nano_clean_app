@@ -91,6 +91,11 @@ mat-list-item mat-icon.egreso{ color: #b91c1c; }
 
 .more{ display: flex; justify-content: center; padding: 8px; }
 
+.action-buttons {
+  display: flex;
+  align-items: center;
+}
+
 .loading{
   display:flex; gap:8px; align-items:center; justify-content:center;
   min-height: 140px; opacity: .8;

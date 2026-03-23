@@ -108,24 +108,27 @@
           {{ ((m.tipo==='egreso' ? -1 : 1) * (+m.monto || 0)) | currency:'MXN':'symbol-narrow':'1.0-0' }}
         </div>
 
-        <button
-          mat-icon-button
-          matListItemMeta
-          color="warn"
-          matTooltip="Eliminar"
-          (click)="onDelete(m, $event)">
-          <mat-icon>delete</mat-icon>
-        </button>
+        <div matListItemMeta class="action-buttons">
+          <button
+            mat-icon-button
+            color="primary"
+            matTooltip="Editar"
+            [routerLink]="['/movimientos', m.id]"
+            (click)="$event.stopPropagation()">
+            <mat-icon>edit</mat-icon>
+          </button>
+
+          <button
+            mat-icon-button
+            color="warn"
+            matTooltip="Eliminar"
+            (click)="onDelete(m, $event)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
 
       </mat-list-item>
     </mat-list>
-
-    <div class="more">
-      <button mat-stroked-button *ngIf="hasMore()" (click)="loadMore()" [disabled]="loadingMore()">
-        <mat-spinner *ngIf="loadingMore()" [diameter]="18"></mat-spinner>
-        <span *ngIf="!loadingMore()">Cargar más</span>
-      </button>
-    </div>
   </section>
 
   <!-- Loading inicial -->

@@ -1,0 +1,50 @@
+
+> nano-clean-app@0.0.0 build
+> ng build
+
+[33m❯[39m Building...
+[32m✔[39m Building...
+[1mInitial chunk files[22m  [2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-NGVMIEDV.js[39m    [2m | [22m[2m-[22m                           [2m | [22m[36m399.86 kB[39m[2m | [22m               [36m96.50 kB[39m
+[32mchunk-44OPMLFA.js[39m    [2m | [22m[2m-[22m                           [2m | [22m[36m220.81 kB[39m[2m | [22m               [36m66.29 kB[39m
+[32mmain-2N2WUOSD.js[39m     [2m | [22m[2mmain[22m                        [2m | [22m[36m115.40 kB[39m[2m | [22m               [36m28.34 kB[39m
+[32mchunk-XURH5XI2.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m79.26 kB[39m[2m | [22m               [36m19.65 kB[39m
+[32mchunk-KGOVQABU.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m67.87 kB[39m[2m | [22m               [36m15.66 kB[39m
+[32mchunk-UTYXUNH4.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m58.07 kB[39m[2m | [22m                [36m9.69 kB[39m
+[32mchunk-634MNSHU.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m34.61 kB[39m[2m | [22m                [36m8.56 kB[39m
+[32mpolyfills-B6TNHZQ6.js[39m[2m | [22m[2mpolyfills[22m                   [2m | [22m [36m34.58 kB[39m[2m | [22m               [36m11.32 kB[39m
+[32mchunk-TPCGNPZZ.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m27.24 kB[39m[2m | [22m                [36m4.39 kB[39m
+[32mchunk-7RGO5E5T.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m22.16 kB[39m[2m | [22m                [36m4.55 kB[39m
+[32mchunk-ELS2SPAA.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m10.11 kB[39m[2m | [22m                [36m2.84 kB[39m
+[32mstyles-XOGRHHTC.css[39m  [2m | [22m[2mstyles[22m                      [2m | [22m  [36m9.50 kB[39m[2m | [22m                [36m1.83 kB[39m
+[32mchunk-SU34IUFM.js[39m    [2m | [22m[2m-[22m                           [2m | [22m  [36m6.75 kB[39m[2m | [22m                [36m1.47 kB[39m
+[32mchunk-7WXVDHZH.js[39m    [2m | [22m[2m-[22m                           [2m | [22m  [36m6.60 kB[39m[2m | [22m                [36m1.54 kB[39m
+[32mchunk-OFPYG64I.js[39m    [2m | [22m[2m-[22m                           [2m | [22m  [36m3.53 kB[39m[2m | [22m                [36m1.03 kB[39m
+[32mchunk-XADRH2IM.js[39m    [2m | [22m[2m-[22m                           [2m | [22m  [36m1.42 kB[39m[2m | [22m              [36m520 bytes[39m
+[32mchunk-BEY3WAZQ.js[39m    [2m | [22m[2m-[22m                           [2m | [22m[36m606 bytes[39m[2m | [22m              [36m606 bytes[39m
+[32mchunk-JLFOLJV7.js[39m    [2m | [22m[2m-[22m                           [2m | [22m[36m216 bytes[39m[2m | [22m              [36m216 bytes[39m
+
+[1m [22m                    [2m | [22m[1mInitial total[22m               [2m | [22m  [1m[93m1.10 MB[39m[22m[2m | [22m              [1m275.01 kB[22m
+
+[1mLazy chunk files[22m     [2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-PRDLVEBD.js[39m    [2m | [22m[2m-[22m                           [2m | [22m[36m114.93 kB[39m[2m | [22m               [36m20.88 kB[39m
+[32mchunk-SC4S4JKS.js[39m    [2m | [22m[2mclientes-component[22m          [2m | [22m [36m86.28 kB[39m[2m | [22m               [36m20.45 kB[39m
+[32mchunk-B7TF6UV5.js[39m    [2m | [22m[2mpedidos-list[22m                [2m | [22m [36m55.74 kB[39m[2m | [22m               [36m12.30 kB[39m
+[32mchunk-VZBIVPWL.js[39m    [2m | [22m[2mpedido-form[22m                 [2m | [22m [36m40.08 kB[39m[2m | [22m               [36m11.10 kB[39m
+[32mchunk-6FABYTF5.js[39m    [2m | [22m[2m-[22m                           [2m | [22m [36m23.33 kB[39m[2m | [22m                [36m4.05 kB[39m
+[32mchunk-PG3DSQYB.js[39m    [2m | [22m[2mresumen-component[22m           [2m | [22m [36m19.55 kB[39m[2m | [22m                [36m5.64 kB[39m
+[32mchunk-KSGFTYWF.js[39m    [2m | [22m[2mcategorias-component[22m        [2m | [22m [36m19.12 kB[39m[2m | [22m                [36m5.39 kB[39m
+[32mchunk-TUURZZT6.js[39m    [2m | [22m[2mrastreo-component[22m           [2m | [22m [36m15.03 kB[39m[2m | [22m                [36m4.12 kB[39m
+[32mchunk-JWLAODHU.js[39m    [2m | [22m[2mmovimientos-component[22m       [2m | [22m [36m14.95 kB[39m[2m | [22m                [36m4.35 kB[39m
+[32mchunk-FPYLVYFG.js[39m    [2m | [22m[2mmovimiento-form-component[22m   [2m | [22m [36m13.87 kB[39m[2m | [22m                [36m4.32 kB[39m
+[32mchunk-4JKGBNDV.js[39m    [2m | [22m[2mlogin-component[22m             [2m | [22m [36m11.69 kB[39m[2m | [22m                [36m3.24 kB[39m
+[32mchunk-HGJP4PKN.js[39m    [2m | [22m[2m-[22m                           [2m | [22m  [36m9.18 kB[39m[2m | [22m                [36m2.24 kB[39m
+[32mchunk-PBJI3EME.js[39m    [2m | [22m[2mcategorias-nuevo-component[22m  [2m | [22m  [36m5.04 kB[39m[2m | [22m                [36m1.84 kB[39m
+[32mchunk-U2W6YL3C.js[39m    [2m | [22m[2mcategorias-listado-component[22m[2m | [22m  [36m4.69 kB[39m[2m | [22m                [36m1.79 kB[39m
+[32mchunk-2I7SJZZA.js[39m    [2m | [22m[2msucursales-listado-component[22m[2m | [22m  [36m4.41 kB[39m[2m | [22m                [36m1.71 kB[39m
+[2m...and 5 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [14.273 seconds]
+
+Output location: C:\Users\dani6\Desktop\apps_negocios\nano_clean_full_app\front\dist\nano_clean_app
+
