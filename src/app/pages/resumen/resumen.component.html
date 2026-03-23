@@ -59,6 +59,10 @@
       <div class="kpi__label">Balance</div>
       <div class="kpi__value">{{ balanceMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
     </article>
+    <article class="kpi kpi--warning">
+      <div class="kpi__label" style="color: #ed6c02; font-weight: 500;">Cartera Vencida (Al Día)</div>
+      <div class="kpi__value" style="color: #d32f2f;">{{ deudaTotal | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+    </article>
   </section>
 
   <!-- Charts -->
@@ -78,6 +82,13 @@
       <div class="chart">
         <canvas baseChart [data]="lineData" [options]="lineOptions" [type]="mainChartType">
         </canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="card card--doughnut">
+      <mat-card-title>Gravedad de Cartera Adeudada</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="deudasDoughnutData" [options]="deudasOptions" type="doughnut"></canvas>
       </div>
     </mat-card>
 

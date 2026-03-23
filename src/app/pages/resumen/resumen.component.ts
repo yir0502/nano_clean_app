@@ -48,6 +48,7 @@ export class ResumenComponent implements OnInit {
   ingresosMes = 0;
   egresosMes = 0;
   balanceMes = 0;
+  deudaTotal = 0; // NUEVO KPI
 
   // Rango de la 1ª gráfica
   range: '3m' | '6m' | '12m' = '3m';
@@ -87,6 +88,14 @@ export class ResumenComponent implements OnInit {
     plugins: { legend: { display: true, position: 'bottom' } },
     scales: { y: { beginAtZero: true } },
     datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9, maxBarThickness: 36 } }
+  };
+
+  // 3) NUEVO: Cartera Vencida (Pastel/Doughnut)
+  deudasDoughnutData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  deudasOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'right' } }
   };
 
   // Recientes
@@ -153,7 +162,10 @@ export class ResumenComponent implements OnInit {
       this.error = undefined;
 
       // 1. Preparar carga de Pedidos Activos
-      const pPedidos = this.api.listPedidos({activo: true,limit: 4});
+      const pPedidos = this.api.listPedidos({activo: true, limit: 4});
+
+      // 1.5 Preparar carga de Deudas Globales
+      const pDeudas = this.api.listPedidos({deuda: true});
 
       // 2. Preparar carga del Dashboard (Tu lógica actual)
       const { desde, hasta } = this.rangeDates(this.range);
@@ -161,9 +173,7 @@ export class ResumenComponent implements OnInit {
       const pDash = this.dash.get({ desde, hasta, org_id, include: 'mes,recientes', limit_recientes: 10 });
 
       // 3. Ejecutar ambas peticiones en paralelo (esperar a las dos)
-      // 'pedidos' recibirá el resultado de pPedidos
-      // 'resp' recibirá el resultado de pDash (DashboardUIResponse)
-      const [pedidos, resp] = await Promise.all([pPedidos, pDash]);
+      const [pedidos, deudas, resp] = await Promise.all([pPedidos, pDeudas, pDash]);
 
       // 4. Asignar los pedidos a la variable que usa el HTML
       this.pedidosActivos = pedidos;
@@ -177,6 +187,40 @@ export class ResumenComponent implements OnInit {
       this.ingresosMes = this.toNumber(k.ingresos);
       this.egresosMes = this.toNumber(k.egresos);
       this.balanceMes = this.toNumber(k.balance);
+
+      // KPI Deuda
+      this.deudaTotal = deudas.reduce((acc, p) => acc + this.toNumber(p.saldo_pendiente), 0);
+
+      // Grafica Doughnut de Deudas
+      let leves = 0, graves = 0, dia = 0;
+      const now = new Date();
+      now.setHours(0,0,0,0);
+      deudas.forEach(p => {
+        let level = 'normal';
+        if (p.fecha_entrega_estimada) {
+           const parts = p.fecha_entrega_estimada.split('-');
+           if (parts.length === 3) {
+             const pDate = new Date(Number(parts[0]), Number(parts[1])-1, Number(parts[2]));
+             pDate.setHours(0,0,0,0);
+             if (now > pDate) {
+               const diff = Math.ceil(Math.abs(now.getTime() - pDate.getTime()) / (1000 * 60 * 60 * 24));
+               level = diff <= 7 ? 'leve' : 'grave';
+             }
+           }
+        }
+        if (level === 'grave') graves++;
+        else if (level === 'leve') leves++;
+        else dia++;
+      });
+      
+      this.deudasDoughnutData = {
+        labels: ['Día a Día', 'Atraso Leve', 'Riesgo Crítico'],
+        datasets: [{
+          data: [dia, leves, graves],
+          backgroundColor: ['#4caf50', '#ff9800', '#f44336'],
+          hoverOffset: 4
+        }]
+      };
 
       // Barras por categoría (MES)
       const eg = resp.por_categoria_mes?.egreso ?? [];

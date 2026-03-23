@@ -77,6 +77,10 @@ import { NgIf, NgFor } from '@angular/common';
           <mat-icon>list_alt</mat-icon><span>Movimientos</span>
           <i class="indicator"></i>
         </a>
+        <a mat-button routerLink="/deudas" routerLinkActive="active">
+          <mat-icon>request_quote</mat-icon><span>Deudas</span>
+          <i class="indicator"></i>
+        </a>
         <a mat-button routerLink="/categorias" routerLinkActive="active">
           <mat-icon>attach_money</mat-icon><span>Análisis</span>
           <i class="indicator"></i>
@@ -181,7 +185,7 @@ import { NgIf, NgFor } from '@angular/common';
     /* ===== NAV INFERIOR (Con el fix previo) ===== */
     .mobile-nav{
       position: fixed; left:0; right:0; bottom:0; height:var(--nav-h);
-      display:grid; grid-template-columns: 0.3fr 1fr 1fr 1fr; 
+      display:grid; grid-template-columns: 0.3fr 1fr 1fr 1fr 1fr; 
       align-items:center; gap: 4px;
       background: rgba(255, 255, 255, 0.23);
       backdrop-filter: saturate(150%) blur(20px);
@@ -277,6 +281,7 @@ export class AppComponent {
     { path: '/administracion', icon: 'category', label: 'Administración' },
     { path: '/clientes', icon: 'group', label: 'Clientes' },
     { path: '/pedidos', icon: 'work', label: 'Pedidos' },
+    { path: '/deudas', icon: 'request_quote', label: 'Deudas' },
     { path: '/inventario', icon: 'inventory', label: 'Inventario' },
     { path: '/pedidos_proveedores', icon: 'local_shipping', label: 'Pedidos Proveedores' },
     // Agrega más opciones aquí

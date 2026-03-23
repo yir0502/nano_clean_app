@@ -64,6 +64,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/clientes/clientes.component').then(m => m.ClientesComponent)
   },
 
+  {
+    path: 'deudas',
+    canMatch: [authGuard],
+    loadComponent: () => import('./pages/deudas/deudas.component').then(m => m.DeudasComponent)
+  },
+
   { 
     path: 'pedidos',
     canMatch: [authGuard],

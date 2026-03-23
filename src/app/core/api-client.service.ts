@@ -143,6 +143,7 @@ export class ApiClientService {
     limit?: number;
     offset?: number;
     org_id?: string;
+    deuda?: boolean;
   }): Promise<Pedido[]> {
     const p = { org_id: this.auth.orgId, ...params };
     return this.get<Pedido[]>('/pedidos', p);

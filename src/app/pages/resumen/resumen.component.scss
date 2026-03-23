@@ -162,8 +162,10 @@ $res-gap: 12px;
   }
 
   .kpi--balance {
-    grid-column: 1 / -1;
     background: #f5faff;
+  }
+  .kpi--warning {
+    background: #fffcf5;
   }
 }
 
@@ -187,7 +189,7 @@ $res-gap: 12px;
 
 /* Desktop */
 @media (min-width: 900px) {
-  .kpis { grid-template-columns: repeat(3, 1fr); }
+  .kpis { grid-template-columns: repeat(4, 1fr); }
   .charts { grid-template-columns: 2fr 1fr; }
   .card--line .chart { height: 320px; }
   .card--doughnut .chart { height: 320px; }
