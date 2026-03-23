@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
 // Material
@@ -12,6 +12,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { NgChartsModule } from 'ng2-charts';
 import { ChartConfiguration } from 'chart.js';
 
@@ -25,13 +26,16 @@ import { Pedido } from '../../core/models';
     CommonModule, RouterModule, FormsModule,
     MatCardModule, MatButtonModule, MatIconModule,
     MatFormFieldModule, MatInputModule, MatProgressSpinnerModule,
-    MatListModule, MatTooltipModule, NgChartsModule
+    MatListModule, MatTooltipModule, NgChartsModule,
+    MatSnackBarModule
   ],
   templateUrl: './deudas.component.html',
   styleUrls: ['./deudas.component.scss']
 })
 export class DeudasComponent implements OnInit {
   private api = inject(ApiClientService);
+  private router = inject(Router);
+  private snack = inject(MatSnackBar);
   protected readonly Number = Number;
 
   loading = signal<boolean>(true);
@@ -155,6 +159,51 @@ export class DeudasComponent implements OnInit {
     
     let telLimpio = p.cliente_telefono.replace(/\D/g, '');
     window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  async liquidarDeuda(p: Pedido, event: Event) {
+    event.stopPropagation();
+    const saldo = Number(p.saldo_pendiente || 0);
+    if (saldo <= 0) return;
+
+    if (!confirm(`¿Estás seguro de liquidar la deuda de $${saldo.toFixed(2)} de ${p.cliente_nombre}?`)) {
+      return;
+    }
+
+    this.loading.set(true);
+    try {
+      // 1. Verificar si tiene un movimiento asignado previamente
+      const movs = await this.api.listMovimientos({ pedido_id: p.id });
+      
+      if (movs && movs.length > 0) {
+        // Escenario A: Redirigir a edición de movimiento
+        const targetMov = movs[0];
+        const todayShort = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+        
+        const oldNota = targetMov.nota ? targetMov.nota : `Pedido ${p.cliente_nombre || 'Cliente'}`;
+        const nuevaNota = `${oldNota} | Liquidacion: $${saldo.toFixed(2)} (${todayShort})`;
+        const globalTotal = Number(targetMov.monto) + saldo;
+
+        this.snack.open('Visualizando movimiento previo para agregar liquidación...', 'OK', { duration: 3000 });
+        
+        this.router.navigate(['/movimientos', targetMov.id], {
+          queryParams: {
+            monto: globalTotal.toFixed(2),
+            nota: nuevaNota
+          }
+        });
+        // Si se redirige, no ocultamos el spinner para evitar un parpadeo
+      } else {
+        // Escenario B: Cerrar deuda en cero directamente
+        await this.api.updatePedido(p.id, { saldo_pendiente: 0 });
+        this.snack.open(`Deuda de ${p.cliente_nombre} liquidada a $0`, 'OK', { duration: 3000 });
+        await this.load(); // Esto quita el loading internamente
+      }
+    } catch (e: any) {
+      console.error(e);
+      this.snack.open('Error: ' + (e.message || 'Ocurrió un problema'), 'Cerrar');
+      this.loading.set(false);
+    }
   }
 
   // Calcula la severidad del atraso

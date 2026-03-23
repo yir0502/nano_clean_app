@@ -1,118 +1,120 @@
 <div class="deudas-page">
 
-<div class="page-header">
-  <h2>Control de Deudas</h2>
-  <p class="subtitle">Supervisa e identifica la cartera vencida de la lavandería.</p>
-</div>
-
-<div class="kpis">
-  <mat-card class="kpi kpi--balance negativo">
-    <div class="kpi__label">Deuda Total Recuperable</div>
-    <div class="kpi__value">{{ totalDeuda() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
-    <mat-icon class="kpi-icon">account_balance_wallet</mat-icon>
-  </mat-card>
-
-  <mat-card class="kpi kpi--count">
-    <div class="kpi__label">Clientes Morosos</div>
-    <div class="kpi__value">{{ totalClientes() }}</div>
-    <mat-icon class="kpi-icon">group_remove</mat-icon>
-  </mat-card>
-</div>
-
-<!-- Gráficas Financieras -->
-<section class="charts" *ngIf="!loading() && pedidos().length > 0">
-  <mat-card class="card card--doughnut">
-    <mat-card-title>Gravedad de la Cartera</mat-card-title>
-    <div class="chart">
-      <canvas baseChart [data]="doughnutData" [options]="chartOptions" type="doughnut"></canvas>
-    </div>
-  </mat-card>
-
-  <mat-card class="card card--bar">
-    <mat-card-title>Principales Deudores</mat-card-title>
-    <div class="chart">
-       <canvas baseChart [data]="barData" [options]="chartOptions" type="bar"></canvas>
-    </div>
-  </mat-card>
-
-  <mat-card class="card card--bar">
-    <mat-card-title>Deudas por Sucursal</mat-card-title>
-    <div class="chart">
-       <canvas baseChart [data]="sucursalBarData" [options]="chartOptions" type="bar"></canvas>
-    </div>
-  </mat-card>
-</section>
-
-<!-- Filtros -->
-<div class="filters">
-  <div class="search-box">
-    <mat-icon class="search-icon">search</mat-icon>
-    <input type="text" placeholder="Buscar por cliente o folio..." 
-           [ngModel]="q()" (ngModelChange)="onSearch($event)" />
-  </div>
-</div>
-
-<div *ngIf="loading()" class="loading">
-  <mat-spinner diameter="40"></mat-spinner>
-</div>
-
-<!-- Listado de Deudores -->
-<div *ngIf="!loading()" class="list">
-  
-  <div *ngIf="pedidos().length === 0" class="empty">
-    <mat-icon style="font-size: 48px; width: 48px; height: 48px; opacity: 0.5; margin-bottom: 12px; color: #0073ff;">sentiment_satisfied_alt</mat-icon>
-    <p>¡Excelente! No hay clientes con deudas pendientes.</p>
+  <div class="page-header">
+    <h2>Control de Deudas</h2>
+    <p class="subtitle">Supervisa e identifica la cartera vencida de la lavandería.</p>
   </div>
 
-  <mat-list *ngIf="pedidos().length > 0">
-    <mat-list-item *ngFor="let p of pedidos()" [routerLink]="['/pedidos', p.id]" class="pedido-item" [ngClass]="'atraso-' + getNivelAtraso(p.fecha_entrega_estimada)">
-      
-      <div matListItemTitle class="pedido-title">
-        <span class="cliente">{{ p.cliente_nombre }}</span>
-        <div class="badges-top">
-          <span class="folio">{{ p.folio }}</span>
-          <span class="sucursal"><mat-icon>store</mat-icon> {{ p.sucursal_nombre }}</span>
-        </div>
+  <div class="kpis">
+    <mat-card class="kpi kpi--balance negativo">
+      <div class="kpi__label">Deuda Total Recuperable</div>
+      <div class="kpi__value">{{ totalDeuda() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
+      <mat-icon class="kpi-icon">account_balance_wallet</mat-icon>
+    </mat-card>
+
+    <mat-card class="kpi kpi--count">
+      <div class="kpi__label">Clientes Morosos</div>
+      <div class="kpi__value">{{ totalClientes() }}</div>
+      <mat-icon class="kpi-icon">group_remove</mat-icon>
+    </mat-card>
+  </div>
+
+  <!-- Gráficas Financieras -->
+  <section class="charts" *ngIf="!loading() && pedidos().length > 0">
+    <mat-card class="card card--doughnut">
+      <mat-card-title>Gravedad de la Cartera</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="doughnutData" [options]="chartOptions" type="doughnut"></canvas>
       </div>
-      
-      <div matListItemLine class="pedido-detail">
-        <div class="fechas">
-          <span class="badge" *ngIf="p.fecha_entrega_estimada">Entrega: {{ p.fecha_entrega_estimada | date:'dd MMM, yyyy' }}</span>
-          <span *ngIf="getNivelAtraso(p.fecha_entrega_estimada) === 'normal'" class="badge-vencido normal">Día a Día</span>
-          <span *ngIf="getNivelAtraso(p.fecha_entrega_estimada) === 'leve'" class="badge-vencido leve">Atraso Leve</span>
-          <span *ngIf="getNivelAtraso(p.fecha_entrega_estimada) === 'grave'" class="badge-vencido grave">Atraso Riesgoso</span>
-        </div>
-        
-        <div class="montos">
-          <div class="monto-row">
-            <span class="label">Total:</span> 
-            <span class="value">{{ Number(p.monto_total || 0) | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+    </mat-card>
+
+    <mat-card class="card card--bar">
+      <mat-card-title>Principales Deudores</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="barData" [options]="chartOptions" type="bar"></canvas>
+      </div>
+    </mat-card>
+
+    <mat-card class="card card--bar">
+      <mat-card-title>Deudas por Sucursal</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="sucursalBarData" [options]="chartOptions" type="bar"></canvas>
+      </div>
+    </mat-card>
+  </section>
+
+  <!-- Filtros -->
+  <div class="filters">
+    <div class="search-box">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input type="text" placeholder="Buscar por cliente o folio..." [ngModel]="q()"
+        (ngModelChange)="onSearch($event)" />
+    </div>
+  </div>
+
+  <div *ngIf="loading()" class="loading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+
+  <!-- Listado de Deudores -->
+  <div *ngIf="!loading()" class="list">
+
+    <div *ngIf="pedidos().length === 0" class="empty">
+      <mat-icon
+        style="font-size: 48px; width: 48px; height: 48px; opacity: 0.5; margin-bottom: 12px; color: #0073ff;">sentiment_satisfied_alt</mat-icon>
+      <p>¡Excelente! No hay clientes con deudas pendientes.</p>
+    </div>
+
+    <mat-list *ngIf="pedidos().length > 0">
+      <mat-list-item *ngFor="let p of pedidos()" [routerLink]="['/pedidos', p.id]" class="pedido-item"
+        [ngClass]="'atraso-' + getNivelAtraso(p.fecha_entrega_estimada)">
+
+        <div matListItemTitle class="pedido-title">
+          <span class="cliente">{{ p.cliente_nombre }}</span>
+          <div class="badges-top">
+            <span class="folio">{{ p.folio }}</span>
+            <span class="sucursal"><mat-icon>store</mat-icon> {{ p.sucursal_nombre }}</span>
           </div>
-          <div class="monto-row deuda">
-            <span class="label">Debe:</span> 
-            <span class="value">{{ Number(p.saldo_pendiente || 0) | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+
+        <div matListItemLine class="pedido-detail">
+          <div class="fechas">
+            <span class="badge" *ngIf="p.fecha_entrega_estimada">Entrega: {{ p.fecha_entrega_estimada | date:'dd MMM,
+              yyyy' }}</span>
+            <span *ngIf="getNivelAtraso(p.fecha_entrega_estimada) === 'normal'" class="badge-vencido normal">Día a
+              Día</span>
+            <span *ngIf="getNivelAtraso(p.fecha_entrega_estimada) === 'leve'" class="badge-vencido leve">Atraso
+              Leve</span>
+            <span *ngIf="getNivelAtraso(p.fecha_entrega_estimada) === 'grave'" class="badge-vencido grave">Atraso
+              Riesgoso</span>
+          </div>
+
+          <div class="montos">
+            <div class="monto-row">
+              <span class="label">Total:</span>
+              <span class="value">{{ Number(p.monto_total || 0) | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+            </div>
+            <div class="monto-row deuda">
+              <span class="label">Debe:</span>
+              <span class="value">{{ Number(p.saldo_pendiente || 0) | currency:'MXN':'symbol-narrow':'1.0-0' }}</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div matListItemMeta class="action-buttons">
-        <button mat-icon-button color="primary" 
-                matTooltip="Liquidar Deuda / Ver Pedido"
-                [routerLink]="['/pedidos', p.id]"
-                (click)="$event.stopPropagation()">
-          <mat-icon>payments</mat-icon>
-        </button>
+        <div class="action-buttons">
+          <button class="btn-wa" *ngIf="p.cliente_telefono"
+            matTooltip="Enviar Recordatorio por WhatsApp" (click)="abrirWhatsapp(p, $event)">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/WhatsApp_icon.png" alt="WA" />
+          </button>
 
-        <button mat-mini-fab class="whatsapp-btn"
-                *ngIf="p.cliente_telefono"
-                matTooltip="Enviar Recordatorio por WhatsApp"
-                (click)="abrirWhatsapp(p, $event)">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/WhatsApp_icon.png" alt="WA" style="width: 20px; height: 20px;" />
-        </button>
-      </div>
+          <button class="btn-pay" matTooltip="Liquidar Deuda"
+            (click)="liquidarDeuda(p, $event)">
+            <mat-icon>payments</mat-icon>
+          </button>
+        </div>
 
-    </mat-list-item>
-  </mat-list>
-</div>
+      </mat-list-item>
+    </mat-list>
+  </div>
 
 </div>
