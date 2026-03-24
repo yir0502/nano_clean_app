@@ -26,6 +26,7 @@ import { ApiClientService } from '../../../core/api-client.service';
 import { Pedido, Cliente, Sucursal, PedidoEvidencia } from '../../../core/models';
 import { A11yModule } from "@angular/cdk/a11y";
 import { EntregaDialogComponent, EntregaDialogResult } from '../entrega-dialog.component';
+import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../accion-pedido-dialog.component';
 
 interface FotoPreview {
   file?: File;
@@ -291,44 +292,6 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  // Agregamos el parámetro 'total' al final
-  abrirWhatsapp(telefono: string, nombre: string, folio: string, estado: string, total: number) {
-    if (!telefono) return;
-
-    // Formatear estado
-    const estadoLimpio = estado.replace('_', ' ');
-    const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
-
-    // Formatear dinero
-    const totalFormato = total.toFixed(2);
-
-    // emoji de mano saludando, de agradecimiento, de fiesta, de celebración y otros
-    // \uD83D\uDC4B = 👋
-    // \uD83D\uDE4F = 🙏
-    // \uD83C\uDF89 =💃
-    // \uD83C\uDF89 =🎉
-
-    // NUEVO FORMATO DE MENSAJE
-    const msg = `Hola *${nombre}* \uD83D\uDC4B \uD83D\uDC4B
-
-Tu pedido *${folio}* está: *${estadoFormato}* \uD83C\uDF89
-Total a pagar: *$${totalFormato}*
-
-Podemos entregar a domicilio o puedes pasar a recogerlo en maximo 2 semanas.
-
-Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriormente.
-
-¡Gracias por confiar en nosotros! \uD83D\uDE4F`;
-
-    // Limpiar teléfono
-    let telLimpio = telefono.replace(/\D/g, '');
-
-    // Generar link
-    const link = `https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`;
-
-    window.open(link, '_blank');
-  }
-
   // --- GUARDADO ---
   async save() {
     if (this.form.invalid) {
@@ -448,15 +411,28 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
           this.router.navigateByUrl('/pedidos');
         }
 
-      // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Sugerir registro manual de anticipo
+      // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Diálogo obligatorio
       } else if (!this.isEdit() && anticipo > 0) {
-        const snackRef = this.snack.open(
-          `Pedido guardado con abono. ¿Registrar ingreso de $${anticipo.toFixed(2)}?`,
-          'REGISTRAR',
-          { duration: 8000 }
-        );
+        const acciones: any[] = [
+          { texto: 'Registrar Ingreso', icono: 'payments', valor: 'registrar', color: 'primary' }
+        ];
+        if (telefonoCliente) {
+          acciones.push({ texto: 'Avisar por WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' });
+        }
 
-        snackRef.onAction().subscribe(async () => {
+        const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
+          data: {
+            titulo: '¡Pedido Guardado!',
+            mensaje: `Pedido ${folioFinal} creado con abono de $${anticipo.toFixed(2)}. ¿Qué deseas hacer?`,
+            acciones
+          } as AccionPedidoDialogData,
+          disableClose: true,
+          width: '400px'
+        });
+
+        const resultado = await firstValueFrom(dialogRef.afterClosed());
+
+        if (resultado === 'registrar') {
           const cats = await this.api.listCategorias('ingreso');
           const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : undefined);
           this.router.navigate(['/movimientos/nuevo'], {
@@ -470,30 +446,60 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
               categoria_id: catId
             }
           });
+        } else if (resultado === 'whatsapp') {
+          this.abrirWhatsapp(telefonoCliente, nombreCliente, folioFinal, 'recibido', montoTotal);
+          this.router.navigateByUrl('/pedidos');
+        } else {
+          this.router.navigateByUrl('/pedidos');
+        }
+
+      // CASO 3: LISTO -> Diálogo obligatorio para WhatsApp
+      } else if (esListo) {
+        const acciones: any[] = [];
+        if (telefonoCliente) {
+          acciones.push({ texto: 'Avisar por WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' });
+        }
+
+        const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
+          data: {
+            titulo: '¡Pedido Listo!',
+            mensaje: `El pedido ${folioFinal} para ${nombreCliente} está listo para entregar. ¿Deseas avisarle al cliente?`,
+            acciones
+          } as AccionPedidoDialogData,
+          disableClose: true,
+          width: '400px'
         });
+
+        const resultado = await firstValueFrom(dialogRef.afterClosed());
+
+        if (resultado === 'whatsapp') {
+          this.abrirWhatsapp(telefonoCliente, nombreCliente, folioFinal, 'listo', montoTotal);
+        }
         this.router.navigateByUrl('/pedidos');
 
-      // CASO 3: LISTO -> Sugerir WhatsApp
-      } else if (esListo) {
-        const snackRef = this.snack.open(
-          'Pedido marcado como LISTO. ¿Avisar al cliente?',
-          'ENVIAR WHATSAPP',
-          { duration: 8000 }
-        );
-
-        snackRef.onAction().subscribe(() => {
-          this.abrirWhatsapp(
-            telefonoCliente,
-            nombreCliente,
-            folioFinal,
-            v.estado || 'listo',
-            montoTotal
-          );
+      // CASO 4: NUEVO PEDIDO SIN ANTICIPO (recibido) -> Sugerir WhatsApp
+      } else if (!this.isEdit() && telefonoCliente) {
+        const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
+          data: {
+            titulo: '¡Pedido Registrado!',
+            mensaje: `Pedido ${folioFinal} creado para ${nombreCliente}. ¿Deseas enviarle confirmación?`,
+            acciones: [
+              { texto: 'Enviar Confirmación WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' }
+            ]
+          } as AccionPedidoDialogData,
+          disableClose: true,
+          width: '400px'
         });
+
+        const resultado = await firstValueFrom(dialogRef.afterClosed());
+
+        if (resultado === 'whatsapp') {
+          this.abrirWhatsapp(telefonoCliente, nombreCliente, folioFinal, 'recibido', montoTotal);
+        }
         this.router.navigateByUrl('/pedidos');
 
       } else {
-        // CASO 4: OTROS ESTADOS
+        // CASO 5: OTROS ESTADOS (edición, sin teléfono, etc.)
         const msj = this.isEdit() ? 'Pedido actualizado' : `Pedido generado ${folioFinal}`;
         this.snack.open(msj, 'OK', { duration: 3000 });
         this.router.navigateByUrl('/pedidos');
@@ -510,5 +516,35 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
   // Helper para estado visual
   setStatus(estado: string) {
     this.form.patchValue({ estado });
+  }
+
+  // --- WhatsApp ---
+  private abrirWhatsapp(
+    telefono: string,
+    nombre: string,
+    folio: string,
+    estado: string,
+    monto: number
+  ) {
+    if (!telefono) return;
+    let msg = '';
+    const montoStr = `$${monto.toFixed(2)}`;
+
+    switch (estado) {
+      case 'recibido':
+        msg = `¡Hola *${nombre}*! 👋\n\nTe confirmamos que tu pedido *${folio}* ha sido recibido en Nano Clean por un total de *${montoStr}*.\n\nTe avisaremos cuando esté listo. ¡Gracias por tu confianza! 🙏`;
+        break;
+      case 'listo':
+        msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* para recoger en Nano Clean.\n\nTotal: *${montoStr}*\n\n¡Te esperamos! 😊`;
+        break;
+      case 'entregado':
+        msg = `¡Hola *${nombre}*! 👋\n\nGracias por recoger tu pedido *${folio}* de Nano Clean.\n\n¡Esperamos verte pronto! 🌟`;
+        break;
+      default:
+        msg = `¡Hola *${nombre}*! 👋\n\nTe escribimos de Nano Clean respecto a tu pedido *${folio}*.\n\nTotal: *${montoStr}*\n\n¡Gracias por tu preferencia! 🙏`;
+    }
+
+    const tel = telefono.replace(/\D/g, '');
+    window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
   }
 }
