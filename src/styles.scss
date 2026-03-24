@@ -214,3 +214,8 @@ mat-toolbar.bubbly::before {
 mat-toolbar .mat-mdc-button {
   color: #fff;
 }
+
+/* Reducir border-radius del panel de diálogos (MatDialog) */
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: 12px !important;
+}

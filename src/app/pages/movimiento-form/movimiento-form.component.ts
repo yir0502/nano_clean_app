@@ -65,7 +65,7 @@ export class MovimientoFormComponent implements OnInit {
     sucursal_id: this.fb.nonNullable.control<string | null>(null, { validators: [Validators.required] }), 
     fecha: this.fb.nonNullable.control<Date | null>(new Date(), { validators: [Validators.required] }),
     metodo_pago: this.fb.nonNullable.control<string | null>('efectivo', { validators: [Validators.required] }),
-    nota: this.fb.nonNullable.control<string>('', { validators: [Validators.maxLength(300)] }),
+    nota: this.fb.nonNullable.control<string>(''),
     pedido_id: this.fb.control<string | null>(null)
   });
 
@@ -94,7 +94,8 @@ export class MovimientoFormComponent implements OnInit {
           monto: Number(params['monto']),
           nota: params['descripcion'] || '',
           sucursal_id: params['sucursal_id'] || null,
-          pedido_id: params['pedido_id'] || null
+          pedido_id: params['pedido_id'] || null,
+          categoria_id: params['categoria_id'] || null
         });
 
         // Recargamos categorías por si estaba en 'egreso' por defecto

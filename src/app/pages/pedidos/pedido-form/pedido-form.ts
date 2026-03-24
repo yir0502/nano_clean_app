@@ -427,6 +427,9 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
               }
             });
           } else {
+            // Obtener categoría de ingreso por defecto
+            const cats = await this.api.listCategorias('ingreso');
+            const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : undefined);
             this.router.navigate(['/movimientos/nuevo'], {
               queryParams: {
                 monto: saldoPend.toFixed(2),
@@ -434,7 +437,8 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
                 tipo: 'ingreso',
                 cliente_id: clientId,
                 pedido_id: pedidoId,
-                sucursal_id: v.sucursal_id || undefined
+                sucursal_id: v.sucursal_id || undefined,
+                categoria_id: catId
               }
             });
           }
@@ -452,7 +456,9 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
           { duration: 8000 }
         );
 
-        snackRef.onAction().subscribe(() => {
+        snackRef.onAction().subscribe(async () => {
+          const cats = await this.api.listCategorias('ingreso');
+          const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : undefined);
           this.router.navigate(['/movimientos/nuevo'], {
             queryParams: {
               monto: anticipo.toFixed(2),
@@ -460,7 +466,8 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
               tipo: 'ingreso',
               cliente_id: clientId,
               pedido_id: pedidoId,
-              sucursal_id: v.sucursal_id || undefined
+              sucursal_id: v.sucursal_id || undefined,
+              categoria_id: catId
             }
           });
         });

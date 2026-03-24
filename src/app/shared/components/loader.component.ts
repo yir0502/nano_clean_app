@@ -15,7 +15,7 @@ import { LoaderService } from '../../core/loader.service';
   styles: [`
     .loader-pill {
       position: fixed;
-      top: 12px;
+      top: 60px;
       right: 12px;
       z-index: 9999;
       display: flex;
@@ -28,7 +28,7 @@ import { LoaderService } from '../../core/loader.service';
       border-radius: 50px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
       pointer-events: none;
-
+      border: 1px solid #0073ff;
       opacity: 0;
       transform: translateY(-10px);
       animation: slideIn 0.3s ease-out 0.1s forwards;
