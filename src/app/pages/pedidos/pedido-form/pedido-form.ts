@@ -1,10 +1,10 @@
-import { Component, OnInit, inject, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { Location } from '@angular/common';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { of, firstValueFrom } from 'rxjs';
 
 // Material Modules
 import { MatCardModule } from '@angular/material/card';
@@ -16,6 +16,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
 import { MatAutocompleteModule } from '@angular/material/autocomplete'; // <--- Nuevo
 import { MatChipsModule } from '@angular/material/chips'; // <--- Nuevo
@@ -24,6 +25,7 @@ import { MatChipsModule } from '@angular/material/chips'; // <--- Nuevo
 import { ApiClientService } from '../../../core/api-client.service';
 import { Pedido, Cliente, Sucursal, PedidoEvidencia } from '../../../core/models';
 import { A11yModule } from "@angular/cdk/a11y";
+import { EntregaDialogComponent, EntregaDialogResult } from '../entrega-dialog.component';
 
 interface FotoPreview {
   file?: File;
@@ -40,7 +42,7 @@ interface FotoPreview {
     MatButtonModule, MatIconModule, MatDatepickerModule, MatNativeDateModule,
     MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule,
     MatAutocompleteModule, MatChipsModule,
-    A11yModule
+    A11yModule, MatDialogModule
   ],
   templateUrl: './pedido-form.html',
   styleUrls: ['./pedido-form.scss']
@@ -51,6 +53,7 @@ export class PedidoFormComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private snack = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
   public location = inject(Location);
 
   // Estados
@@ -393,19 +396,25 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
       const todayShort = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
       const detalleStr = payload.descripcion ? `(${payload.descripcion})` : `(Folio: ${folioFinal})`;
 
-      // CASO 1: ENTREGADO -> Sugerir cobro de liquidación solo si hay saldo pendiente
+      // CASO 1: ENTREGADO -> Diálogo obligatorio para decidir cobro o deuda
       if (esEntregado && saldoPend > 0) {
-        const snackRef = this.snack.open(
-          `Pedido entregado. ¿Registrar liquidación de $${saldoPend.toFixed(2)}?`,
-          'REGISTRAR',
-          { duration: 8000 }
-        );
+        const dialogRef = this.dialog.open(EntregaDialogComponent, {
+          data: {
+            nombreCliente,
+            folio: folioFinal,
+            saldoPendiente: saldoPend,
+            montoTotal: montoTotal
+          },
+          disableClose: true,
+          width: '400px'
+        });
 
-        snackRef.onAction().subscribe(async () => {
-          // Buscamos dinámicamente si ya hay un movimiento (anticipo previo)
+        const resultado: EntregaDialogResult | undefined = await firstValueFrom(dialogRef.afterClosed());
+
+        if (resultado === 'registrar') {
+          // Buscar movimiento existente (anticipo previo)
           const movs = await this.api.listMovimientos({ pedido_id: pedidoId });
           if (movs && movs.length > 0) {
-            // Editar movimiento existente (agregando monto y juntando las notas)
             const targetMov = movs[0];
             const oldNota = targetMov.nota ? targetMov.nota : `Pedido ${nombreCliente} ${detalleStr}`;
             const nuevaNota = `${oldNota} | Liquidacion: $${saldoPend.toFixed(2)} (${todayShort})`;
@@ -418,7 +427,6 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
               }
             });
           } else {
-            // Nuevo movimiento independiente si no había anticipo
             this.router.navigate(['/movimientos/nuevo'], {
               queryParams: {
                 monto: saldoPend.toFixed(2),
@@ -430,8 +438,11 @@ Puedes ver los detalles, saldo y fotos en el enlace que te enviamos anteriorment
               }
             });
           }
-        });
-        this.router.navigateByUrl('/pedidos');
+        } else {
+          // 'deuda' o cerrado sin selección → queda en deudas automáticamente
+          this.snack.open('Pedido entregado. El saldo pendiente quedó registrado en Deudas.', 'OK', { duration: 4000 });
+          this.router.navigateByUrl('/pedidos');
+        }
 
       // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Sugerir registro manual de anticipo
       } else if (!this.isEdit() && anticipo > 0) {

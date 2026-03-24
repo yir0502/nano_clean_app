@@ -102,13 +102,12 @@
         </div>
 
         <div class="action-buttons">
-          <button class="btn-wa" *ngIf="p.cliente_telefono"
-            matTooltip="Enviar Recordatorio por WhatsApp" (click)="abrirWhatsapp(p, $event)">
+          <button class="btn-wa" *ngIf="p.cliente_telefono" matTooltip="Enviar Recordatorio por WhatsApp"
+            (click)="abrirWhatsapp(p, $event)">
             <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/WhatsApp_icon.png" alt="WA" />
           </button>
 
-          <button class="btn-pay" matTooltip="Liquidar Deuda"
-            (click)="liquidarDeuda(p, $event)">
+          <button class="btn-pay" matTooltip="Liquidar Deuda" (click)="liquidarDeuda(p, $event)">
             <mat-icon>payments</mat-icon>
           </button>
         </div>

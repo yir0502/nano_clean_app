@@ -7,64 +7,52 @@ import { LoaderService } from '../../core/loader.service';
   standalone: true,
   imports: [NgIf],
   template: `
-    <div class="loader-overlay" *ngIf="isLoading()">
-      <div class="loader-container">
-        <div class="bubbly-spinner"></div>
-        <p>Procesando...</p>
-      </div>
+    <div class="loader-pill" *ngIf="isLoading()">
+      <div class="bubbly-spinner"></div>
+      <span>Procesando...</span>
     </div>
   `,
   styles: [`
-    .loader-overlay {
+    .loader-pill {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      /* Fondo desenfocado estilo glassmorphism */
-      background: rgba(255, 255, 255, 0.4);
-      backdrop-filter: saturate(180%) blur(8px);
-      -webkit-backdrop-filter: saturate(180%) blur(8px);
-      z-index: 9999; /* Asegura estar en lo más alto */
+      top: 12px;
+      right: 12px;
+      z-index: 9999;
       display: flex;
-      justify-content: center;
       align-items: center;
-      
-      /* Animación de entrada suave con un retraso estratégico de 100ms
-         para evitar parpadeos visuales si la petición dura menos de eso. */
-      opacity: 0;
-      animation: fadeInOverlay 0.25s ease-out 0.1s forwards;
-    }
-    .loader-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      /* Pequeño overlay blanco translúcido alrededor del spinner */
-      background: rgba(255, 255, 255, 0.75);
-      padding: 30px 40px;
-      border-radius: 24px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: saturate(180%) blur(12px);
+      -webkit-backdrop-filter: saturate(180%) blur(12px);
+      padding: 8px 18px 8px 12px;
+      border-radius: 50px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.08);
+      pointer-events: none;
 
-      /* Escala de rebote elegante centrada */
-      transform: scale(0.9);
-      animation: popInContainer 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.1s forwards;
+      opacity: 0;
+      transform: translateY(-10px);
+      animation: slideIn 0.3s ease-out 0.1s forwards;
     }
-    .loader-container p {
+
+    .loader-pill span {
+      font-size: 13px;
       font-weight: 600;
       color: #0073ff;
-      letter-spacing: 0.5px;
-      margin: 0;
+      letter-spacing: 0.3px;
       animation: pulse 1.5s infinite ease-in-out;
     }
+
     .bubbly-spinner {
-      width: 55px;
-      height: 55px;
+      width: 22px;
+      height: 22px;
       border-radius: 50%;
-      /* Colores dinámicos del estilo base */
       background: conic-gradient(from 0deg, #0073ff, #ff41f8, #0073ff);
       mask-image: radial-gradient(transparent 55%, black 56%);
       -webkit-mask-image: radial-gradient(transparent 55%, black 56%);
       animation: spin 1s linear infinite;
+      flex-shrink: 0;
     }
-    
+
     @keyframes spin {
       100% { transform: rotate(360deg); }
     }
@@ -72,18 +60,13 @@ import { LoaderService } from '../../core/loader.service';
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
-    @keyframes fadeInOverlay {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes popInContainer {
-      from { transform: scale(0.85); }
-      to { transform: scale(1); }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   `]
 })
 export class LoaderComponent {
   private loader = inject(LoaderService);
-  // Vinculamos la señal del servicio a la plantilla
   isLoading = this.loader.isLoading;
 }
