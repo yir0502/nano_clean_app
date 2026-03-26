@@ -23,7 +23,7 @@ import { MatChipsModule } from '@angular/material/chips'; // <--- Nuevo
 
 // Servicios y Modelos
 import { ApiClientService } from '../../../core/api-client.service';
-import { Pedido, Cliente, Sucursal, PedidoEvidencia } from '../../../core/models';
+import { Cliente, Sucursal } from '../../../core/models';
 import { A11yModule } from "@angular/cdk/a11y";
 import { EntregaDialogComponent, EntregaDialogResult } from '../entrega-dialog.component';
 import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../accion-pedido-dialog.component';
@@ -31,7 +31,7 @@ import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../accion-p
 interface FotoPreview {
   file?: File;
   url: string;
-  id?: string; // Si ya existe en BD
+  id?: string;
 }
 
 @Component({
@@ -86,8 +86,8 @@ export class PedidoFormComponent implements OnInit {
     // Pedido
     sucursal_id: ['', Validators.required],
     descripcion: ['',],
-    monto_total: [null as number | null],
-    saldo_pendiente: [null as number | null],
+    monto_total: [0],
+    saldo_pendiente: [0],
     fecha_entrega_estimada: [new Date(), Validators.required],
     estado: ['recibido'],
 
@@ -411,7 +411,7 @@ export class PedidoFormComponent implements OnInit {
           this.router.navigateByUrl('/pedidos');
         }
 
-      // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Diálogo obligatorio
+        // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Diálogo obligatorio
       } else if (!this.isEdit() && anticipo > 0) {
         const acciones: any[] = [
           { texto: 'Registrar Ingreso', icono: 'payments', valor: 'registrar', color: 'primary' }
@@ -453,7 +453,7 @@ export class PedidoFormComponent implements OnInit {
           this.router.navigateByUrl('/pedidos');
         }
 
-      // CASO 3: LISTO -> Diálogo obligatorio para WhatsApp
+        // CASO 3: LISTO -> Diálogo obligatorio para WhatsApp
       } else if (esListo) {
         const acciones: any[] = [];
         if (telefonoCliente) {
@@ -477,7 +477,7 @@ export class PedidoFormComponent implements OnInit {
         }
         this.router.navigateByUrl('/pedidos');
 
-      // CASO 4: NUEVO PEDIDO SIN ANTICIPO (recibido) -> Sugerir WhatsApp
+        // CASO 4: NUEVO PEDIDO SIN ANTICIPO (recibido) -> Sugerir WhatsApp
       } else if (!this.isEdit() && telefonoCliente) {
         const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
           data: {
@@ -529,10 +529,12 @@ export class PedidoFormComponent implements OnInit {
     if (!telefono) return;
     let msg = '';
     const montoStr = `$${monto.toFixed(2)}`;
+    const baseUrl = globalThis.location.origin;
+    const urlRastreo = `${baseUrl}/rastreo/${folio}`;
 
     switch (estado) {
       case 'recibido':
-        msg = `¡Hola *${nombre}*! 👋\n\nTe confirmamos que tu pedido *${folio}* ha sido recibido en Nano Clean por un total de *${montoStr}*.\n\nTe avisaremos cuando esté listo. ¡Gracias por tu confianza! 🙏`;
+        msg = `Hola *${nombre}* 👋\n\nTu pedido *${folio}* ha sido recibido.\n\nPuedes ver los detalles, saldo y fotos aquí:\n${urlRastreo}\n\n¡Gracias por tu confianza! \n- Lavandería Nano Clean`;
         break;
       case 'listo':
         msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* para recoger en Nano Clean.\n\nTotal: *${montoStr}*\n\n¡Te esperamos! 😊`;
