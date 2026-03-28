@@ -84,4 +84,22 @@ export class RastreoComponent implements OnInit {
     // Compara si el ID del paso es IGUAL al estado del pedido
     return this.pedido()?.estado === stepId;
   }
-}
+
+  getProgressPercent(): number {
+    const estadoActual = this.pedido()?.estado;
+    const estadosOrdenados = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado'];
+    const idx = estadosOrdenados.indexOf(estadoActual);
+    if (idx < 0) return 0;
+    return (idx / (estadosOrdenados.length - 1)) * 100;
+  }
+
+  selectedPhoto = signal<string | null>(null);
+
+  openPhoto(url: string) {
+    this.selectedPhoto.set(url);
+  }
+
+  closePhoto() {
+    this.selectedPhoto.set(null);
+  }
+}

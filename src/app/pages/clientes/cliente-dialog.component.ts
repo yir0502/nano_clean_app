@@ -37,7 +37,8 @@ import { Cliente } from '../../core/models';
           
           <mat-form-field appearance="outline" class="half-width">
             <mat-label>Email (Opcional)</mat-label>
-            <input matInput formControlName="email" type="email">
+            <input matInput formControlName="email">
+            <mat-error *ngIf="form.get('email')?.hasError('email')">Email inválido</mat-error>
           </mat-form-field>
         </div>
 
@@ -95,7 +96,7 @@ export class ClienteDialogComponent implements OnInit {
     this.form = this.fb.group({
       nombre: ['', Validators.required],
       telefono: ['', [Validators.required, Validators.minLength(10)]],
-      email: [''],
+      email: ['', [Validators.email]],
       direccion: [''],
       permite_whatsapp: [true],
       frecuencia_recordatorio: [15],

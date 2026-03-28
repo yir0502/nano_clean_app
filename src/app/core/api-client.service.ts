@@ -115,9 +115,9 @@ export class ApiClientService {
   }
 
   // --- CLIENTES ---
-  listClientes(params?: any): Promise<any[]> {
+  listClientes(params?: any): Promise<{ data: any[], count: number }> {
     const p = { org_id: this.auth.orgId, ...params };
-    return this.get<any[]>('/clientes', p);
+    return this.get<{ data: any[], count: number }>('/clientes', p);
   }
 
   deleteCliente(id: string): Promise<{ ok: boolean }> {

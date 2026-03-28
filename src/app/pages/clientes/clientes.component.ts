@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, Inject } from '@angular/core';
+import { Component, OnInit, inject, signal, Inject, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -23,6 +23,47 @@ import { Cliente } from '../../core/models';
 import { ClienteDialogComponent } from './cliente-dialog.component'; // <--- Importar el nuevo dialog
 
 @Component({
+  selector: 'app-campaign-dialog',
+  standalone: true,
+  imports: [CommonModule, FormsModule, MatButtonModule, MatInputModule, MatFormFieldModule, MatSelectModule, MatDialogModule, MatDialogTitle, MatDialogContent, MatDialogActions],
+  template: `
+    <h2 mat-dialog-title>⚙️ Plantillas de Campaña</h2>
+    <div mat-dialog-content class="form-cols">
+      <p class="mb-4 text-gray-600" style="font-size: 13px;">Usa <strong>[Nombre]</strong> para personalizar. Los textos quedarán guardados en tu dispositivo.</p>
+      
+      <h3>Mensaje Promocional</h3>
+      <mat-form-field appearance="outline" style="width: 100%">
+        <mat-label>Plantilla de texto</mat-label>
+        <textarea matInput rows="3" [(ngModel)]="data.promoMsg"></textarea>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" style="width: 100%">
+        <mat-label>Link de Imágen / Página (Opcional)</mat-label>
+        <input matInput [(ngModel)]="data.promoLink" placeholder="https://imgur.com/...jpg">
+        <mat-hint>Pegar link para crear vista previa en WhatsApp.</mat-hint>
+      </mat-form-field>
+      
+      <h3 style="margin-top: 16px;">Recordatorio </h3>
+      <mat-form-field appearance="outline" style="width: 100%">
+        <mat-label>Plantilla para inactivos</mat-label>
+        <textarea matInput rows="3" [(ngModel)]="data.remMsg"></textarea>
+      </mat-form-field>
+    </div>
+    <div mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancelar</button>
+      <button mat-flat-button color="primary" [mat-dialog-close]="data">Guardar Plantillas</button>
+    </div>
+  `,
+  styles: [`
+    .form-cols { display: flex; flex-direction: column; gap: 4px; padding-top: 10px; min-width: 320px; }
+    h3 { font-size: 14px; font-weight: 600; margin: 0 0 8px 0; color: #3f51b5; }
+  `]
+})
+export class CampaignSettingsDialogComponent {
+  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
+}
+
+@Component({
   selector: 'app-clientes',
   standalone: true,
   imports: [
@@ -33,49 +74,100 @@ import { ClienteDialogComponent } from './cliente-dialog.component'; // <--- Imp
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss'
 })
-export class ClientesComponent implements OnInit {
+export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
   private api = inject(ApiClientService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
 
+  @ViewChild('infiniteAnchor') infiniteAnchor!: ElementRef;
+  private observer?: IntersectionObserver;
+
   items = signal<Cliente[]>([]);
   loading = signal<boolean>(false);
   q = signal<string>('');
+  totalCount = signal<number>(0);
   
   page = 1;
   pageSize = 20;
   hasMore = signal<boolean>(true);
   loadingMore = signal<boolean>(false);
 
+  // CRM
+  currentFilter = signal<'todos' | 'falta_promo' | 'inactivos'>('todos');
+  promoMessage = signal<string>(localStorage.getItem('nc_promo_msg') || '¡Hola [Nombre]! 🌟 Aprovecha nuestra promo este mes en Nano Clean. 🫧');
+  promoLink = signal<string>(localStorage.getItem('nc_promo_link') || '');
+  reminderMessage = signal<string>(localStorage.getItem('nc_rem_msg') || '¡Hola [Nombre] 👋! Notamos que hace unos días no nos visitas. ¿Tienes prendas listas? ¡Te esperamos en Nano Clean! 💙');
+
   ngOnInit(): void {
     this.loadClientes(true);
   }
 
+  ngAfterViewInit(): void {
+    this.setupInfiniteScroll();
+  }
+
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+  }
+
+  private setupInfiniteScroll() {
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && this.hasMore() && !this.loading() && !this.loadingMore()) {
+        this.loadClientes();
+      }
+    }, { threshold: 0.1 });
+
+    if (this.infiniteAnchor) {
+      this.observer.observe(this.infiniteAnchor.nativeElement);
+    }
+  }
+
   // --- CARGA DE DATOS ---
   async loadClientes(reset: boolean = false) {
-    if (reset) { this.page = 1; this.hasMore.set(true); this.loading.set(true); } 
-    else { this.loadingMore.set(true); }
+    if (this.loading() || this.loadingMore()) return;
+
+    if (reset) { 
+      this.page = 1; 
+      this.hasMore.set(true); 
+      this.loading.set(true); 
+    } else { 
+      this.loadingMore.set(true); 
+    }
 
     try {
       const offset = (this.page - 1) * this.pageSize;
-      const data = await this.api.listClientes({ q: this.q(), limit: this.pageSize, offset });
+      const filterParam = this.currentFilter() !== 'todos' ? this.currentFilter() : undefined;
+      const res = await this.api.listClientes({ q: this.q(), limit: this.pageSize, offset, filter: filterParam });
+      const data = res.data;
+      const count = res.count;
+
+      this.totalCount.set(count);
 
       if (reset) this.items.set(data);
       else this.items.update(curr => [...curr, ...data]);
 
-      if (data.length < this.pageSize) this.hasMore.set(false);
-      else this.page++;
+      if (this.items().length >= count || data.length < this.pageSize) {
+        this.hasMore.set(false);
+      } else {
+        this.page++;
+      }
 
     } catch (e: any) {
       this.snackBar.open('Error cargando clientes', 'Cerrar');
     } finally {
-      this.loading.set(false); this.loadingMore.set(false);
+      this.loading.set(false); 
+      this.loadingMore.set(false);
     }
   }
 
   onQInput(term: string): void {
     this.q.set(term);
+    this.loadClientes(true);
+  }
+
+  setFilter(f: 'todos' | 'falta_promo' | 'inactivos') {
+    this.currentFilter.set(f);
     this.loadClientes(true);
   }
 
@@ -97,16 +189,19 @@ export class ClientesComponent implements OnInit {
       try {
         if (cliente) {
           // Update
-          await this.api.updateCliente(cliente.id, result);
+          const updated = await this.api.updateCliente(cliente.id, result);
+          this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, ...updated } : c));
           this.snackBar.open('Cliente actualizado', 'OK', { duration: 2500 });
         } else {
           // Create
-          await this.api.createCliente(result);
+          const nuevo = await this.api.createCliente(result);
+          this.items.update(list => [nuevo, ...list]);
+          this.totalCount.update(c => c + 1);
           this.snackBar.open('Cliente registrado', 'OK', { duration: 2500 });
         }
-        this.loadClientes(true); // Recargar lista para ver cambios
       } catch (e: any) {
         this.snackBar.open(e.message || 'Error al guardar', 'Cerrar', { duration: 3000 });
+      } finally {
         this.loading.set(false);
       }
     });
@@ -125,99 +220,100 @@ export class ClientesComponent implements OnInit {
     }
   }
 
-  // --- LÓGICA DE NEGOCIO ---
-
-  // Semáforo de Retención 🚦
+  // --- LÓGICA DE NEGOCIO ---  // Helpers Visuales
   getStatusColor(fechaUltimaVisita?: string): string {
-    if (!fechaUltimaVisita) return '#9e9e9e'; // Gris (Nuevo/Sin datos)
-    
-    // Calcular diferencia en días
+    if (!fechaUltimaVisita) return '#9e9e9e'; 
     const diff = new Date().getTime() - new Date(fechaUltimaVisita).getTime();
     const dias = diff / (1000 * 3600 * 24);
-
-    if (dias <= 15) return '#4caf50'; // Verde (Activo)
-    if (dias <= 45) return '#ffc107'; // Amarillo (Riesgo)
-    return '#f44336';                 // Rojo (Perdido)
+    if (dias <= 15) return '#4caf50'; 
+    if (dias <= 45) return '#ffc107'; 
+    return '#f44336';                 
   }
 
-  // Mensajes Masivos
-  onMassMessage() {
-    // Solo obtenemos el conteo visual
-    const count = this.items().filter(c => (c as any).permite_whatsapp).length; 
-    
-    const dialogRef = this.dialog.open(MassMessageDialogComponent, {
+  hasPromoThisMonth(c: Cliente): boolean {
+    if (!c.fecha_ultima_promo) return false;
+    const date = new Date(c.fecha_ultima_promo);
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  }
+
+  isInactiveMoreThan15Days(c: Cliente): boolean {
+    if (!c.ultima_visita) return false;
+    const diff = new Date().getTime() - new Date(c.ultima_visita).getTime();
+    return (diff / (1000 * 3600 * 24)) > 15;
+  }
+
+  // --- CRM Acciones ---
+
+  openCampaignSettings() {
+    const dialogRef = this.dialog.open(CampaignSettingsDialogComponent, {
       width: '500px',
-      data: { count }
-    });
-
-    dialogRef.afterClosed().subscribe(async (res) => {
-      if (!res) return; // Si canceló o cerró sin enviar
-
-      this.loading.set(true);
-      try {
-        // Llamada REAL al backend
-        const response = await this.api.sendMassMessage({ 
-            message: res.message || 'Hola, tenemos ofertas...', // Dato que viene del dialog
-            template: res.template 
-        });
-        
-        this.snackBar.open(`Éxito: ${response.message}`, 'Genial', { duration: 4000 });
-      } catch (e) {
-        this.snackBar.open('Error al enviar mensajes', 'Cerrar');
-      } finally {
-        this.loading.set(false);
+      data: { 
+        promoMsg: this.promoMessage(), 
+        promoLink: this.promoLink(),
+        remMsg: this.reminderMessage() 
       }
     });
+
+    dialogRef.afterClosed().subscribe(res => {
+      if (!res) return;
+      this.promoMessage.set(res.promoMsg);
+      this.promoLink.set(res.promoLink);
+      this.reminderMessage.set(res.remMsg);
+      
+      localStorage.setItem('nc_promo_msg', res.promoMsg);
+      localStorage.setItem('nc_promo_link', res.promoLink || '');
+      localStorage.setItem('nc_rem_msg', res.remMsg);
+      this.snackBar.open('Plantillas guardadas', 'OK', { duration: 2000 });
+    });
   }
 
-  onSendProgrammedReminder(cliente: Cliente, event: MouseEvent) {
+  async sendPromo(cliente: Cliente, event: MouseEvent) {
     event.stopPropagation();
-    if (!(cliente as any).permite_whatsapp) {
-      this.snackBar.open('Este cliente no acepta mensajes de WA', 'Cerrar', { duration: 3000 });
+    if (!cliente.telefono) {
+      this.snackBar.open('El cliente no tiene teléfono.', 'Cerrar', { duration: 3000 });
       return;
     }
-    // Aquí conectarías con tu backend para forzar el envío
-    this.snackBar.open(`Recordatorio enviado a ${cliente.nombre}`, 'OK', { duration: 3000 });
+
+    let rawMsg = this.promoMessage().replace('[Nombre]', cliente.nombre.split(' ')[0]);
+    if (this.promoLink()) {
+      rawMsg += `\n\nVer Promo: ${this.promoLink()}`;
+    }
+
+    const tel = cliente.telefono.replace(/\D/g, '');
+    window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(rawMsg)}`, '_blank');
+
+    // Marcamos como enviado hoy si no lo estaba
+    if (!this.hasPromoThisMonth(cliente)) {
+      try {
+        const today = new Date().toISOString();
+        await this.api.updateCliente(cliente.id, { fecha_ultima_promo: today });
+        this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, fecha_ultima_promo: today } : c));
+        // Si estamos en filtro falta_promo, lo quitamos visualmente
+        if (this.currentFilter() === 'falta_promo') {
+          this.items.update(list => list.filter(c => c.id !== cliente.id));
+        }
+      } catch (e) {
+        console.error('No se pudo guardar la fecha promocional', e);
+      }
+    }
+  }
+
+  sendReminder(cliente: Cliente, event: MouseEvent) {
+    event.stopPropagation();
+    if (!cliente.telefono) {
+      this.snackBar.open('El cliente no tiene teléfono.', 'Cerrar', { duration: 3000 });
+      return;
+    }
+
+    const rawMsg = this.reminderMessage().replace('[Nombre]', cliente.nombre.split(' ')[0]);
+    const tel = cliente.telefono.replace(/\D/g, '');
+    window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(rawMsg)}`, '_blank');
   }
 
   onViewOrders(cliente: Cliente, event: MouseEvent) {
     event.stopPropagation();
-    // Navegar a pedidos filtrados por este cliente
     this.router.navigate(['/movimientos'], { queryParams: { q: cliente.nombre } });
   }
 }
-
-// --- Componente Inline para Mensaje Masivo (Reutilizado) ---
-@Component({
-  selector: 'app-mass-message-dialog',
-  standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatInputModule, MatFormFieldModule, MatSelectModule, MatDialogModule, MatDialogTitle, MatDialogContent, MatDialogActions],
-  template: `
-    <h2 mat-dialog-title>📢 Envío Masivo</h2>
-    <div mat-dialog-content>
-      <p class="mb-4 text-gray-600">Se enviará a <strong>{{ data.count }}</strong> clientes con WhatsApp activo.</p>
-      
-      <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 12px">
-        <mat-label>Plantilla</mat-label>
-        <mat-select [(value)]="template">
-          <mat-option value="promo">🎉 Promoción Mensual</mat-option>
-          <mat-option value="recordatorio">⏰ Recordatorio General</mat-option>
-          <mat-option value="aviso">⚠️ Aviso de Horario</mat-option>
-        </mat-select>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" style="width: 100%">
-        <mat-label>Mensaje personalizado</mat-label>
-        <textarea matInput rows="4" placeholder="Hola [Nombre], aprovecha..."></textarea>
-      </mat-form-field>
-    </div>
-    <div mat-dialog-actions align="end">
-      <button mat-button mat-dialog-close>Cancelar</button>
-      <button mat-flat-button color="primary" [mat-dialog-close]="{ message: 'Mensaje enviado', template: template }">Enviar Masivo</button>
-    </div>
-  `
-})
-export class MassMessageDialogComponent {
-  template = 'promo';
-  constructor(@Inject(MAT_DIALOG_DATA) public data: any) {}
-}
+

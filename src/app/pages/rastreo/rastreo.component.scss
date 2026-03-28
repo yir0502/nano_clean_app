@@ -1,40 +1,193 @@
-@use 'sass:color';
-$primary: var(--brand-primary); 
-$success: var(--brand-accent);
+$primary: #0082bf;
+$success: #22c55e;
 
 .tracking-container {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
   padding-bottom: 40px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* --- Fondo de Burbujas Animadas (Fixed para que siempre se vean) --- */
+.bubbles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2;
+  /* Encima del fondo pero debajo del contenido */
+}
+
+.bubble {
+  position: absolute;
+  bottom: -150px;
+  background: rgba(14, 165, 233, 0.2);
+  /* Sutil azul */
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-radius: 50%;
+  animation: move-bubble 10s infinite linear;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.8);
+
+  &:nth-child(1) {
+    left: 10%;
+    width: 50px;
+    height: 50px;
+    animation-duration: 9s;
+    animation-delay: 0s;
+  }
+
+  &:nth-child(2) {
+    left: 25%;
+    width: 30px;
+    height: 30px;
+    animation-duration: 12s;
+    animation-delay: 2s;
+  }
+
+  &:nth-child(3) {
+    left: 40%;
+    width: 60px;
+    height: 60px;
+    animation-duration: 8s;
+    animation-delay: 1s;
+  }
+
+  &:nth-child(4) {
+    left: 55%;
+    width: 40px;
+    height: 40px;
+    animation-duration: 15s;
+    animation-delay: 3s;
+  }
+
+  &:nth-child(5) {
+    left: 70%;
+    width: 55px;
+    height: 55px;
+    animation-duration: 11s;
+    animation-delay: 0.5s;
+  }
+
+  &:nth-child(6) {
+    left: 85%;
+    width: 25px;
+    height: 25px;
+    animation-duration: 13s;
+    animation-delay: 4s;
+  }
+
+  &:nth-child(7) {
+    left: 15%;
+    width: 35px;
+    height: 35px;
+    animation-duration: 10s;
+    animation-delay: 1s;
+  }
+
+  &:nth-child(8) {
+    left: 45%;
+    width: 45px;
+    height: 45px;
+    animation-duration: 14s;
+    animation-delay: 2.5s;
+  }
+
+  &:nth-child(9) {
+    left: 60%;
+    width: 20px;
+    height: 20px;
+    animation-duration: 8s;
+    animation-delay: 0s;
+  }
+
+  &:nth-child(10) {
+    left: 80%;
+    width: 50px;
+    height: 50px;
+    animation-duration: 16s;
+    animation-delay: 5s;
+  }
+}
+
+
+
+@keyframes move-bubble {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-120vh) scale(1.5);
+    opacity: 0;
+  }
 }
 
 .center-msg {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 80vh; gap: 16px; color: #666;
-  &.error mat-icon { font-size: 64px; width: 64px; height: 64px; color: #ccc; }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  gap: 16px;
+  color: #666;
+
+  &.error mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #ccc;
+  }
 }
 
 .brand-header {
-  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));  color: white;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light));
+  color: white;
   padding: 30px 20px 60px 20px;
   text-align: center;
   border-radius: 0 0 24px 24px;
-  
-  .logo { 
-    margin: 0 auto 12px auto; 
-    width: 140px; 
-    height: 45px; 
+
+  .logo {
+    margin: 0 auto 12px auto;
+    width: 140px;
+    height: 100px;
     background-image: var(--brand-logo-url);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
   }
-  h1 { margin: 0; font-size: 22px; font-weight: 500; }
-  .folio { opacity: 0.8; font-size: 14px; margin-top: 4px; letter-spacing: 1px; }
+
+  h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+  }
+
+  .folio {
+    opacity: 0.8;
+    font-size: 14px;
+    margin-top: 4px;
+    letter-spacing: 1px;
+  }
 }
 
 .content {
-  max-width: 500px; margin: 0 auto;
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 5;
 }
 
 .status-card {
@@ -54,12 +207,21 @@ $success: var(--brand-accent);
   .track-line {
     position: absolute;
     top: 50%;
-    left: 20px;  // Margen para no salir de los círculos extremos
+    left: 20px;
     right: 20px;
-    height: 4px; // Un poco más gruesa
+    height: 5px;
     background: #e0e0e0;
+    border-radius: 10px;
     transform: translateY(-50%);
     z-index: 0;
+    overflow: hidden;
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #22c55e, #0ea5e9);
+      transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+    }
   }
 
   .step {
@@ -68,27 +230,34 @@ $success: var(--brand-accent);
     display: flex;
     flex-direction: column;
     align-items: center;
-    
+
     // --- ESTADO 1: FUTURO (Defecto) ---
     .icon-circle {
-      width: 32px; height: 32px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: #f5f7fa; // Mismo color de fondo de la app para "cortar" la línea
       border: 3px solid #e0e0e0;
       color: #ccc;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); // Efecto rebote suave
-      
-      mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
     }
-    
+
     .label {
       position: absolute;
       top: 45px; // Lo empujamos hacia abajo
       width: 100px; // Ancho fijo para centrar texto
       text-align: center;
       font-size: 10px;
-      opacity: 1;           // Oculto por defecto
+      opacity: 1; // Oculto por defecto
       transform: translateY(-10px);
       transition: all 0.3s;
       pointer-events: none;
@@ -107,78 +276,257 @@ $success: var(--brand-accent);
     // --- ESTADO 3: ACTUAL (El Héroe) ---
     &.current {
       .icon-circle {
-        transform: scale(1.3); // Círculo MUY grande
-        background: white;     // Fondo blanco para resaltar icono
-        border: 2px solid $primary; // Borde grueso azul
-        color: $primary;       // Icono azul
-        box-shadow: 0 4px 15px rgba($primary, 0.2); // Sombra resplandor
+        transform: scale(1.3);
+        background: white;
+        border: 2px solid $primary;
+        color: $primary;
+        box-shadow: 0 4px 15px rgba($primary, 0.2);
+        animation: pulse-blue 2s infinite;
       }
-      
+
       .label {
-        opacity: 1; // Texto visible
+        opacity: 1;
         transform: translateY(0);
-        font-size: 12px;
-        top: 48px; // Ajuste por el tamaño del círculo grande
+        font-size: 11px;
+        top: 48px;
         font-weight: bold;
         color: $primary;
       }
     }
   }
 
+  @keyframes pulse-blue {
+    0% {
+      box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.6);
+    }
+
+    70% {
+      box-shadow: 0 0 0 20px rgba(14, 165, 233, 0);
+    }
+
+    100% {
+      box-shadow: 0 0 0 0 rgba(14, 165, 233, 0);
+    }
+  }
+
   // Ocultamos la sección de "Estado actual" textual vieja porque ya se ve en el stepper
   .main-status {
-    margin-top: 25px; // Separación extra
+    margin-top: 30px;
     border-top: 1px solid #eee;
-    padding-top: 15px;
+    padding-top: 20px;
     text-align: center;
-    font-size: 16px;
-    color: $primary;
+
+    p {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #e3f2fd;
+      color: $primary;
+      padding: 10px 24px;
+      border-radius: 99px;
+      font-size: 20px;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba($primary, 0.1);
+
+      &.done {
+        background: #e8f5e9;
+        color: #2e7d32;
+        box-shadow: 0 4px 12px rgba(#2e7d32, 0.1);
+      }
+
+      mat-icon {
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+    }
+  }
+}
+
+/* --- Animaciones de Entrada --- */
+.animate-up {
+  animation: fade-up 0.6s both ease-out;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 .details-card {
   margin: 0 16px 16px 16px;
   border-radius: 16px;
-  .desc { color: #555; line-height: 1.5; margin-bottom: 16px; }
+
+  .desc {
+    color: #555;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
 }
 
 .payment-row {
-  display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #eee;
-  &.highlight { background: #fff0f0; margin: 0 -16px; padding: 12px 16px; border: none; }
-  &.success { background: #f0fff4; margin: 0 -16px; padding: 12px 16px; border: none; }
-  
-  .debt { color: #d32f2f; font-weight: bold; }
-  .paid { color: $success; font-weight: bold; }
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #eee;
+
+  &.highlight {
+    background: #fff0f0;
+    margin: 0 -16px;
+    padding: 12px 16px;
+    border: none;
+  }
+
+  &.success {
+    background: #f0fff4;
+    margin: 0 -16px;
+    padding: 12px 16px;
+    border: none;
+  }
+
+  .debt {
+    color: #d32f2f;
+    font-weight: bold;
+  }
+
+  .paid {
+    color: $success;
+    font-weight: bold;
+  }
 }
 
 .date-info {
-  margin-top: 16px; text-align: center; font-size: 13px; color: #666;
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #666;
 }
 
 .evidence-section {
   padding: 0 16px;
-  h3 { font-size: 16px; margin-bottom: 12px; color: #444; }
+
+  h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    color: #444;
+  }
 }
 
 .photos-grid {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+
   .photo {
-    position: relative; border-radius: 12px; overflow: hidden;
-    img { width: 100%; height: 150px; object-fit: cover; display: block; }
-    .note { 
-      position: absolute; bottom: 0; left: 0; right: 0; 
-      background: rgba(0,0,0,0.6); color: white; 
-      font-size: 11px; padding: 4px 8px; 
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: zoom-in;
+    transition: transform 0.3s;
+
+    img {
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+    }
+
+    &:hover {
+      transform: scale(1.02);
+    }
+
+    .note {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 11px;
+      padding: 4px 8px;
     }
   }
 }
 
+/* --- Overlay de Foto --- */
+.photo-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(5px);
+  animation: fade-in 0.3s forwards;
+
+  .overlay-content {
+    position: relative;
+    max-width: 90%;
+    max-height: 90%;
+
+    img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      animation: zoom-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .close-btn {
+      position: absolute;
+      top: -50px;
+      right: 0;
+      color: white;
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .payment-info-card {
-  margin:16px 16px 0 16px;
+  margin: 16px 16px 0 16px;
   border-radius: 16px;
   overflow: hidden; // Para que el header no se salga de las esquinas
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important; // Sombra suave
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important; // Sombra suave
 
   .pay-header {
     background: #f8f9fa;
@@ -188,16 +536,27 @@ $success: var(--brand-accent);
     border-bottom: 1px solid #eee;
 
     .icon-box {
-      width: 40px; height: 40px;
+      width: 40px;
+      height: 40px;
       background: #e3f2fd; // Azul muy claro
       color: $primary;
       border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-right: 15px;
     }
 
-    mat-card-title { font-size: 16px; font-weight: 600; margin: 0; }
-    mat-card-subtitle { font-size: 13px; margin-top: 2px; }
+    mat-card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    mat-card-subtitle {
+      font-size: 13px;
+      margin-top: 2px;
+    }
   }
 
   .instruction-msg {
@@ -209,33 +568,59 @@ $success: var(--brand-accent);
   }
 
   .pay-list {
-    display: flex; flex-direction: column;
+    display: flex;
+    flex-direction: column;
   }
 
   .pay-item {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 16px;
     border-bottom: 1px dashed #eee;
     transition: background 0.2s;
 
-    &:last-child { border-bottom: none; }
+    &:last-child {
+      border-bottom: none;
+    }
 
     // Efecto visual para indicar que es clickeable
     &.ripple {
       cursor: pointer;
-      &:hover { background-color: #f5f7fa; }
-      &:active { background-color: #eef2f8; }
+
+      &:hover {
+        background-color: #f5f7fa;
+      }
+
+      &:active {
+        background-color: #eef2f8;
+      }
     }
 
     .info {
-      display: flex; flex-direction: column;
-      
-      .label { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; margin-bottom: 4px; }
-      .value { 
-        font-size: 15px; font-weight: 500; color: #333; font-family: monospace; // Monospace ayuda a leer números
+      display: flex;
+      flex-direction: column;
+
+      .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #888;
         letter-spacing: 0.5px;
-        
-        &.text-wrap { font-family: inherit; font-size: 14px; line-height: 1.4; }
+        margin-bottom: 4px;
+      }
+
+      .value {
+        font-size: 15px;
+        font-weight: 500;
+        color: #333;
+        font-family: monospace; // Monospace ayuda a leer números
+        letter-spacing: 0.5px;
+
+        &.text-wrap {
+          font-family: inherit;
+          font-size: 14px;
+          line-height: 1.4;
+        }
       }
     }
 
@@ -251,15 +636,38 @@ $success: var(--brand-accent);
     background: #fff8e1; // Amarillo muy suave para nota
     padding: 12px;
     border-radius: 8px;
-    display: flex; gap: 10px; align-items: center;
-    
-    mat-icon { color: #ffa000; font-size: 20px; height: 20px; }
-    p { margin: 0; font-size: 12px; color: #795548; line-height: 1.4; }
+    display: flex;
+    gap: 10px;
+    align-items: center;
+
+    mat-icon {
+      color: #ffa000;
+      font-size: 20px;
+      height: 20px;
+    }
+
+    p {
+      margin: 0;
+      font-size: 12px;
+      color: #795548;
+      line-height: 1.4;
+    }
   }
 }
 
 .footer {
-  text-align: center; padding: 40px 16px;
-  p { margin-bottom: 8px; color: #888; font-size: 14px; }
-  .whatsapp-btn { background-color: var(--brand-accent); color: white; border-radius: 99px; }
+  text-align: center;
+  padding: 40px 16px;
+
+  p {
+    margin-bottom: 8px;
+    color: #888;
+    font-size: 14px;
+  }
+
+  .whatsapp-btn {
+    background-color: var(--brand-accent);
+    color: white;
+    border-radius: 99px;
+  }
 }

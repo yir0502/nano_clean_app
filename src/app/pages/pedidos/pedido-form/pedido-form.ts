@@ -104,11 +104,11 @@ export class PedidoFormComponent implements OnInit {
         debounceTime(300),
         distinctUntilChanged(),
         switchMap(val => {
-          if (!val || typeof val !== 'string') return of([]);
+          if (!val || typeof val !== 'string') return of({ data: [], count: 0 });
           return this.api.listClientes({ q: val, limit: 5 });
         })
       )
-      .subscribe(data => this.clientesFiltrados.set(data));
+      .subscribe(res => this.clientesFiltrados.set(res.data));
 
     // Escuchar cambios en teléfono para validar existencia
     this.form.get('cliente_telefono')?.valueChanges
@@ -116,15 +116,15 @@ export class PedidoFormComponent implements OnInit {
         debounceTime(500),
         distinctUntilChanged(),
         switchMap(val => {
-          if (!val || val.length < 10) return of([]);
+          if (!val || val.length < 10) return of({ data: [], count: 0 });
           // Buscamos si existe alguien con ese teléfono
           return this.api.listClientes({ q: val, limit: 1 });
         })
       )
-      .subscribe(matches => {
+      .subscribe(res => {
         // Si encontramos un cliente por teléfono y NO hemos seleccionado uno explícitamente
-        if (matches.length > 0 && !this.selectedCliente()) {
-          const c = matches[0];
+        if (res.data.length > 0 && !this.selectedCliente()) {
+          const c = res.data[0];
           // Autocompletamos instantáneamente en lugar de arrojar una alerta
           this.selectCliente(c);
           this.snack.open(`Cliente vinculado con exito`, 'Cerrar', { duration: 3000 });
@@ -537,10 +537,10 @@ export class PedidoFormComponent implements OnInit {
         msg = `Hola *${nombre}* 👋\n\nTu pedido *${folio}* ha sido recibido.\n\nPuedes ver los detalles, saldo y fotos aquí:\n${urlRastreo}\n\n¡Gracias por tu confianza! \n- Lavandería Nano Clean`;
         break;
       case 'listo':
-        msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* para recoger en Nano Clean.\n\nTotal: *${montoStr}*\n\n¡Te esperamos! 😊`;
+        msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* por un total de ${montoStr}\n\nPuedes pasar a recogerlo en un plazo máximo de 2 semanas o tambien puedes solicitar envio a domicilio.\n\n¡Gracias por tu preferencia! 🙏`;
         break;
       case 'entregado':
-        msg = `¡Hola *${nombre}*! 👋\n\nGracias por recoger tu pedido *${folio}* de Nano Clean.\n\n¡Esperamos verte pronto! 🌟`;
+        msg = `¡Hola *${nombre}*! 👋\n\nGracias por tu preferencia, tu pedido *${folio}* ha sido entregado.\n\n¡Esperamos verte pronto! 🌟`;
         break;
       default:
         msg = `¡Hola *${nombre}*! 👋\n\nTe escribimos de Nano Clean respecto a tu pedido *${folio}*.\n\nTotal: *${montoStr}*\n\n¡Gracias por tu preferencia! 🙏`;

@@ -1,8 +1,11 @@
 <div class="page-container">
-    
+
     <header class="page-header">
         <div class="title-group">
             <h1><mat-icon>people_alt</mat-icon> Clientes</h1>
+            <span class="count-badge" *ngIf="items().length > 0">
+                {{ items().length }} de {{ totalCount() }}
+            </span>
         </div>
         <button mat-flat-button color="primary" (click)="openClienteDialog()">
             <mat-icon>add</mat-icon> Nuevo Cliente
@@ -18,57 +21,91 @@
                 <button *ngIf="q()" matSuffix mat-icon-button (click)="onQInput('')"><mat-icon>close</mat-icon></button>
             </mat-form-field>
 
-            <button mat-stroked-button color="accent" (click)="onMassMessage()">
-                <mat-icon>campaign</mat-icon> Mensaje Masivo
+            <button mat-stroked-button color="primary" (click)="openCampaignSettings()">
+                <mat-icon>settings</mat-icon> Config. Campaña
             </button>
         </mat-card-content>
     </mat-card>
 
+    <!-- Guía de Colores -->
+    <div class="color-guide">
+        <div class="guide-item"><span class="dot" style="background: #4caf50"></span> Activo (0-15 días)</div>
+        <div class="guide-item"><span class="dot" style="background: #ffc107"></span> Riesgo (16-45 días)</div>
+        <div class="guide-item"><span class="dot" style="background: #f44336"></span> Perdido (+45 días)</div>
+    </div>
 
+    <div class="modern-filter-tabs">
+        <button class="filter-pill pill-all" [class.active]="currentFilter() === 'todos'" (click)="setFilter('todos')">
+            <mat-icon>groups</mat-icon> Todos
+        </button>
+        <button class="filter-pill pill-promo" [class.active]="currentFilter() === 'falta_promo'"
+            (click)="setFilter('falta_promo')">
+            <mat-icon>campaign</mat-icon> Faltan Promo
+        </button>
+        <button class="filter-pill pill-inactivos" [class.active]="currentFilter() === 'inactivos'"
+            (click)="setFilter('inactivos')">
+            <mat-icon>warning</mat-icon> Inactivos (+15D)
+        </button>
+    </div>
 
     <div class="cliente-grid" *ngIf="items().length > 0">
-        <mat-card *ngFor="let c of items()" class="cliente-card" (click)="openClienteDialog(c, $event)">
-            <div class="card-header">
-                <div class="avatar-placeholder">{{ c.nombre.charAt(0).toUpperCase() }}</div>
-                <div class="info">
-                    <div class="name-row">
-                        <span class="name">{{ c.nombre }}</span>
-                        <div class="status-dot" 
-                             [style.background-color]="getStatusColor(c.ultima_visita)"
-                             matTooltip="Estado de actividad del cliente">
+        <mat-card *ngFor="let c of items()" class="cliente-card modern-card" (click)="openClienteDialog(c, $event)"
+            [style.border-left]="'4px solid ' + getStatusColor(c.ultima_visita)">
+            <div class="card-layout">
+                <div class="card-main">
+                    <div class="card-header">
+                        <div class="info">
+                            <div class="name-row-stack">
+                                <span class="name">{{ c.nombre }}</span>
+                                <span class="tag phone-tag">{{ c.telefono }}</span>
+                            </div>
                         </div>
+                        <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
+                            <mat-icon>more_vert</mat-icon>
+                        </button>
+                        <mat-menu #menu="matMenu">
+                            <button mat-menu-item (click)="onViewOrders(c, $event)">
+                                <mat-icon>receipt</mat-icon> Ver Pedidos
+                            </button>
+                            <button mat-menu-item (click)="onDelete(c, $event)" class="warn-text">
+                                <mat-icon color="warn">delete</mat-icon> Eliminar
+                            </button>
+                        </mat-menu>
                     </div>
-                    <div class="meta">{{ c.telefono }}</div>
+
+                    <mat-card-content class="card-body">
+                        <div class="tag-group">
+                            <span class="tag" [class.active]="c.permite_whatsapp">
+                                <mat-icon>chat</mat-icon> {{ c.permite_whatsapp ? 'WA Activo' : 'Sin WA' }}
+                            </span>
+                            <span class="tag freq" *ngIf="c.frecuencia_recordatorio > 0">
+                                <mat-icon>update</mat-icon> {{ c.frecuencia_recordatorio }} días
+                            </span>
+                            <span class="tag modern-sent" *ngIf="hasPromoThisMonth(c)">
+                                Promo Enviada
+                            </span>
+                            <span class="tag modern-warn" *ngIf="isInactiveMoreThan15Days(c)">
+                                Inactivo +15D
+                            </span>
+                        </div>
+                    </mat-card-content>
                 </div>
-                <button mat-icon-button [matMenuTriggerFor]="menu" (click)="$event.stopPropagation()">
-                    <mat-icon>more_vert</mat-icon>
-                </button>
-                <mat-menu #menu="matMenu">
-                    <button mat-menu-item (click)="onViewOrders(c, $event)">
-                        <mat-icon>receipt</mat-icon> Ver Pedidos
-                    </button>
-                    <button mat-menu-item (click)="onSendProgrammedReminder(c, $event)" [disabled]="!c.permite_whatsapp">
-                        <mat-icon>whatsapp</mat-icon> Recordatorio
-                    </button>
-                    <button mat-menu-item (click)="onDelete(c, $event)" class="warn-text">
-                        <mat-icon color="warn">delete</mat-icon> Eliminar
-                    </button>
-                </mat-menu>
+
+                <div class="card-side-actions">
+                    <div class="side-btn btn-green" (click)="sendPromo(c, $event)"
+                        [class.disabled]="!c.permite_whatsapp || hasPromoThisMonth(c)" matTooltip="Enviar Promo M.">
+                        <mat-icon>campaign</mat-icon>
+                    </div>
+                    <div class="side-btn btn-blue" (click)="sendReminder(c, $event)"
+                        [class.disabled]="!c.permite_whatsapp" matTooltip="Recordatorio Abandono">
+                        <mat-icon>waving_hand</mat-icon>
+                    </div>
+                </div>
             </div>
-            
-            <mat-card-content class="card-body">
-               <div class="tag-group">
-                   <span class="tag" [class.active]="c.permite_whatsapp">
-                       <mat-icon>chat</mat-icon> {{ c.permite_whatsapp ? 'WA Activo' : 'Sin WA' }}
-                   </span>
-                   <span class="tag freq" *ngIf="c.frecuencia_recordatorio > 0">
-                       <mat-icon>update</mat-icon> {{ c.frecuencia_recordatorio }} días
-                   </span>
-               </div>
-               <p class="address" *ngIf="c.direccion">{{ c.direccion }}</p>
-            </mat-card-content>
         </mat-card>
     </div>
+
+    <div class="infinite-observer" #infiniteAnchor></div>
 
     <div *ngIf="!loading() && items().length === 0" class="empty-state">
         <mat-icon>person_off</mat-icon>

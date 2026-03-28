@@ -62,6 +62,7 @@ export interface Cliente {
   permite_whatsapp: boolean;
   frecuencia_recordatorio: number; 
   ultima_visita?: string;
+  fecha_ultima_promo?: string;
   total_gastado?: number;
 }
 

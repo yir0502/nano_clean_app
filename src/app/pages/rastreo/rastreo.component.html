@@ -1,4 +1,16 @@
 <div class="tracking-container">
+  <div class="bubbles">
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+    <div class="bubble"></div>
+  </div>
 
 
 
@@ -17,9 +29,11 @@
       <p class="folio">Folio: {{ pedido().folio }}</p>
     </header>
 
-    <mat-card class="status-card">
+    <mat-card class="status-card animate-up">
       <div class="stepper">
-        <div class="track-line"></div>
+        <div class="track-line">
+          <div class="progress-fill" [style.width.%]="getProgressPercent()"></div>
+        </div>
 
         <div class="step" *ngFor="let s of steps" [class.active]="isStepActive(s.id)" [class.current]="isCurrent(s.id)">
 
@@ -33,14 +47,15 @@
 
       <div class="main-status">
         <p>Estado actual:</p>
-        <h2 [class.done]="pedido().estado === 'listo'">
+        <div class="status-badge" [class.done]="pedido().estado === 'listo'">
+          <mat-icon *ngIf="pedido().estado === 'listo'">verified</mat-icon>
           {{ pedido().estado | titlecase }}
-        </h2>
+        </div>
       </div>
     </mat-card>
 
-    <mat-card class="details-card">
-      <mat-card-header><mat-card-title>Detalles</mat-card-title></mat-card-header>
+    <mat-card class="details-card animate-up" style="animation-delay: 0.1s;">
+      <h2>Detalles del Pedido</h2>
       <mat-card-content>
         <p class="desc">{{ pedido().descripcion }}</p>
 
@@ -63,17 +78,17 @@
       </mat-card-content>
     </mat-card>
 
-    <div class="evidence-section" *ngIf="pedido().fotos?.length">
+    <div class="evidence-section animate-up" *ngIf="pedido().fotos?.length" style="animation-delay: 0.2s;">
       <h3>Evidencia de recepción</h3>
       <div class="photos-grid">
-        <div class="photo" *ngFor="let f of pedido().fotos">
+        <div class="photo" *ngFor="let f of pedido().fotos" (click)="openPhoto(f.url)">
           <img [src]="f.url" alt="Evidencia">
           <span class="note" *ngIf="f.nota">{{ f.nota }}</span>
         </div>
       </div>
     </div>
 
-    <mat-card class="payment-info-card">
+    <mat-card class="payment-info-card animate-up" style="animation-delay: 0.3s;">
 
       <p class="instruction-msg">¡También puedes pagar vía transferencia bancaria!</p>
 
@@ -129,9 +144,19 @@
     <footer class="footer">
       <p>¿Dudas?</p>
       <button mat-flat-button class="whatsapp-btn" onclick="window.open('https://wa.me/5212227342492', '_blank')">
-        <mat-icon>chat</mat-icon> Contáctanos
+        <mat-icon>chat</mat-icon> Hablar con Soporte
       </button>
     </footer>
 
+  </div>
+
+  <!-- Overlay para Zoom de Fotos -->
+  <div class="photo-overlay" *ngIf="selectedPhoto()" (click)="closePhoto()">
+    <div class="overlay-content" (click)="$event.stopPropagation()">
+      <img [src]="selectedPhoto()" alt="Evidencia ampliada">
+      <button mat-icon-button class="close-btn" (click)="closePhoto()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
   </div>
 </div>
