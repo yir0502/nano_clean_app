@@ -120,6 +120,11 @@ export class ApiClientService {
     return this.get<{ data: any[], count: number }>('/clientes', p);
   }
 
+  getClientStats(): Promise<any> {
+    const p = { org_id: this.auth.orgId };
+    return this.get<any>('/clientes/stats', p);
+  }
+
   deleteCliente(id: string): Promise<{ ok: boolean }> {
     return this.deleteGeneric<{ ok: boolean }>(`/clientes/${id}`);
   }

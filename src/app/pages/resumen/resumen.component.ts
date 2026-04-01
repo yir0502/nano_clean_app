@@ -98,6 +98,14 @@ export class ResumenComponent implements OnInit {
     plugins: { legend: { position: 'right' } }
   };
 
+  // 4) Gráfica de Análisis de Clientes
+  clientesDoughnutData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  clientesOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom' } }
+  };
+
   // Recientes
   recientes: { id: string; tipo: 'ingreso' | 'egreso'; categoria: string; fecha: string; monto: number }[] = [];
 
@@ -167,13 +175,16 @@ export class ResumenComponent implements OnInit {
       // 1.5 Preparar carga de Deudas Globales
       const pDeudas = this.api.listPedidos({deuda: true});
 
+      // 1.8 Cargar Estadísticas de Clientes
+      const pStatsClientes = this.api.getClientStats();
+
       // 2. Preparar carga del Dashboard (Tu lógica actual)
       const { desde, hasta } = this.rangeDates(this.range);
       const org_id = this.auth.orgId;
       const pDash = this.dash.get({ desde, hasta, org_id, include: 'mes,recientes', limit_recientes: 10 });
 
-      // 3. Ejecutar ambas peticiones en paralelo (esperar a las dos)
-      const [pedidos, deudas, resp] = await Promise.all([pPedidos, pDeudas, pDash]);
+      // 3. Ejecutar peticiones en paralelo
+      const [pedidos, deudas, resp, statsClientes] = await Promise.all([pPedidos, pDeudas, pDash, pStatsClientes]);
 
       // 4. Asignar los pedidos a la variable que usa el HTML
       this.pedidosActivos = pedidos;
@@ -218,6 +229,20 @@ export class ResumenComponent implements OnInit {
         datasets: [{
           data: [dia, leves, graves],
           backgroundColor: ['#4caf50', '#ff9800', '#f44336'],
+          hoverOffset: 4
+        }]
+      };
+
+      // Grafica Clientes
+      this.clientesDoughnutData = {
+        labels: ['Activos (<15d)', 'Riesgo (16-45d)', 'Perdidos (>45d)'],
+        datasets: [{
+          data: [
+            statsClientes.segmentos?.active_0_15 || 0,
+            statsClientes.segmentos?.risk_16_45 || 0,
+            statsClientes.segmentos?.lost_45plus || 0
+          ],
+          backgroundColor: ['#4caf50', '#ffc107', '#f44336'],
           hoverOffset: 4
         }]
       };

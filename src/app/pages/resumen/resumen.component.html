@@ -92,6 +92,13 @@
       </div>
     </mat-card>
 
+    <mat-card class="card card--doughnut">
+      <mat-card-title>Actividad de Clientes</mat-card-title>
+      <div class="chart">
+        <canvas baseChart [data]="clientesDoughnutData" [options]="clientesOptions" type="doughnut"></canvas>
+      </div>
+    </mat-card>
+
     <mat-card class="card card--bar">
       <mat-card-title>Por sucursal (mes)</mat-card-title>
       <div class="chart">

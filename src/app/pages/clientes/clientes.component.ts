@@ -20,7 +20,13 @@ import { MatMenuModule } from '@angular/material/menu';
 // Servicios y Componentes
 import { ApiClientService } from '../../core/api-client.service';
 import { Cliente } from '../../core/models';
-import { ClienteDialogComponent } from './cliente-dialog.component'; // <--- Importar el nuevo dialog
+import { ClienteDialogComponent } from './cliente-dialog.component';
+
+// Charts
+import { NgChartsModule } from 'ng2-charts';
+import type { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { Chart as ChartJS, registerables } from 'chart.js';
+ChartJS.register(...registerables);
 
 @Component({
   selector: 'app-campaign-dialog',
@@ -69,7 +75,7 @@ export class CampaignSettingsDialogComponent {
   imports: [
     CommonModule, FormsModule, MatCardModule, MatListModule, MatIconModule, MatButtonModule,
     MatInputModule, MatProgressSpinnerModule, MatSnackBarModule, MatFormFieldModule, MatSelectModule, MatDialogModule, MatTooltipModule,
-    MatMenuModule
+    MatMenuModule, NgChartsModule
   ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss'
@@ -93,14 +99,99 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
   hasMore = signal<boolean>(true);
   loadingMore = signal<boolean>(false);
 
+  // Stats
+  statsData: any = null;
+  doughnutData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  doughnutOptions: ChartConfiguration<'doughnut'>['options'] = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right' } }
+  };
+  barData: ChartData<'bar'> = { labels: [], datasets: [] };
+  barOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { 
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw} clientes` } }
+    },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+    datasets: { bar: { maxBarThickness: 32, borderRadius: 6 } }
+  };
+
+  // Nuevas Gráficas
+  whatsappData: ChartData<'pie'> = { labels: [], datasets: [] };
+  whatsappOptions: ChartConfiguration<'pie'>['options'] = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: window.innerWidth < 600 ? 'bottom' : 'right' } }
+  };
+
+  frecuenciaData: ChartData<'bar'> = { labels: [], datasets: [] };
+  frecuenciaOptions: ChartConfiguration<'bar'>['options'] = {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+    datasets: { bar: { maxBarThickness: 24, borderRadius: 4 } }
+  };
+
   // CRM
-  currentFilter = signal<'todos' | 'falta_promo' | 'inactivos'>('todos');
+  currentFilter = signal<'todos' | '0-15' | '16-45' | '45plus' | 'falta_promo'>('todos');
   promoMessage = signal<string>(localStorage.getItem('nc_promo_msg') || '¡Hola [Nombre]! 🌟 Aprovecha nuestra promo este mes en Nano Clean. 🫧');
   promoLink = signal<string>(localStorage.getItem('nc_promo_link') || '');
   reminderMessage = signal<string>(localStorage.getItem('nc_rem_msg') || '¡Hola [Nombre] 👋! Notamos que hace unos días no nos visitas. ¿Tienes prendas listas? ¡Te esperamos en Nano Clean! 💙');
 
   ngOnInit(): void {
+    this.loadStats();
     this.loadClientes(true);
+  }
+
+  async loadStats() {
+    try {
+      const stats = await this.api.getClientStats();
+      this.statsData = stats;
+
+      this.doughnutData = {
+        labels: ['0-15 Días (Activos)', '16-45 Días (En Riesgo)', '+45 Días (Perdidos)'],
+        datasets: [{
+          data: [stats.segmentos.active_0_15, stats.segmentos.risk_16_45, stats.segmentos.lost_45plus],
+          backgroundColor: ['#4caf50', '#ffc107', '#f44336'],
+          hoverOffset: 4
+        }]
+      };
+
+      this.barData = {
+        labels: ['Promo Vigente', 'Falta Promo'],
+        datasets: [{
+          data: [stats.total - stats.faltan_promo, stats.faltan_promo],
+          backgroundColor: ['#2196f3', '#9e9e9e'],
+          borderWidth: 0
+        }]
+      };
+
+      this.whatsappData = {
+        labels: ['WA Activo', 'Sin WA'],
+        datasets: [{
+          data: [stats.con_whatsapp, stats.total - stats.con_whatsapp],
+          backgroundColor: ['#2ed573', '#dcdde1']
+        }]
+      };
+
+      this.frecuenciaData = {
+        labels: ['Cada 7 días', 'Cada 15 días', 'Cada 30 días', 'Otros'],
+        datasets: [{
+          label: 'Clientes',
+          data: [stats.frecuencias['7'], stats.frecuencias['15'], stats.frecuencias['30'], stats.frecuencias['otros']],
+          backgroundColor: '#3f51b5'
+        }]
+      };
+
+      // Ajuste de leyenda dinámico
+      const isMobile = window.innerWidth < 600;
+      if (this.doughnutOptions?.plugins?.legend) this.doughnutOptions.plugins.legend.position = isMobile ? 'bottom' : 'right';
+      if (this.whatsappOptions?.plugins?.legend) this.whatsappOptions.plugins.legend.position = isMobile ? 'bottom' : 'right';
+
+    } catch (e) {
+      console.error('Error cargando stats', e);
+    }
   }
 
   ngAfterViewInit(): void {
@@ -166,7 +257,7 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadClientes(true);
   }
 
-  setFilter(f: 'todos' | 'falta_promo' | 'inactivos') {
+  setFilter(f: 'todos' | '0-15' | '16-45' | '45plus' | 'falta_promo') {
     this.currentFilter.set(f);
     this.loadClientes(true);
   }

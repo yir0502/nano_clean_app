@@ -3,14 +3,38 @@
     <header class="page-header">
         <div class="title-group">
             <h1><mat-icon>people_alt</mat-icon> Clientes</h1>
-            <span class="count-badge" *ngIf="items().length > 0">
-                {{ items().length }} de {{ totalCount() }}
-            </span>
+            <button mat-flat-button color="primary" (click)="openClienteDialog()" style="margin-left: 16px;">
+                <mat-icon>add</mat-icon> Nuevo Cliente
+            </button>
         </div>
-        <button mat-flat-button color="primary" (click)="openClienteDialog()">
-            <mat-icon>add</mat-icon> Nuevo Cliente
-        </button>
     </header>
+
+    <div class="charts-section" *ngIf="statsData">
+        <mat-card class="chart-card">
+            <mat-card-title>Segmentación por Actividad</mat-card-title>
+            <div class="chart-container">
+                <canvas baseChart [data]="doughnutData" [options]="doughnutOptions" type="doughnut"></canvas>
+            </div>
+        </mat-card>
+        <mat-card class="chart-card">
+            <mat-card-title>Alcance WhatsApp</mat-card-title>
+            <div class="chart-container">
+                <canvas baseChart [data]="whatsappData" [options]="whatsappOptions" type="pie"></canvas>
+            </div>
+        </mat-card>
+        <mat-card class="chart-card">
+            <mat-card-title>Marketing: Última Promoción</mat-card-title>
+            <div class="chart-container">
+                <canvas baseChart [data]="barData" [options]="barOptions" type="bar"></canvas>
+            </div>
+        </mat-card>
+        <mat-card class="chart-card">
+            <mat-card-title>Frecuencia de Re-visita</mat-card-title>
+            <div class="chart-container">
+                <canvas baseChart [data]="frecuenciaData" [options]="frecuenciaOptions" type="bar"></canvas>
+            </div>
+        </mat-card>
+    </div>
 
     <mat-card class="search-actions-card">
         <mat-card-content class="search-content">
@@ -22,29 +46,40 @@
             </mat-form-field>
 
             <button mat-stroked-button color="primary" (click)="openCampaignSettings()">
-                <mat-icon>settings</mat-icon> Config. Campaña
+                <mat-icon>edit_note</mat-icon> Plantillas Mensajes
             </button>
         </mat-card-content>
     </mat-card>
 
-    <!-- Guía de Colores -->
-    <div class="color-guide">
-        <div class="guide-item"><span class="dot" style="background: #4caf50"></span> Activo (0-15 días)</div>
-        <div class="guide-item"><span class="dot" style="background: #ffc107"></span> Riesgo (16-45 días)</div>
-        <div class="guide-item"><span class="dot" style="background: #f44336"></span> Perdido (+45 días)</div>
+    <!-- Guía de Colores y Contador -->
+    <div class="guide-conteo-container">
+        <div class="color-guide">
+            <div class="guide-item"><span class="dot" style="background: #4caf50"></span> Activo (0-15 días)</div>
+            <div class="guide-item"><span class="dot" style="background: #ffc107"></span> Riesgo (16-45 días)</div>
+            <div class="guide-item"><span class="dot" style="background: #f44336"></span> Perdido (+45 días)</div>
+        </div>
+        <span class="count-badge" *ngIf="items().length > 0">
+            {{ items().length }} de {{ totalCount() }}
+        </span>
     </div>
 
     <div class="modern-filter-tabs">
         <button class="filter-pill pill-all" [class.active]="currentFilter() === 'todos'" (click)="setFilter('todos')">
             <mat-icon>groups</mat-icon> Todos
         </button>
+        <button class="filter-pill" style="border-left-color: #4caf50;" [class.active]="currentFilter() === '0-15'" (click)="setFilter('0-15')">
+            <mat-icon>check_circle</mat-icon> 0 a 15 Días
+        </button>
+        <button class="filter-pill" style="border-left-color: #ffc107;" [class.active]="currentFilter() === '16-45'" (click)="setFilter('16-45')">
+            <mat-icon>warning</mat-icon> 16 a 45 Días
+        </button>
+        <button class="filter-pill pill-inactivos" style="border-left-color: #f44336;" [class.active]="currentFilter() === '45plus'"
+            (click)="setFilter('45plus')">
+            <mat-icon>block</mat-icon> Más de 45 Días
+        </button>
         <button class="filter-pill pill-promo" [class.active]="currentFilter() === 'falta_promo'"
             (click)="setFilter('falta_promo')">
             <mat-icon>campaign</mat-icon> Faltan Promo
-        </button>
-        <button class="filter-pill pill-inactivos" [class.active]="currentFilter() === 'inactivos'"
-            (click)="setFilter('inactivos')">
-            <mat-icon>warning</mat-icon> Inactivos (+15D)
         </button>
     </div>
 
