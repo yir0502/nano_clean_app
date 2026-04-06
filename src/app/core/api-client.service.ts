@@ -1,16 +1,22 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http'; // <--- HttpClient
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
-import { Categoria, Movimiento, Sucursal, Pedido, PedidoEvidencia} from './models';
+import { Categoria, Movimiento, Sucursal, Pedido, PedidoEvidencia, Cliente, PaginatedResponse } from './models';
 import { AuthService } from './auth.service';
 import { ENV } from './env';
 
 @Injectable({ providedIn: 'root' })
 export class ApiClientService {
   private http = inject(HttpClient);
-  private auth = inject(AuthService); // Se usa en el interceptor, pero quizás necesitemos orgId aquí para params
+  private auth = inject(AuthService);
+  private snack = inject(MatSnackBar);
 
   private base = ENV.API_URL || 'http://localhost:3000';
+  
+  // Caché de memoria para catálogos estáticos
+  private cacheCategorias = new Map<string, Categoria[]>();
+  private cacheSucursales = new Map<string, Sucursal[]>();
 
   // ===== HELPERS =====
 
@@ -31,9 +37,15 @@ export class ApiClientService {
   private async request<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, options?: { body?: any, params?: any }): Promise<T> {
     const url = path.startsWith('/') ? `${this.base}${path}` : `${this.base}/${path}`;
 
+    // Inyectamos org_id si no viene ya en los parámetros
+    const params = { ...options?.params };
+    if (!params.org_id && this.auth.orgId) {
+      params.org_id = this.auth.orgId;
+    }
+
     const obs$ = this.http.request<T>(method, url, {
       body: options?.body,
-      params: this.toHttpParams(options?.params),
+      params: this.toHttpParams(params),
     });
 
     try {
@@ -41,6 +53,7 @@ export class ApiClientService {
     } catch (error: any) {
       // Normalizar error para que tus componentes sigan recibiendo el mensaje limpio
       const msg = error.error?.error || error.message || 'Error del servidor';
+      this.snack.open(msg, 'Cerrar', { duration: 4000, horizontalPosition: 'right', verticalPosition: 'bottom' });
       throw new Error(msg);
     }
   }
@@ -85,39 +98,55 @@ export class ApiClientService {
   }
 
   // --- CATEGORÍAS ---
-  listCategorias(tipo?: 'ingreso' | 'egreso'): Promise<Categoria[]> {
+  async listCategorias(tipo?: 'ingreso' | 'egreso'): Promise<Categoria[]> {
+    const cacheKey = tipo || 'todas';
+    if (this.cacheCategorias.has(cacheKey)) return this.cacheCategorias.get(cacheKey)!;
+
     const p: any = { org_id: this.auth.orgId };
     if (tipo) p.tipo = tipo;
-    return this.get<Categoria[]>('/categorias', p);
+    const res = await this.get<Categoria[]>('/categorias', p);
+    
+    this.cacheCategorias.set(cacheKey, res);
+    return res;
   }
 
   createCategoria(payload: any): Promise<Categoria> {
+    this.cacheCategorias.clear(); // Limpiar caché al crear
     return this.post<Categoria>('/categorias', payload);
   }
 
   deleteCategoria(id: string): Promise<{ ok: boolean }> {
+    this.cacheCategorias.clear(); // Limpiar caché al borrar
     return this.deleteGeneric<{ ok: boolean }>(`/categorias/${id}`);
   }
 
   // --- SUCURSALES ---
-  listSucursales(params?: { activo?: number }): Promise<Sucursal[]> {
+  async listSucursales(params?: { activo?: number }): Promise<Sucursal[]> {
+    const cacheKey = JSON.stringify(params || {});
+    if (this.cacheSucursales.has(cacheKey)) return this.cacheSucursales.get(cacheKey)!;
+
     const p: any = { org_id: this.auth.orgId };
     if (params?.activo !== undefined) p.activo = params.activo;
-    return this.get<Sucursal[]>('/sucursales', p);
+    const res = await this.get<Sucursal[]>('/sucursales', p);
+    
+    this.cacheSucursales.set(cacheKey, res);
+    return res;
   }
 
   createSucursal(payload: any): Promise<Sucursal> {
+    this.cacheSucursales.clear(); // Limpiar caché al crear
     return this.post<Sucursal>('/sucursales', payload);
   }
 
   deleteSucursal(id: string): Promise<{ ok: boolean }> {
+    this.cacheSucursales.clear(); // Limpiar caché al borrar
     return this.deleteGeneric<{ ok: boolean }>(`/sucursales/${id}`);
   }
 
   // --- CLIENTES ---
-  listClientes(params?: any): Promise<{ data: any[], count: number }> {
+  listClientes(params?: any): Promise<PaginatedResponse<Cliente>> {
     const p = { org_id: this.auth.orgId, ...params };
-    return this.get<{ data: any[], count: number }>('/clientes', p);
+    return this.get<PaginatedResponse<Cliente>>('/clientes', p);
   }
 
   getClientStats(): Promise<any> {
@@ -129,16 +158,16 @@ export class ApiClientService {
     return this.deleteGeneric<{ ok: boolean }>(`/clientes/${id}`);
   }
 
-  createCliente(payload: any): Promise<any> {
-    return this.post('/clientes', payload);
+  createCliente(payload: Partial<Cliente>): Promise<Cliente> {
+    return this.post<Cliente>('/clientes', payload);
   }
 
-  updateCliente(id: string, payload: any): Promise<any> {
-    return this.put(`/clientes/${id}`, payload);
+  updateCliente(id: string, payload: Partial<Cliente>): Promise<Cliente> {
+    return this.put<Cliente>(`/clientes/${id}`, payload);
   }
 
-  sendMassMessage(payload: { message: string, template?: string }): Promise<any> {
-    return this.post('/clientes/mass-message', payload);
+  sendMassMessage(payload: { message: string, template?: string }): Promise<{ ok: boolean }> {
+    return this.post<{ ok: boolean }>('/clientes/mass-message', payload);
   }
 
   // --- PEDIDOS Y TRACKING ---
@@ -184,7 +213,7 @@ export class ApiClientService {
   }
 
   // --- RASTREO PÚBLICO ---
-  getPedidoPublico(folio: string): Promise<any> {
-    return this.get(`/rastreo/${folio}`);
+  getPedidoPublico(folio: string): Promise<Pedido> {
+    return this.get<Pedido>(`/rastreo/${folio}`);
   }
 }

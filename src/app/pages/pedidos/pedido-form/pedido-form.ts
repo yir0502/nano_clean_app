@@ -307,8 +307,8 @@ export class PedidoFormComponent implements OnInit {
       // 1. Crear Cliente si no existe
       if (!clientId) {
         const nuevoCliente = await this.api.createCliente({
-          nombre: v.cliente_nombre,
-          telefono: v.cliente_telefono,
+          nombre: v.cliente_nombre || '',
+          telefono: v.cliente_telefono || '',
           permite_whatsapp: true
         });
         clientId = nuevoCliente.id;

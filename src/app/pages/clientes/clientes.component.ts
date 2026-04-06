@@ -378,8 +378,12 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.hasPromoThisMonth(cliente)) {
       try {
         const today = new Date().toISOString();
-        await this.api.updateCliente(cliente.id, { fecha_ultima_promo: today });
-        this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, fecha_ultima_promo: today } : c));
+        const newCount = (cliente.invitaciones_enviadas || 0) + 1;
+        await this.api.updateCliente(cliente.id, { 
+          fecha_ultima_promo: today,
+          invitaciones_enviadas: newCount
+        });
+        this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, fecha_ultima_promo: today, invitaciones_enviadas: newCount } : c));
         // Si estamos en filtro falta_promo, lo quitamos visualmente
         if (this.currentFilter() === 'falta_promo') {
           this.items.update(list => list.filter(c => c.id !== cliente.id));
@@ -400,6 +404,12 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
     const rawMsg = this.reminderMessage().replace('[Nombre]', cliente.nombre.split(' ')[0]);
     const tel = cliente.telefono.replace(/\D/g, '');
     window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(rawMsg)}`, '_blank');
+
+    // Incrementar contador de invitaciones
+    const newCount = (cliente.invitaciones_enviadas || 0) + 1;
+    this.api.updateCliente(cliente.id, { invitaciones_enviadas: newCount }).then(updated => {
+      this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, invitaciones_enviadas: newCount } : c));
+    }).catch(err => console.error('Error al actualizar contador de invitaciones', err));
   }
 
   onViewOrders(cliente: Cliente, event: MouseEvent) {

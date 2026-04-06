@@ -1,18 +1,18 @@
 <div class="page-container resumen-grid">
   <div class="section-header">
     <h2>Pedidos en Curso</h2>
-    <a routerLink="/pedidos" class="see-all" *ngIf="pedidosActivos.length > 0">Ver todos</a>
+    <a routerLink="/pedidos" class="see-all" *ngIf="pedidosActivos().length > 0">Ver todos</a>
   </div>
-  <section class="active-orders" *ngIf="!loading">
+  <section class="active-orders" *ngIf="!loading()">
 
-    <div class="empty-orders" *ngIf="pedidosActivos.length === 0">
+    <div class="empty-orders" *ngIf="pedidosActivos().length === 0">
       <mat-icon>check_circle_outline</mat-icon>
       <p>¡Todo limpio! No hay pedidos pendientes.</p>
       <button mat-button color="primary" routerLink="/pedidos/nuevo">Recibir Pedido</button>
     </div>
 
-    <div class="orders-list" *ngIf="pedidosActivos.length > 0">
-      <mat-card *ngFor="let p of pedidosActivos" class="order-item" [routerLink]="['/pedidos', p.id]">
+    <div class="orders-list" *ngIf="pedidosActivos().length > 0">
+      <mat-card *ngFor="let p of pedidosActivos()" class="order-item" [routerLink]="['/pedidos', p.id]">
         <div class="order-header">
           <mat-icon>store</mat-icon> {{ p.sucursal_nombre }}
           <button (click)="deletePedido(p, $event)" class="delete-button">
@@ -20,14 +20,14 @@
           </button>
         </div>
         <div class="order-strip">
-          <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
+          <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
           <div class="order-content">
             <div class="order-main">
               <span class="customer">{{ p.cliente_nombre }}</span>
               <span class="folio">{{ p.folio }}</span>
             </div>
             <div class="order-meta">
-              <span class="status-badge" [ngClass]="getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
+              <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
               <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
             </div>
             <div class="order-icon">
@@ -36,7 +36,7 @@
           </div>
         </div>
         <div class="order-actions">
-          <button (click)="sendWhatsapp(p, $event)" class="whatsapp-button">
+          <button (click)="pedidoActions.sendWhatsapp(p); $event.stopPropagation()" class="whatsapp-button">
             <mat-icon>share</mat-icon> Compartir al cliente
           </button>
         </div>
@@ -46,41 +46,41 @@
   
   <h2>Resumen Financiero</h2>
   <!-- KPIs -->
-  <section class="kpis" *ngIf="!loading; else skeleton">
+  <section class="kpis" *ngIf="!loading(); else skeleton">
     <article class="kpi">
       <div class="kpi__label">Ingresos mes</div>
-      <div class="kpi__value">{{ ingresosMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+      <div class="kpi__value">{{ ingresosMes() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
     </article>
     <article class="kpi">
       <div class="kpi__label">Egresos mes</div>
-      <div class="kpi__value">{{ egresosMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+      <div class="kpi__value">{{ egresosMes() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
     </article>
     <article class="kpi kpi--balance">
       <div class="kpi__label">Balance</div>
-      <div class="kpi__value">{{ balanceMes | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+      <div class="kpi__value">{{ balanceMes() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
     </article>
     <article class="kpi kpi--warning">
       <div class="kpi__label" style="color: #ed6c02; font-weight: 500;">Cartera Vencida (Al Día)</div>
-      <div class="kpi__value" style="color: #d32f2f;">{{ deudaTotal | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
+      <div class="kpi__value" style="color: #d32f2f;">{{ deudaTotal() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
     </article>
   </section>
 
   <!-- Charts -->
-  <section class="charts" *ngIf="!loading">
+  <section class="charts" *ngIf="!loading()">
     <mat-card class="card card--line">
       <mat-card-title>
         Ingresos vs Egresos
         <span class="spacer"></span>
       </mat-card-title>
 
-      <mat-button-toggle-group [value]="range" (change)="setRange($event.value)" exclusive>
+      <mat-button-toggle-group [value]="range()" (change)="setRange($event.value)" exclusive>
         <mat-button-toggle value="3m">3m</mat-button-toggle>
         <mat-button-toggle value="6m">6m</mat-button-toggle>
         <mat-button-toggle value="12m">12m</mat-button-toggle>
       </mat-button-toggle-group>
 
       <div class="chart">
-        <canvas baseChart [data]="lineData" [options]="lineOptions" [type]="mainChartType">
+        <canvas baseChart [data]="lineData()" [options]="lineOptions" [type]="mainChartType()">
         </canvas>
       </div>
     </mat-card>
@@ -88,21 +88,21 @@
     <mat-card class="card card--doughnut">
       <mat-card-title>Gravedad de Cartera Adeudada</mat-card-title>
       <div class="chart">
-        <canvas baseChart [data]="deudasDoughnutData" [options]="deudasOptions" type="doughnut"></canvas>
+        <canvas baseChart [data]="deudasDoughnutData()" [options]="deudasOptions" type="doughnut"></canvas>
       </div>
     </mat-card>
 
     <mat-card class="card card--doughnut">
       <mat-card-title>Actividad de Clientes</mat-card-title>
       <div class="chart">
-        <canvas baseChart [data]="clientesDoughnutData" [options]="clientesOptions" type="doughnut"></canvas>
+        <canvas baseChart [data]="clientesDoughnutData()" [options]="clientesOptions" type="doughnut"></canvas>
       </div>
     </mat-card>
 
     <mat-card class="card card--bar">
       <mat-card-title>Por sucursal (mes)</mat-card-title>
       <div class="chart">
-        <canvas baseChart [data]="sucursalBarData" [options]="sucursalBarOptions" chartType="bar">
+        <canvas baseChart [data]="sucursalBarData()" [options]="sucursalBarOptions" type="bar">
         </canvas>
       </div>
     </mat-card>
@@ -111,24 +111,24 @@
     <mat-card class="card card--bar">
       <mat-card-title>Por categoría (Ingresos · mes)</mat-card-title>
       <div class="chart">
-        <canvas baseChart [data]="barIngresoData" [options]="barOptions" type="bar"></canvas>
+        <canvas baseChart [data]="barIngresoData()" [options]="barOptions" type="bar"></canvas>
       </div>
     </mat-card>
 
     <mat-card class="card card--bar">
       <mat-card-title>Por categoría (Egresos · mes)</mat-card-title>
       <div class="chart">
-        <canvas baseChart [data]="barEgresoData" [options]="barOptions" type="bar"></canvas>
+        <canvas baseChart [data]="barEgresoData()" [options]="barOptions" type="bar"></canvas>
       </div>
     </mat-card>
   </section>
 
 
   <!-- Recientes -->
-  <section class="recientes" *ngIf="!loading">
+  <section class="recientes" *ngIf="!loading()">
     <h3>Últimos movimientos</h3>
     <mat-list>
-      <mat-list-item *ngFor="let m of recientes">
+      <mat-list-item *ngFor="let m of recientes()">
         <mat-icon matListItemIcon>{{ m.tipo === 'ingreso' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
         <div matListItemTitle>{{ m.categoria }}</div>
         <div matListItemLine>{{ m.fecha | date:'dd MMM, HH:mm' }}</div>

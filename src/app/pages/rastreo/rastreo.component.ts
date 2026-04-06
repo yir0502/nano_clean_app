@@ -2,6 +2,8 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiClientService } from '../../core/api-client.service';
+import { PedidoActionsService } from '../../core/pedido-actions.service';
+import { Pedido } from '../../core/models';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -9,6 +11,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
+export interface PedidoRastreo extends Pedido {
+  fotos?: { url: string; nota?: string }[];
+}
 
 @Component({
   selector: 'app-rastreo',
@@ -25,10 +31,11 @@ export class RastreoComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private api = inject(ApiClientService);
   private snack = inject(MatSnackBar);
+  public pedidoActions = inject(PedidoActionsService);
 
   loading = signal(true);
   error = signal<string|null>(null);
-  pedido = signal<any>(null);
+  pedido = signal<PedidoRastreo|null>(null);
 
   // --- CAMBIO 1: Agregamos los pasos nuevos al Array visual ---
   steps = [
@@ -63,10 +70,10 @@ export class RastreoComponent implements OnInit {
   // Calcula si un paso ya se completó para pintarlo de color
   isStepActive(stepId: string): boolean {
     const estadoActual = this.pedido()?.estado;
+    if(!estadoActual) return false;
     
-    // --- CAMBIO 2: Actualizamos la lista lógica para que el cálculo funcione ---
     // El orden aquí es CRÍTICO para saber qué círculos pintar
-    const estadosOrdenados = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado'];
+    const estadosOrdenados = this.pedidoActions.estadosProduccion;
     
     return estadosOrdenados.indexOf(stepId) <= estadosOrdenados.indexOf(estadoActual);
   }
@@ -87,7 +94,8 @@ export class RastreoComponent implements OnInit {
 
   getProgressPercent(): number {
     const estadoActual = this.pedido()?.estado;
-    const estadosOrdenados = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado'];
+    if(!estadoActual) return 0;
+    const estadosOrdenados = this.pedidoActions.estadosProduccion;
     const idx = estadosOrdenados.indexOf(estadoActual);
     if (idx < 0) return 0;
     return (idx / (estadosOrdenados.length - 1)) * 100;

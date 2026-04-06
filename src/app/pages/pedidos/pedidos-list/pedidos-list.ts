@@ -13,8 +13,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ApiClientService } from '../../../core/api-client.service';
+import { PedidoActionsService } from '../../../core/pedido-actions.service';
 import { Pedido } from '../../../core/models';
 
 @Component({
@@ -23,15 +25,16 @@ import { Pedido } from '../../../core/models';
   imports: [
     CommonModule, FormsModule,
     MatCardModule, MatButtonModule, MatIconModule, MatListModule,
-    MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatChipsModule
+    MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatChipsModule, MatTooltipModule
   ],
-  templateUrl: './pedidos-list.html', // Asegúrate que exista
-  styleUrls: ['./pedidos-list.scss']  // Asegúrate que exista
+  templateUrl: './pedidos-list.html',
+  styleUrls: ['./pedidos-list.scss']
 })
 export class PedidosListComponent implements OnInit {
   private api = inject(ApiClientService);
   private router = inject(Router);
   private snack = inject(MatSnackBar);
+  public pedidoActions = inject(PedidoActionsService);
 
   // Estado
   activeTab = signal<number>(0); // 0 = Activos, 1 = Historial
@@ -51,13 +54,12 @@ export class PedidosListComponent implements OnInit {
   async reload() {
     this.loading.set(true);
     try {
-      // Si tab es 0 (Activos) -> activo=true, Si tab es 1 (Historial) -> activo=false
       const isActivo = this.activeTab() === 0;
 
       const data = await this.api.listPedidos({
         activo: isActivo,
         q: this.q() || undefined,
-        limit: 50 // Traemos 50 por ahora
+        limit: 50
       });
       this.pedidos.set(data);
     } catch (e) {
@@ -65,21 +67,6 @@ export class PedidosListComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
-  }
-
-  // Helpers visuales
-  getStatusColor(estado: string): string {
-    switch (estado) {
-      case 'recibido': return 'warn';
-      case 'lavando': return 'accent_1';
-      case 'secando': return 'accent_2';
-      case 'doblando': return 'accent_3';
-      case 'listo': return 'primary';
-      case 'entregado': return 'completed';
-      case 'cancelado': return 'canceled';
-      default: return '';
-    }
-
   }
 
   async deletePedido(pedido: Pedido, event: MouseEvent) {
@@ -90,46 +77,12 @@ export class PedidosListComponent implements OnInit {
 
     try {
       await this.api.deletePedido(pedido.id);
-
       // Actualizamos la lista localmente para que desaparezca al instante
       this.pedidos.update(prev => prev.filter(p => p.id !== pedido.id));
-
       this.snack.open('Pedido eliminado correctamente', 'OK', { duration: 3000 });
     } catch (e) {
-      this.snack.open('Error al eliminar el pedido', 'Cerrar', { duration: 3000 });
+      // El snack global lo maneja
     }
-  }
-
-
-  // Acción rápida: Enviar WhatsApp
-  sendWhatsapp(pedido: Pedido, event: MouseEvent) {
-    event.stopPropagation();
-
-    if (!pedido.cliente_telefono) return;
-
-    const baseUrl = window.location.origin;
-    const urlRastreo = `${baseUrl}/rastreo/${pedido.folio}`;
-
-    const estadoLimpio = pedido.estado.replace('_', ' ');
-    const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
-
-    const msg = `Hola *${pedido.cliente_nombre}* \uD83D\uDC4B
-
-Tu pedido *${pedido.folio}* está: *${estadoFormato}*.
-
-Puedes ver los detalles, saldo y fotos aquí \uD83D\uDC47:
-${urlRastreo}
-
-¡Gracias por tu confianza! \u2764\uFE0F
-- Lavandería Nano Clean \uD83E\uDD16`;
-
-    // Limpiar teléfono
-    const telefono = pedido.cliente_telefono.replace(/\D/g, '');
-
-    // Usar api.whatsapp.com asegura mejor compatibilidad de codificación
-    const link = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(msg)}`;
-
-    window.open(link, '_blank');
   }
 
   goToDetail(pedido: Pedido) {

@@ -35,7 +35,7 @@
             </div>
 
             <div class="order-strip">
-              <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
+              <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
               
               <div class="order-content">
                 <div class="order-main">
@@ -44,7 +44,7 @@
                 </div>
                 
                 <div class="order-meta">
-                  <span class="status-badge" [ngClass]="getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
+                  <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
                   <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
                 </div>
                 
@@ -55,7 +55,7 @@
             </div>
 
             <div class="order-actions">
-              <button (click)="sendWhatsapp(p, $event)" class="whatsapp-button">
+              <button (click)="pedidoActions.sendWhatsapp(p); $event.stopPropagation()" class="whatsapp-button">
                 <mat-icon>share</mat-icon> Compartir al cliente
               </button>
             </div>
@@ -82,14 +82,14 @@
             </div>
 
              <div class="order-strip">
-                <div class="status-strip" [ngClass]="getStatusColor(p.estado)"></div>
+                <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
                <div class="order-content">
                  <div class="order-main">
                    <span class="customer">{{ p.cliente_nombre }}</span>
                    <span class="folio crossed">{{ p.folio }}</span>
                  </div>
                  <div class="order-meta">
-                    <span class="status-badge" [ngClass]="getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
+                    <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
                    <span class="date">{{ p.fecha_entregado | date:'shortDate' }}</span>
                  </div>
                  <div class="order-icon">

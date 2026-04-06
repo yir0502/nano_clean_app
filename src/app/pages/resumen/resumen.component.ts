@@ -1,5 +1,5 @@
 // src/app/pages/resumen/resumen.component.ts
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
@@ -16,12 +16,13 @@ import { NgChartsModule } from 'ng2-charts';
 import type { ChartConfiguration, ChartData, ChartType, ChartOptions } from 'chart.js';
 import { Chart as ChartJS, registerables } from 'chart.js';
 ChartJS.register(...registerables);
+
 import { DashboardService, DashboardDay } from '../../core/dashboard.service';
 import { AuthService } from '../../core/auth.service';
 import { ApiClientService } from '../../core/api-client.service';
 import { Pedido } from '../../core/models';
+import { PedidoActionsService } from '../../core/pedido-actions.service';
 
-// 🎨 Colores (ajusta a tu marca)
 const C_INGRESO_BG = 'hsla(158, 64%, 45%, .75)'; // verde
 const C_INGRESO_LINE = 'hsl(158, 64%, 45%)';
 const C_EGRESO_BG = 'hsla(0, 83%, 60%, .75)';   // rojo
@@ -36,29 +37,34 @@ const C_EGRESO_LINE = 'hsl(0, 83%, 60%)';
     NgChartsModule, MatButtonModule, MatChipsModule
   ],
   templateUrl: './resumen.component.html',
-  styleUrls: ['./resumen.component.scss']
+  styleUrls: ['./resumen.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ResumenComponent implements OnInit {
-  // Estado
-  loading = true;
-  error?: string;
-  pedidosActivos: Pedido[] = [];
+  // Inyecciones
+  private dash = inject(DashboardService);
+  private auth = inject(AuthService);
+  private api = inject(ApiClientService);
+  private snack = inject(MatSnackBar);
+  public pedidoActions = inject(PedidoActionsService);
 
-  // KPIs (mes actual)
-  ingresosMes = 0;
-  egresosMes = 0;
-  balanceMes = 0;
-  deudaTotal = 0; // NUEVO KPI
+  // Estado via Signals
+  loading = signal(true);
+  error = signal<string | undefined>(undefined);
+  pedidosActivos = signal<Pedido[]>([]);
 
-  // Rango de la 1ª gráfica
-  range: '3m' | '6m' | '12m' = '3m';
+  // KPIs
+  ingresosMes = signal(0);
+  egresosMes = signal(0);
+  balanceMes = signal(0);
+  deudaTotal = signal(0);
+  range = signal<'3m' | '6m' | '12m'>('3m');
 
-  // 1) Ingresos vs Egresos (tipo dinámico, usamos barras agregadas)
-  mainChartType: ChartType = 'bar';
-  lineData: ChartData = { labels: [], datasets: [] };
+  // Chart Properties (Reactivos a la vista)
+  mainChartType = signal<ChartType>('bar');
+  lineData = signal<ChartData>({ labels: [], datasets: [] });
   lineOptions: any = {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: true } },
     scales: {
       x: { ticks: { maxRotation: 0, autoSkip: true } },
@@ -68,21 +74,18 @@ export class ResumenComponent implements OnInit {
     datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9, maxBarThickness: 36 } }
   };
 
-  // 1b) Barras por sucursal (MES)
-  sucursalBarData: ChartData<'bar'> = { labels: [], datasets: [] };
+  sucursalBarData = signal<ChartData<'bar'>>({ labels: [], datasets: [] });
   sucursalBarOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'top' } },
     scales: {
-      x: { stacked: false },            // pon true si quieres apilar
+      x: { stacked: false },
       y: { stacked: false, beginAtZero: true }
     }
   };
 
-  // 2) Barras por categoría (MES)
-  barEgresoData: ChartData<'bar'> = { labels: [], datasets: [] };
-  barIngresoData: ChartData<'bar'> = { labels: [], datasets: [] };
+  barEgresoData = signal<ChartData<'bar'>>({ labels: [], datasets: [] });
+  barIngresoData = signal<ChartData<'bar'>>({ labels: [], datasets: [] });
   barOptions: ChartConfiguration<'bar'>['options'] = {
     responsive: true, maintainAspectRatio: false,
     plugins: { legend: { display: true, position: 'bottom' } },
@@ -90,33 +93,28 @@ export class ResumenComponent implements OnInit {
     datasets: { bar: { categoryPercentage: 0.7, barPercentage: 0.9, maxBarThickness: 36 } }
   };
 
-  // 3) NUEVO: Cartera Vencida (Pastel/Doughnut)
-  deudasDoughnutData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  deudasDoughnutData = signal<ChartData<'doughnut'>>({ labels: [], datasets: [] });
   deudasOptions: ChartConfiguration<'doughnut'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'right' } }
   };
 
-  // 4) Gráfica de Análisis de Clientes
-  clientesDoughnutData: ChartData<'doughnut'> = { labels: [], datasets: [] };
+  clientesDoughnutData = signal<ChartData<'doughnut'>>({ labels: [], datasets: [] });
   clientesOptions: ChartConfiguration<'doughnut'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
+    responsive: true, maintainAspectRatio: false,
     plugins: { legend: { position: 'bottom' } }
   };
 
-  // Recientes
-  recientes: { id: string; tipo: 'ingreso' | 'egreso'; categoria: string; fecha: string; monto: number }[] = [];
+  recientes = signal<{ id: string; tipo: 'ingreso' | 'egreso'; categoria: string; fecha: string; monto: number }[]>([]);
 
-  constructor(private dash: DashboardService, private auth: AuthService, private api: ApiClientService) { }
-  async ngOnInit() { await this.loadAll(); }
+  async ngOnInit() { 
+    await this.loadAll(); 
+  }
 
-  // ---- helpers ----
+  // --- Helpers locales ---
   private iso(d: Date) { return d.toISOString().slice(0, 10); }
   private toNumber(n: any) { const x = Number(n); return isNaN(x) ? 0 : x; }
   private hasNonZero(arr: number[]) { return arr.some(v => v !== 0); }
-  private snack = inject(MatSnackBar);
   
   private rangeDates(kind: '3m' | '6m' | '12m'): { desde: string; hasta: string } {
     const hasta = this.iso(new Date());
@@ -132,21 +130,22 @@ export class ResumenComponent implements OnInit {
     const txt = new Intl.DateTimeFormat('es-MX', { month: 'long', year: 'numeric' }).format(now);
     return txt.charAt(0).toUpperCase() + txt.slice(1);
   }
+
   private rangoLabel(): string {
-    return this.range === '3m' ? '3 meses' : this.range === '6m' ? '6 meses' : '12 meses';
+    return this.range() === '3m' ? '3 meses' : this.range() === '6m' ? '6 meses' : '12 meses';
   }
 
-  // Agregación (para no tener “mil” barras/días)
+  // Agregación Semanal y Mensual
   private weekKey(fechaISO: string): { key: string; label: string } {
     const d = new Date(fechaISO + 'T00:00:00');
-    const day = (d.getDay() + 6) % 7; // 0=lunes
+    const day = (d.getDay() + 6) % 7; 
     const monday = new Date(d); monday.setDate(d.getDate() - day);
     const key = monday.toISOString().slice(0, 10);
     const lab = new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short' }).format(monday);
     return { key, label: `Sem ${lab}` };
   }
   private monthKey(fechaISO: string): { key: string; label: string } {
-    const key = fechaISO.slice(0, 7); // YYYY-MM
+    const key = fechaISO.slice(0, 7);
     const [y, m] = key.split('-').map(Number);
     const lab = new Intl.DateTimeFormat('es-MX', { month: 'short', year: '2-digit' }).format(new Date(y, m - 1, 1));
     return { key, label: lab };
@@ -163,46 +162,35 @@ export class ResumenComponent implements OnInit {
     return Array.from(map.values());
   }
 
-  // ---- carga de datos ----
+  // --- Carga Principal ---
   async loadAll() {
     try {
-      this.loading = true;
-      this.error = undefined;
+      this.loading.set(true);
+      this.error.set(undefined);
 
-      // 1. Preparar carga de Pedidos Activos
+      // Peticiones
       const pPedidos = this.api.listPedidos({activo: true, limit: 4});
-
-      // 1.5 Preparar carga de Deudas Globales
       const pDeudas = this.api.listPedidos({deuda: true});
-
-      // 1.8 Cargar Estadísticas de Clientes
       const pStatsClientes = this.api.getClientStats();
-
-      // 2. Preparar carga del Dashboard (Tu lógica actual)
-      const { desde, hasta } = this.rangeDates(this.range);
+      
+      const { desde, hasta } = this.rangeDates(this.range());
       const org_id = this.auth.orgId;
       const pDash = this.dash.get({ desde, hasta, org_id, include: 'mes,recientes', limit_recientes: 10 });
 
-      // 3. Ejecutar peticiones en paralelo
+      // Ejecutar Paralelo
       const [pedidos, deudas, resp, statsClientes] = await Promise.all([pPedidos, pDeudas, pDash, pStatsClientes]);
 
-      // 4. Asignar los pedidos a la variable que usa el HTML
-      this.pedidosActivos = pedidos;
+      this.pedidosActivos.set(pedidos);
 
-      // -----------------------------------------------------------
-      // A PARTIR DE AQUÍ, ES TU LÓGICA DE GRÁFICAS ORIGINAL (usando 'resp')
-      // -----------------------------------------------------------
-
-      // KPIs
+      // --- KPIs ---
       const k = resp.kpis_mes ?? { ingresos: 0, egresos: 0, balance: 0 };
-      this.ingresosMes = this.toNumber(k.ingresos);
-      this.egresosMes = this.toNumber(k.egresos);
-      this.balanceMes = this.toNumber(k.balance);
+      this.ingresosMes.set(this.toNumber(k.ingresos));
+      this.egresosMes.set(this.toNumber(k.egresos));
+      this.balanceMes.set(this.toNumber(k.balance));
+      
+      this.deudaTotal.set(deudas.reduce((acc, p) => acc + this.toNumber(p.saldo_pendiente), 0));
 
-      // KPI Deuda
-      this.deudaTotal = deudas.reduce((acc, p) => acc + this.toNumber(p.saldo_pendiente), 0);
-
-      // Grafica Doughnut de Deudas
+      // --- Gráfica Dougnut Deudas ---
       let leves = 0, graves = 0, dia = 0;
       const now = new Date();
       now.setHours(0,0,0,0);
@@ -224,17 +212,17 @@ export class ResumenComponent implements OnInit {
         else dia++;
       });
       
-      this.deudasDoughnutData = {
+      this.deudasDoughnutData.set({
         labels: ['Día a Día', 'Atraso Leve', 'Riesgo Crítico'],
         datasets: [{
           data: [dia, leves, graves],
           backgroundColor: ['#4caf50', '#ff9800', '#f44336'],
           hoverOffset: 4
         }]
-      };
+      });
 
-      // Grafica Clientes
-      this.clientesDoughnutData = {
+      // --- Gráfica Clientes ---
+      this.clientesDoughnutData.set({
         labels: ['Activos (<15d)', 'Riesgo (16-45d)', 'Perdidos (>45d)'],
         datasets: [{
           data: [
@@ -245,66 +233,51 @@ export class ResumenComponent implements OnInit {
           backgroundColor: ['#4caf50', '#ffc107', '#f44336'],
           hoverOffset: 4
         }]
-      };
+      });
 
-      // Barras por categoría (MES)
+      // --- Barras Por Categoría ---
       const eg = resp.por_categoria_mes?.egreso ?? [];
       const ing = resp.por_categoria_mes?.ingreso ?? [];
       const mesLbl = this.mesActualLabel();
 
-      this.barEgresoData = {
+      this.barEgresoData.set({
         labels: eg.map(c => c?.nombre || 'Sin categoría'),
         datasets: [{
           label: `Egresos (${mesLbl})`,
           data: eg.map(c => this.toNumber(c?.total)),
           backgroundColor: C_EGRESO_BG,
           borderColor: C_EGRESO_LINE,
-          borderWidth: 1,
-          borderRadius: 6
+          borderWidth: 1, borderRadius: 6
         }]
-      };
-      this.barIngresoData = {
+      });
+
+      this.barIngresoData.set({
         labels: ing.map(c => c?.nombre || 'Sin categoría'),
         datasets: [{
           label: `Ingresos (${mesLbl})`,
           data: ing.map(c => this.toNumber(c?.total)),
           backgroundColor: C_INGRESO_BG,
           borderColor: C_INGRESO_LINE,
-          borderWidth: 1,
-          borderRadius: 6
+          borderWidth: 1, borderRadius: 6
         }]
-      };
+      });
 
-      // NUEVO: Barras por sucursal (MES)
+      // --- Barras Por Sucursal ---
       const sucs = (resp as any).por_sucursal_mes ?? [];
       const sucLabels = sucs.map((s: any) => s?.nombre || 'Sin sucursal');
       const sucIng = sucs.map((s: any) => this.toNumber(s?.ingresos));
       const sucEgr = sucs.map((s: any) => this.toNumber(s?.egresos));
 
-      this.sucursalBarData = {
+      this.sucursalBarData.set({
         labels: sucLabels,
         datasets: [
-          {
-            label: `Ingresos (${mesLbl})`,
-            data: sucIng,
-            backgroundColor: C_INGRESO_BG,
-            borderColor: C_INGRESO_LINE,
-            borderWidth: 1,
-            borderRadius: 6
-          },
-          {
-            label: `Egresos (${mesLbl})`,
-            data: sucEgr,
-            backgroundColor: C_EGRESO_BG,
-            borderColor: C_EGRESO_LINE,
-            borderWidth: 1,
-            borderRadius: 6
-          }
+          { label: `Ingresos (${mesLbl})`, data: sucIng, backgroundColor: C_INGRESO_BG, borderColor: C_INGRESO_LINE, borderWidth: 1, borderRadius: 6 },
+          { label: `Egresos (${mesLbl})`, data: sucEgr, backgroundColor: C_EGRESO_BG, borderColor: C_EGRESO_LINE, borderWidth: 1, borderRadius: 6 }
         ]
-      };
+      });
 
-      // 1ª gráfica: Ingresos vs Egresos (agregado semanal/mensual)
-      const mode = this.range === '3m' ? 'weekly' : 'monthly';
+      // --- Gráfica Ingresos Vs Egresos (Agregada) ---
+      const mode = this.range() === '3m' ? 'weekly' : 'monthly';
       const serie = this.aggregate(resp.por_dia ?? [], mode);
       const labels = serie.map(s => s.label);
       const serieIng = serie.map(s => s.ingresos);
@@ -313,108 +286,42 @@ export class ResumenComponent implements OnInit {
       const rangoLbl = this.rangoLabel();
       const datasets: any[] = [];
       if (this.hasNonZero(serieIng)) {
-        datasets.push({
-          label: `Ingresos (${rangoLbl})`,
-          data: serieIng,
-          backgroundColor: C_INGRESO_BG,
-          borderColor: C_INGRESO_LINE,
-          borderWidth: 1
-        });
+        datasets.push({ label: `Ingresos (${rangoLbl})`, data: serieIng, backgroundColor: C_INGRESO_BG, borderColor: C_INGRESO_LINE, borderWidth: 1 });
       }
       if (this.hasNonZero(serieEgr)) {
-        datasets.push({
-          label: `Egresos (${rangoLbl})`,
-          data: serieEgr,
-          backgroundColor: C_EGRESO_BG,
-          borderColor: C_EGRESO_LINE,
-          borderWidth: 1
-        });
+        datasets.push({ label: `Egresos (${rangoLbl})`, data: serieEgr, backgroundColor: C_EGRESO_BG, borderColor: C_EGRESO_LINE, borderWidth: 1 });
       }
       if (datasets.length === 0 && labels.length) {
-        datasets.push({
-          label: `Egresos (${rangoLbl})`,
-          data: new Array(labels.length).fill(0),
-          backgroundColor: C_EGRESO_BG,
-          borderColor: C_EGRESO_LINE,
-          borderWidth: 1
-        });
+        datasets.push({ label: `Egresos (${rangoLbl})`, data: new Array(labels.length).fill(0), backgroundColor: C_EGRESO_BG, borderColor: C_EGRESO_LINE, borderWidth: 1 });
       }
 
-      this.mainChartType = 'bar'; // barras agrupadas
-      this.lineData = { labels, datasets };
-
-      // Recientes (Movimientos financieros, no pedidos)
-      this.recientes = resp.recientes ?? [];
+      this.lineData.set({ labels, datasets });
+      this.recientes.set(resp.recientes ?? []);
 
     } catch (e: any) {
-      this.error = e?.message || 'Error cargando dashboard';
+      this.error.set(e?.message || 'Error cargando dashboard');
     } finally {
-      this.loading = false;
+      this.loading.set(false);
     }
   }
 
   async setRange(value: '3m' | '6m' | '12m') {
-    this.range = value;
+    this.range.set(value);
     await this.loadAll();
   }
-  
-  getStatusColor(estado: string): string {
-    switch (estado) {
-      case 'recibido': return 'warn';      // Rojo
-      case 'lavando': return 'accent_1';   // Naranja
-      case 'secando': return 'accent_2';   // Amarillo
-      case 'doblando': return 'accent_3';  // Amarillo claro
-      case 'listo': return 'primary';       // Verde
-      case 'entregado': return 'gray';      // Gris
-      default: return '';
-    }
-  }
 
+  // --- Acciones de Pedido Lógica Refinada ---
   async deletePedido(pedido: Pedido, event: MouseEvent) {
-    event.stopPropagation(); // Evita entrar al detalle del pedido
-    
+    event.stopPropagation();
     const confirmacion = confirm(`¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`);
     if (!confirmacion) return;
 
     try {
       await this.api.deletePedido(pedido.id);
-      
-      // Actualizamos la lista localmente para que desaparezca al instante
-      this.pedidosActivos = this.pedidosActivos.filter(p => p.id !== pedido.id);
-      
+      this.pedidosActivos.update(act => act.filter(p => p.id !== pedido.id));
       this.snack.open('Pedido eliminado correctamente', 'OK', { duration: 3000 });
     } catch (e) {
-      this.snack.open('Error al eliminar el pedido', 'Cerrar', { duration: 3000 });
+      // El interceptor ya muestra el error, no necesitamos hacer nada.
     }
-  }
-
-  sendWhatsapp(pedido: Pedido, event: MouseEvent) {
-    event.stopPropagation();
-    
-    if (!pedido.cliente_telefono) return;
-
-    const baseUrl = window.location.origin; 
-    const urlRastreo = `${baseUrl}/rastreo/${pedido.folio}`;
-    
-    const estadoLimpio = pedido.estado.replace('_', ' ');
-    const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
-
-    const msg = `Hola *${pedido.cliente_nombre}* \uD83D\uDC4B
-
-Tu pedido *${pedido.folio}* está: *${estadoFormato}*.
-
-Puedes ver los detalles, saldo y fotos aquí \uD83D\uDC47:
-${urlRastreo}
-
-¡Gracias por tu confianza! \u2764\uFE0F
-- Lavandería Nano Clean \uD83E\uDD16`;
-
-    // Limpiar teléfono
-    const telefono = pedido.cliente_telefono.replace(/\D/g, '');
-    
-    // Usar api.whatsapp.com asegura mejor compatibilidad de codificación
-    const link = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(msg)}`;
-    
-    window.open(link, '_blank');
   }
 }

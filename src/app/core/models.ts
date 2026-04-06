@@ -17,6 +17,7 @@ export interface Movimiento {
   pedido_id?: string | null;
   fecha: string;                     
   nota?: string | null;
+  metodo_pago?: string | null;
   created_at?: string;
   updated_at?: string;
   categoria_nombre?: string;         
@@ -35,21 +36,9 @@ export interface Sucursal {
   updated_at?: string;
 }
 
-export interface Movimiento {
-  id: string;
-  org_id: string;
-  tipo: 'ingreso' | 'egreso';
-  monto: number;
-  categoria_id?: string | null;
-  sucursal_id?: string | null;
-  pedido_id?: string | null;
-  fecha: string;
-  metodo_pago?: string | null;
-  nota?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  categoria_nombre?: string;
-  sucursal_nombre?: string;
+export interface PaginatedResponse<T> {
+  data: T[];
+  count: number;
 }
 
 export interface Cliente {
@@ -64,6 +53,7 @@ export interface Cliente {
   ultima_visita?: string;
   fecha_ultima_promo?: string;
   total_gastado?: number;
+  invitaciones_enviadas?: number;
 }
 
 export interface Pedido {
@@ -73,7 +63,7 @@ export interface Pedido {
   cliente_id: string | null;
   sucursal_id?: string | null;
   descripcion?: string;
-  estado: 'pendiente' | 'en_proceso' | 'listo' | 'entregado' | 'cancelado';
+  estado: 'recibido' | 'lavando' | 'secando' | 'doblando' | 'listo' | 'entregado' | 'cancelado';
   monto_total: number;
   saldo_pendiente: number;
   fecha_entrega_estimada?: string;
