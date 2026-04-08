@@ -64,6 +64,24 @@
             <mat-error>Mínimo 10 dígitos</mat-error>
           </mat-form-field>
         </div>
+
+        <!-- SECCIÓN DE MONEDERO (CASHBACK) -->
+        <div class="monedero-banner" *ngIf="selectedCliente()?.monedero && selectedCliente()!.monedero! > 0">
+          <mat-icon class="monedero-icon" style="vertical-align: middle; margin-right: 8px; color: #4caf50;">account_balance_wallet</mat-icon>
+          <div class="monedero-info" style="display: inline-block;">
+            <span class="monedero-title" style="font-weight: 500; font-size: 14px; display: block;">Monedero Disponible</span>
+            <span class="monedero-amount" style="color: #4caf50; font-weight: bold; font-size: 18px;">${{ selectedCliente()?.monedero | number:'1.2-2' }} MXN</span>
+          </div>
+          <div style="margin-top: 10px;">
+            <button mat-flat-button color="accent" *ngIf="(form.get('descuento_aplicado')?.value || 0) === 0" (click)="usarMonederoCompleto()" type="button">
+              Usar Saldo
+            </button>
+            <button mat-stroked-button color="warn" *ngIf="(form.get('descuento_aplicado')?.value || 0) > 0" (click)="quitarMonedero()" type="button">
+              Quitar Saldo
+            </button>
+          </div>
+        </div>
+
       </mat-card-content>
     </mat-card>
 
@@ -90,8 +108,13 @@
             <input matInput type="number" formControlName="monto_total">
           </mat-form-field>
 
+          <mat-form-field appearance="outline" class="half-width" *ngIf="form.get('descuento_aplicado')?.value! > 0">
+            <mat-label>Descuento Monedero ($)</mat-label>
+            <input matInput type="number" formControlName="descuento_aplicado" readonly>
+          </mat-form-field>
+
           <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Saldo pendiente ($)</mat-label>
+            <mat-label>Saldo pendiente a pagar ($)</mat-label>
             <input matInput type="number" formControlName="saldo_pendiente">
           </mat-form-field>
 

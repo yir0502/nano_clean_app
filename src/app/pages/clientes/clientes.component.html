@@ -97,6 +97,18 @@
                                     <span class="invitaciones-count" *ngIf="c.invitaciones_enviadas">
                                         <mat-icon>mail</mat-icon> {{ c.invitaciones_enviadas }} enviadas
                                     </span>
+                                    
+                                    <!-- MONEDERO INFO -->
+                                    <div class="monedero-mini-info" style="margin-top: 4px; display: flex; gap: 8px; font-size: 11px;">
+                                        <span *ngIf="c.monedero !== undefined" style="color: #4caf50; font-weight: bold; display: flex; align-items: center; gap: 2px;">
+                                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">account_balance_wallet</mat-icon> 
+                                            ${{ c.monedero || 0 | number:'1.2-2' }}
+                                        </span>
+                                        <span *ngIf="c.contador_servicios !== undefined" style="color: #ff9800; display: flex; align-items: center; gap: 2px;" matTooltip="Visita actual en ciclo de 4">
+                                            <mat-icon style="font-size: 14px; width: 14px; height: 14px;">repeat</mat-icon> 
+                                            {{ (c.contador_servicios % 4) }}/4
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>

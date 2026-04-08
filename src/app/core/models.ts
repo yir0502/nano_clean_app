@@ -54,6 +54,8 @@ export interface Cliente {
   fecha_ultima_promo?: string;
   total_gastado?: number;
   invitaciones_enviadas?: number;
+  monedero?: number;
+  contador_servicios?: number;
 }
 
 export interface Pedido {
@@ -73,6 +75,8 @@ export interface Pedido {
   cliente_nombre?: string;
   cliente_telefono?: string;
   sucursal_nombre?: string;
+  descuento_aplicado?: number;
+  puntos_generados?: boolean;
 }
 
 export interface PedidoEvidencia {

@@ -88,6 +88,8 @@ export class PedidoFormComponent implements OnInit {
     descripcion: ['',],
     monto_total: [0],
     saldo_pendiente: [0],
+    descuento_aplicado: [{ value: 0, disabled: true }],
+
     fecha_entrega_estimada: [new Date(), Validators.required],
     estado: ['recibido'],
 
@@ -132,12 +134,42 @@ export class PedidoFormComponent implements OnInit {
       });
 
     this.form.get('monto_total')?.valueChanges
-      .pipe(distinctUntilChanged()) // Evita duplicados
+      .pipe(distinctUntilChanged())
       .subscribe(total => {
-        // Solo actualizamos el saldo si el usuario está escribiendo.
-        // Asignamos el mismo valor del total al saldo automáticamente.
-        this.form.patchValue({ saldo_pendiente: total });
+        this.recalcularSaldo();
       });
+
+    this.form.get('descuento_aplicado')?.valueChanges
+      .pipe(distinctUntilChanged())
+      .subscribe(desc => {
+        this.recalcularSaldo();
+      });
+  }
+
+  // --- LÓGICA DE MONEDERO Y SALDOS ---
+  private recalcularSaldo() {
+    // Si ya estamos en edición, el usuario puede tener saldos que ha abonado (idealmente no lo sobreescribimos automágicamente)
+    if (this.isEdit()) return; 
+
+    // Solo para pedidos nuevos calculamos Saldo = Total - Descuento
+    const total = Number(this.form.get('monto_total')?.value) || 0;
+    const descuento = Number(this.form.get('descuento_aplicado')?.value) || 0;
+    const nuevoSaldo = Math.max(0, total - descuento);
+    
+    this.form.patchValue({ saldo_pendiente: nuevoSaldo }, { emitEvent: false });
+  }
+
+  usarMonederoCompleto() {
+    const maxMonedero = this.selectedCliente()?.monedero || 0;
+    const total = Number(this.form.get('monto_total')?.value) || 0;
+    const aplicar = Math.min(maxMonedero, total);
+    
+    this.form.controls.descuento_aplicado.enable();
+    this.form.patchValue({ descuento_aplicado: aplicar });
+  }
+
+  quitarMonedero() {
+    this.form.patchValue({ descuento_aplicado: 0 });
   }
 
   async ngOnInit() {
@@ -183,6 +215,7 @@ export class PedidoFormComponent implements OnInit {
     this.form.patchValue({ cliente_nombre: '', cliente_telefono: '', cliente_id: '' });
     this.form.controls.cliente_nombre.enable();
     this.form.controls.cliente_telefono.enable();
+    this.quitarMonedero();
   }
 
   // --- LOGICA FOTOS ---
@@ -270,9 +303,21 @@ export class PedidoFormComponent implements OnInit {
         estado: p.estado
       }, { emitEvent: false });
 
-      // Si tiene cliente ID, simulamos selección
+      // Si tiene cliente ID, cargamos sus datos completos para obetner monedero
       if (p.cliente_id) {
-        this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0 }); // Mock parcial para UI
+        try {
+          // Necesitamos el monedero real
+          const clienteRes = await this.api.listClientes({ q: p.cliente_nombre || '', limit: 1 });
+          const clienteReal = clienteRes.data.find(c => c.id === p.cliente_id);
+          if (clienteReal) {
+            this.selectedCliente.set(clienteReal);
+          } else {
+            this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 }); 
+          }
+        } catch {
+          this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 }); 
+        }
+        
         this.form.controls.cliente_nombre.disable();
         this.form.controls.cliente_telefono.disable();
       }
@@ -322,6 +367,7 @@ export class PedidoFormComponent implements OnInit {
         descripcion: v.descripcion,
         monto_total: v.monto_total,
         saldo_pendiente: v.saldo_pendiente,
+        descuento_aplicado: v.descuento_aplicado || 0,
         fecha_entrega_estimada: v.fecha_entrega_estimada ? new Date(v.fecha_entrega_estimada).toISOString().split('T')[0] : null,
         estado: v.estado
       };
