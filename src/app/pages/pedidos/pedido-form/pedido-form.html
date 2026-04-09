@@ -97,7 +97,8 @@
               </div>
               <div class="stat-item">
                 <span class="stat-label">Próxima ganancia</span>
-                <span class="stat-value accent">${{ proximaGanancia }} en {{ 4 - serviciosEnCiclo }} lavada(s)</span>
+                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 60">${{ proximaGanancia }} en {{ 4 - serviciosEnCiclo }} lavada(s)</span>
+                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 60">Bloqueada por límite</span>
               </div>
             </div>
 
@@ -110,6 +111,12 @@
               <div class="ciclo-dots">
                 <span class="dot" *ngFor="let i of [0,1,2,3]" [class.filled]="i < serviciosEnCiclo"></span>
               </div>
+            </div>
+
+            <!-- Hint administrativo -->
+            <div class="lealtad-hint" style="margin-top: 12px; font-size: 13px; color: #555; text-align: center; background: #fdfae3; padding: 8px; border-radius: 8px;">
+              <mat-icon style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #ffa000;">info</mat-icon>
+              {{ getLoyaltyMessage() }}
             </div>
           </ng-container>
 

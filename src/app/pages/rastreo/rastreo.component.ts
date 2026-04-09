@@ -54,10 +54,10 @@ export class RastreoComponent implements OnInit {
   public pedidoActions = inject(PedidoActionsService);
 
   loading = signal(true);
-  error = signal<string|null>(null);
-  pedido = signal<PedidoRastreo|null>(null);
+  error = signal<string | null>(null);
+  pedido = signal<PedidoRastreo | null>(null);
   canjeando = signal(false);
-  canjeOk = signal<string|null>(null);
+  canjeOk = signal<string | null>(null);
 
   // --- CAMBIO 1: Agregamos los pasos nuevos al Array visual ---
   steps = [
@@ -85,63 +85,39 @@ export class RastreoComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
-
-    // Iniciar tour solo si el pedido cargó correctamente
-    if (this.pedido()) {
-      this.scrollTour();
-    }
   }
 
-  /** Tour automático: baja hasta el final y regresa al inicio */
-  private scrollTour() {
-    // Aumentamos el delay inicial para permitir que las imágenes y el layout se estabilicen
-    setTimeout(async () => {
-      const pageBottom = document.documentElement.scrollHeight - window.innerHeight;
-      
-      // Si la página es corta (ej. carga lenta), reintentamos obtener la altura un poco después
-      if (pageBottom <= 100) {
-        await new Promise(r => setTimeout(r, 1000));
-      }
-      
-      const realBottom = document.documentElement.scrollHeight - window.innerHeight;
-      if (realBottom <= 50) return; 
 
-      await this.smoothScroll(realBottom, 3500); // Bajamos un poco más lento para que se aprecie
-      await new Promise<void>(r => setTimeout(r, 1200)); // Pausa más larga al fondo
-      await this.smoothScroll(0, 2500);           // Subimos de regreso
-    }, 1500); // 1.5s de espera inicial
-  }
-
-  /** Scroll animado con easing: aceelera y desacelera suavemente */
-  private smoothScroll(target: number, duration: number): Promise<void> {
-    return new Promise(resolve => {
-      const start = window.scrollY;
-      const distance = target - start;
-      if (Math.abs(distance) < 5) { resolve(); return; }
-
-      const startTime = performance.now();
-      const ease = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-
-      const step = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        window.scrollTo(0, start + distance * ease(progress));
-        if (progress < 1) requestAnimationFrame(step);
-        else resolve();
-      };
-      requestAnimationFrame(step);
-    });
-  }
 
   // Calcula si un paso ya se completó para pintarlo de color
   isStepActive(stepId: string): boolean {
     const estadoActual = this.pedido()?.estado;
-    if(!estadoActual) return false;
-    
+    if (!estadoActual) return false;
+
     // El orden aquí es CRÍTICO para saber qué círculos pintar
     const estadosOrdenados = this.pedidoActions.estadosProduccion;
-    
+
     return estadosOrdenados.indexOf(stepId) <= estadosOrdenados.indexOf(estadoActual);
+  }
+
+  getLoyaltyMessage(): string {
+    const monedero = this.pedido()?.lealtad?.monedero ?? 0;
+    
+    if (monedero >= 60) {
+      return '¡Felicidades! Has alcanzado el límite máximo. Canjéalo ahora para poder seguir acumulando en tus siguientes visitas.';
+    }
+
+    const count = this.pedido()?.lealtad?.servicios_en_ciclo ?? 0;
+    
+    if (count === 0) {
+      return '¡Empieza a acumular saldo desde hoy y gana bonos especiales!';
+    } else if (count === 1 || count === 2) {
+      return 'Sigue acumulando tu saldo o gástalo ahora mismo.';
+    } else if (count === 3) {
+      return '¡Estás a solo una lavada de tu bono especial de $30.00 MXN!';
+    } else {
+      return '¡Felicidades! Has desbloqueado tu bono. Úsalo ahora.';
+    }
   }
 
   copyToClipboard(text: string, label: string) {
@@ -160,7 +136,7 @@ export class RastreoComponent implements OnInit {
 
   getProgressPercent(): number {
     const estadoActual = this.pedido()?.estado;
-    if(!estadoActual) return 0;
+    if (!estadoActual) return 0;
     const estadosOrdenados = this.pedidoActions.estadosProduccion;
     const idx = estadosOrdenados.indexOf(estadoActual);
     if (idx < 0) return 0;
@@ -193,4 +169,4 @@ export class RastreoComponent implements OnInit {
   closePhoto() {
     this.selectedPhoto.set(null);
   }
-}
+}

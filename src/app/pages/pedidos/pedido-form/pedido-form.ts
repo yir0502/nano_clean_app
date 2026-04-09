@@ -150,11 +150,26 @@ export class PedidoFormComponent implements OnInit {
   }
 
   get proximaGanancia(): number {
+    const monedero = this.selectedCliente()?.monedero ?? 0;
+    if (monedero >= 60) return 0;
     return this.serviciosEnCiclo === 3 ? 30 : 10;
   }
 
   get promoProgressPercent(): number {
     return (this.serviciosEnCiclo / 4) * 100;
+  }
+
+  getLoyaltyMessage(): string {
+    const monedero = this.selectedCliente()?.monedero ?? 0;
+    if (monedero >= 60) {
+      return 'El cliente ha alcanzado el límite de $60.00 MXN. Debe canjear su saldo para poder seguir acumulando.';
+    }
+    const count = this.serviciosEnCiclo;
+    if (count === 3) {
+      return '¡Próxima lavada otorga el bono especial de $30.00 MXN!';
+    } else {
+      return `Falta(n) ${4 - count - 1} lavada(s) para el bono especial de $30.00 MXN.`;
+    }
   }
 
   // Toggle: cambia apto_promociones del cliente en tiempo real

@@ -84,7 +84,8 @@
 
             <!-- Desglose de ganancias por lavada -->
             <div class="cycle-section">
-              <p class="cycle-label">Lo que ganas por cada lavada</p>
+              <p class="cycle-label">Acumula saldo con cada servicio y canjéalo cuando
+                prefieras.</p>
               <div class="earn-grid">
                 <div class="earn-tile" *ngFor="let i of [0,1,2,3]"
                   [class.done]="i < (pedido()?.lealtad?.servicios_en_ciclo ?? 0)" [class.special]="i === 3">
@@ -99,12 +100,9 @@
                   <span class="earn-wash">Lavada {{ i + 1 }}</span>
                 </div>
               </div>
-              <p class="cycle-hint" *ngIf="(pedido()?.lealtad?.servicios_en_ciclo ?? 0) === 3">
-                🎉 ¡Esta es tu próxima lavada especial! Ganarás <strong>$30 MXN</strong> al ser registrada.
-              </p>
-              <p class="cycle-hint" *ngIf="(pedido()?.lealtad?.servicios_en_ciclo ?? 0) < 3">
-                Te faltan <strong>{{ 4 - (pedido()?.lealtad?.servicios_en_ciclo ?? 0) - 1 }}</strong> lavada(s)
-                para tu bonificación especial de <strong>$30 MXN</strong>.
+
+              <p class="cycle-hint">
+                {{ getLoyaltyMessage() }}
               </p>
             </div>
 
