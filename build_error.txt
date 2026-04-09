@@ -1,0 +1,48 @@
+[1mInitial chunk files[22m  [2m | [22m[1mNames[22m                    [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-GYFXLV64.js[39m    [2m | [22m[2m-[22m                        [2m | [22m[36m399.65 kB[39m[2m | [22m               [36m96.51 kB[39m
+[32mchunk-3WNELVQ5.js[39m    [2m | [22m[2m-[22m                        [2m | [22m[36m220.81 kB[39m[2m | [22m               [36m66.26 kB[39m
+[32mmain-UMPBZAJK.js[39m     [2m | [22m[2mmain[22m                     [2m | [22m[36m115.74 kB[39m[2m | [22m               [36m28.44 kB[39m
+[32mchunk-JBRPDWF3.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m79.47 kB[39m[2m | [22m               [36m19.69 kB[39m
+[32mchunk-BLOY27F7.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m67.97 kB[39m[2m | [22m               [36m15.73 kB[39m
+[32mchunk-IKORAGCJ.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m58.07 kB[39m[2m | [22m                [36m9.68 kB[39m
+[32mchunk-JNZRI53B.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m34.61 kB[39m[2m | [22m                [36m8.58 kB[39m
+[32mpolyfills-B6TNHZQ6.js[39m[2m | [22m[2mpolyfills[22m                [2m | [22m [36m34.58 kB[39m[2m | [22m               [36m11.32 kB[39m
+[32mchunk-OUSHD5NQ.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m27.24 kB[39m[2m | [22m                [36m4.38 kB[39m
+[32mchunk-35DRJC6O.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m22.16 kB[39m[2m | [22m                [36m4.56 kB[39m
+[32mstyles-KK4PTHJY.css[39m  [2m | [22m[2mstyles[22m                   [2m | [22m [36m10.54 kB[39m[2m | [22m                [36m2.14 kB[39m
+[32mchunk-5YVEG5SD.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m10.11 kB[39m[2m | [22m                [36m2.84 kB[39m
+[32mchunk-VSND24AN.js[39m    [2m | [22m[2m-[22m                        [2m | [22m  [36m6.75 kB[39m[2m | [22m                [36m1.47 kB[39m
+[32mchunk-6OWZ4U5Q.js[39m    [2m | [22m[2m-[22m                        [2m | [22m  [36m6.60 kB[39m[2m | [22m                [36m1.55 kB[39m
+[32mchunk-MTHYDRM2.js[39m    [2m | [22m[2m-[22m                        [2m | [22m  [36m3.53 kB[39m[2m | [22m                [36m1.03 kB[39m
+[32mchunk-5EBM5QIQ.js[39m    [2m | [22m[2m-[22m                        [2m | [22m  [36m1.42 kB[39m[2m | [22m              [36m520 bytes[39m
+[32mchunk-XD7TIXX6.js[39m    [2m | [22m[2m-[22m                        [2m | [22m[36m606 bytes[39m[2m | [22m              [36m606 bytes[39m
+[32mchunk-MYFAQL4H.js[39m    [2m | [22m[2m-[22m                        [2m | [22m[36m216 bytes[39m[2m | [22m              [36m216 bytes[39m
+
+[1m [22m                    [2m | [22m[1mInitial total[22m            [2m | [22m  [1m1.10 MB[22m[2m | [22m              [1m275.53 kB[22m
+
+[1mLazy chunk files[22m     [2m | [22m[1mNames[22m                    [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-L2ISM3RF.js[39m    [2m | [22m[2m-[22m                        [2m | [22m[36m114.93 kB[39m[2m | [22m               [36m20.92 kB[39m
+[32mchunk-DEJZL3KX.js[39m    [2m | [22m[2mclientes-component[22m       [2m | [22m [36m56.19 kB[39m[2m | [22m               [36m14.68 kB[39m
+[32mchunk-SEYQRZI4.js[39m    [2m | [22m[2mpedidos-list[22m             [2m | [22m [36m54.45 kB[39m[2m | [22m               [36m11.87 kB[39m
+[32mchunk-S3IOREJM.js[39m    [2m | [22m[2mpedido-form[22m              [2m | [22m [36m53.97 kB[39m[2m | [22m               [36m13.89 kB[39m
+[32mchunk-BWGZZNWW.js[39m    [2m | [22m[2mrastreo-component[22m        [2m | [22m [36m36.68 kB[39m[2m | [22m                [36m8.00 kB[39m
+[32mchunk-AVCCQLQC.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m28.99 kB[39m[2m | [22m                [36m6.84 kB[39m
+[32mchunk-BHKBCE6O.js[39m    [2m | [22m[2mdeudas-component[22m         [2m | [22m [36m26.65 kB[39m[2m | [22m                [36m6.54 kB[39m
+[32mchunk-5SHN64CB.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m23.33 kB[39m[2m | [22m                [36m4.05 kB[39m
+[32mchunk-VWUQNQOT.js[39m    [2m | [22m[2mresumen-component[22m        [2m | [22m [36m21.08 kB[39m[2m | [22m                [36m5.93 kB[39m
+[32mchunk-WBRGHXYG.js[39m    [2m | [22m[2mcategorias-component[22m     [2m | [22m [36m19.12 kB[39m[2m | [22m                [36m5.39 kB[39m
+[32mchunk-IZL5GHAP.js[39m    [2m | [22m[2m-[22m                        [2m | [22m [36m17.51 kB[39m[2m | [22m                [36m4.73 kB[39m
+[32mchunk-P3VT2H7D.js[39m    [2m | [22m[2mmovimientos-component[22m    [2m | [22m [36m14.92 kB[39m[2m | [22m                [36m4.39 kB[39m
+[32mchunk-MUAMNMMO.js[39m    [2m | [22m[2mmovimiento-form-component[22m[2m | [22m [36m13.86 kB[39m[2m | [22m                [36m4.31 kB[39m
+[32mchunk-TYFZ36PE.js[39m    [2m | [22m[2mlogin-component[22m          [2m | [22m [36m11.80 kB[39m[2m | [22m                [36m3.28 kB[39m
+[32mchunk-IET6EXFL.js[39m    [2m | [22m[2m-[22m                        [2m | [22m  [36m9.18 kB[39m[2m | [22m                [36m2.24 kB[39m
+[2m...and 9 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation failed. [10.121 seconds]
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1msrc/app/pages/rastreo/rastreo.component.scss exceeded maximum budget. Budget 8.00 kB was not met by 6.78 kB with a total of 14.78 kB.[0m
+
+[39m[22m
+[1m[31m[31mX [41;31m[[41;97mERROR[41;31m][0m [1msrc/app/pages/rastreo/rastreo.component.scss exceeded maximum budget. Budget 12.00 kB was not met by 2.78 kB with a total of 14.78 kB.[0m
+
+[39m[22m
