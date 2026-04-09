@@ -1,5 +1,5 @@
 <div class="container">
-  
+
   <div class="header">
     <button mat-icon-button (click)="location.back()">
       <mat-icon>arrow_back</mat-icon>
@@ -15,21 +15,19 @@
     <div class="status-bar-container" *ngIf="isEdit()">
       <p class="section-label">Estatus del Pedido</p>
       <div class="status-stepper">
-        <div 
-          *ngFor="let st of ESTADOS" 
-          class="step" 
-          [class.active]="form.get('estado')?.value === st"
+        <div *ngFor="let st of ESTADOS" class="step" [class.active]="form.get('estado')?.value === st"
           (click)="setStatus(st)">
-          
+
           <div class="circle">
             <mat-icon *ngIf="st === 'recibido'">hourglass_empty</mat-icon>
             <mat-icon *ngIf="st === 'lavando'">local_laundry_service</mat-icon>
-            
-            <mat-icon *ngIf="st === 'secando'">dry</mat-icon>   <mat-icon *ngIf="st === 'doblando'">layers</mat-icon> <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
+
+            <mat-icon *ngIf="st === 'secando'">dry</mat-icon> <mat-icon *ngIf="st === 'doblando'">layers</mat-icon>
+            <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
             <mat-icon *ngIf="st === 'entregado'">inventory_2</mat-icon>
             <mat-icon *ngIf="st === 'cancelado'">block</mat-icon>
           </div>
-          
+
           <span class="label">{{ st | titlecase }}</span>
         </div>
       </div>
@@ -43,11 +41,9 @@
         <div class="row">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Nombre del Cliente</mat-label>
-            <input type="text"
-                   matInput
-                   formControlName="cliente_nombre"
-                   [matAutocomplete]="auto">
-            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCliente" (optionSelected)="selectCliente($event.option.value)">
+            <input type="text" matInput formControlName="cliente_nombre" [matAutocomplete]="auto">
+            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCliente"
+              (optionSelected)="selectCliente($event.option.value)">
               <mat-option *ngFor="let c of clientesFiltrados()" [value]="c">
                 <span class="auto-name">{{ c.nombre }}</span>
                 <span class="auto-phone">{{ c.telefono }}</span>
@@ -74,11 +70,8 @@
               <span>Programa de Lealtad</span>
             </div>
             <!-- Toggle: cambia apto_promociones del cliente en el acto -->
-            <button
-              mat-stroked-button
-              [color]="selectedCliente()?.apto_promociones !== false ? 'primary' : 'warn'"
-              type="button"
-              (click)="toggleAptitudPromo(selectedCliente()?.apto_promociones === false)">
+            <button mat-stroked-button [color]="selectedCliente()?.apto_promociones !== false ? 'primary' : 'warn'"
+              type="button" (click)="toggleAptitudPromo(selectedCliente()?.apto_promociones === false)">
               <mat-icon>{{ selectedCliente()?.apto_promociones !== false ? 'check_circle' : 'block' }}</mat-icon>
               {{ selectedCliente()?.apto_promociones !== false ? 'Apto para promos' : 'No aplica promos' }}
             </button>
@@ -97,8 +90,10 @@
               </div>
               <div class="stat-item">
                 <span class="stat-label">Próxima ganancia</span>
-                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 60">${{ proximaGanancia }} en {{ 4 - serviciosEnCiclo }} lavada(s)</span>
-                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 60">Bloqueada por límite</span>
+                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 60">${{ proximaGanancia }}
+                  en {{ 4 - serviciosEnCiclo } servicio(s)</span>
+                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 60">Bloqueada por
+                  límite</span>
               </div>
             </div>
 
@@ -114,8 +109,10 @@
             </div>
 
             <!-- Hint administrativo -->
-            <div class="lealtad-hint" style="margin-top: 12px; font-size: 13px; color: #555; text-align: center; background: #fdfae3; padding: 8px; border-radius: 8px;">
-              <mat-icon style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #ffa000;">info</mat-icon>
+            <div class="lealtad-hint"
+              style="margin-top: 12px; font-size: 13px; color: #555; text-align: center; background: #fdfae3; padding: 8px; border-radius: 8px;">
+              <mat-icon
+                style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #ffa000;">info</mat-icon>
               {{ getLoyaltyMessage() }}
             </div>
           </ng-container>
@@ -129,7 +126,7 @@
     <mat-card class="form-card">
       <mat-card-header><mat-card-title class="titulo-seccion">Detalles</mat-card-title></mat-card-header>
       <mat-card-content>
-        
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Sucursal</mat-label>
           <mat-select formControlName="sucursal_id">
@@ -174,7 +171,7 @@
         </button>
         <input #fileInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" style="display:none">
       </mat-card-header>
-      
+
       <mat-card-content>
         <div class="photos-grid" *ngIf="fotos().length > 0; else noPhotos">
           <div class="photo-item" *ngFor="let f of fotos(); let i = index">

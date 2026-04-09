@@ -166,9 +166,9 @@ export class PedidoFormComponent implements OnInit {
     }
     const count = this.serviciosEnCiclo;
     if (count === 3) {
-      return '¡Próxima lavada otorga el bono especial de $30.00 MXN!';
+      return '¡Tu próximo servicio te otorga el bono especial de $30.00 MXN!';
     } else {
-      return `Falta(n) ${4 - count - 1} lavada(s) para el bono especial de $30.00 MXN.`;
+      return `Falta(n) ${4 - count - 1} servicio(s) para el bono especial de $30.00 MXN.`;
     }
   }
 

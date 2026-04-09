@@ -102,19 +102,19 @@ export class RastreoComponent implements OnInit {
 
   getLoyaltyMessage(): string {
     const monedero = this.pedido()?.lealtad?.monedero ?? 0;
-    
+
     if (monedero >= 60) {
       return '¡Felicidades! Has alcanzado el límite máximo. Canjéalo ahora para poder seguir acumulando en tus siguientes visitas.';
     }
 
     const count = this.pedido()?.lealtad?.servicios_en_ciclo ?? 0;
-    
+
     if (count === 0) {
       return '¡Empieza a acumular saldo desde hoy y gana bonos especiales!';
     } else if (count === 1 || count === 2) {
       return 'Sigue acumulando tu saldo o gástalo ahora mismo.';
     } else if (count === 3) {
-      return '¡Estás a solo una lavada de tu bono especial de $30.00 MXN!';
+      return '¡Estás a solo un servicio de tu bono especial de $30.00 MXN!';
     } else {
       return '¡Felicidades! Has desbloqueado tu bono. Úsalo ahora.';
     }
