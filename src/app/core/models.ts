@@ -49,13 +49,14 @@ export interface Cliente {
   direccion?: string;
   email?: string;
   permite_whatsapp: boolean;
-  frecuencia_recordatorio: number; 
+  frecuencia_recordatorio: number;
   ultima_visita?: string;
   fecha_ultima_promo?: string;
   total_gastado?: number;
   invitaciones_enviadas?: number;
   monedero?: number;
   contador_servicios?: number;
+  apto_promociones?: boolean;
 }
 
 export interface Pedido {

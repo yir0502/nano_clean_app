@@ -65,22 +65,56 @@
           </mat-form-field>
         </div>
 
-        <!-- SECCIÓN DE MONEDERO (CASHBACK) -->
-        <div class="monedero-banner" *ngIf="selectedCliente()?.monedero && selectedCliente()!.monedero! > 0">
-          <mat-icon class="monedero-icon" style="vertical-align: middle; margin-right: 8px; color: #4caf50;">account_balance_wallet</mat-icon>
-          <div class="monedero-info" style="display: inline-block;">
-            <span class="monedero-title" style="font-weight: 500; font-size: 14px; display: block;">Monedero Disponible</span>
-            <span class="monedero-amount" style="color: #4caf50; font-weight: bold; font-size: 18px;">${{ selectedCliente()?.monedero | number:'1.2-2' }} MXN</span>
-          </div>
-          <div style="margin-top: 10px;">
-            <button mat-flat-button color="accent" *ngIf="(form.get('descuento_aplicado')?.value || 0) === 0" (click)="usarMonederoCompleto()" type="button">
-              Usar Saldo
+        <!-- PANEL DE LEALTAD (solo si hay cliente seleccionado) -->
+        <div class="lealtad-panel" *ngIf="selectedCliente()">
+
+          <div class="lealtad-header">
+            <div class="lealtad-title">
+              <mat-icon class="lealtad-icon">loyalty</mat-icon>
+              <span>Programa de Lealtad</span>
+            </div>
+            <!-- Toggle: cambia apto_promociones del cliente en el acto -->
+            <button
+              mat-stroked-button
+              [color]="selectedCliente()?.apto_promociones !== false ? 'primary' : 'warn'"
+              type="button"
+              (click)="toggleAptitudPromo(selectedCliente()?.apto_promociones === false)">
+              <mat-icon>{{ selectedCliente()?.apto_promociones !== false ? 'check_circle' : 'block' }}</mat-icon>
+              {{ selectedCliente()?.apto_promociones !== false ? 'Apto para promos' : 'No aplica promos' }}
             </button>
-            <button mat-stroked-button color="warn" *ngIf="(form.get('descuento_aplicado')?.value || 0) > 0" (click)="quitarMonedero()" type="button">
-              Quitar Saldo
-            </button>
           </div>
+
+          <!-- Solo mostramos el progreso si es apto -->
+          <ng-container *ngIf="selectedCliente()?.apto_promociones !== false">
+            <div class="lealtad-stats">
+              <div class="stat-item">
+                <span class="stat-label">Saldo acumulado</span>
+                <span class="stat-value green">${{ (selectedCliente()?.monedero ?? 0) | number:'1.2-2' }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Servicios totales</span>
+                <span class="stat-value">{{ selectedCliente()?.contador_servicios ?? 0 }}</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-label">Próxima ganancia</span>
+                <span class="stat-value accent">${{ proximaGanancia }} en {{ 4 - serviciosEnCiclo }} lavada(s)</span>
+              </div>
+            </div>
+
+            <!-- Barra de progreso del ciclo actual -->
+            <div class="ciclo-progress">
+              <span class="ciclo-label">Ciclo actual: {{ serviciosEnCiclo }} de 4</span>
+              <div class="progress-track">
+                <div class="progress-fill" [style.width.%]="promoProgressPercent"></div>
+              </div>
+              <div class="ciclo-dots">
+                <span class="dot" *ngFor="let i of [0,1,2,3]" [class.filled]="i < serviciosEnCiclo"></span>
+              </div>
+            </div>
+          </ng-container>
+
         </div>
+
 
       </mat-card-content>
     </mat-card>
@@ -106,11 +140,6 @@
           <mat-form-field appearance="outline" class="half-width">
             <mat-label>Total ($)</mat-label>
             <input matInput type="number" formControlName="monto_total">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="half-width" *ngIf="form.get('descuento_aplicado')?.value! > 0">
-            <mat-label>Descuento Monedero ($)</mat-label>
-            <input matInput type="number" formControlName="descuento_aplicado" readonly>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="half-width">

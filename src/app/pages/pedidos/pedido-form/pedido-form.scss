@@ -112,3 +112,88 @@
 .save-btn { width: 100%; max-width: 600px; height: 48px; font-size: 16px; border-radius: 12px; }
 .white-spinner ::ng-deep circle { stroke: white !important; }
 .loading-shade { display: flex; justify-content: center; padding-top: 50px; }
+
+/* ─── Panel de Lealtad ─────────────────────────────────── */
+.lealtad-panel {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #f0f4ff 0%, #faf5ff 100%);
+  border: 1px solid rgba(100, 80, 200, 0.15);
+  border-radius: 14px;
+
+  .lealtad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+
+    .lealtad-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #4a3f8a;
+
+      .lealtad-icon { font-size: 20px; width: 20px; height: 20px; color: #6c5ce7; }
+    }
+  }
+
+  .lealtad-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+      .stat-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: #333;
+        &.green { color: #27ae60; }
+        &.accent { color: #6c5ce7; }
+      }
+    }
+  }
+
+  .ciclo-progress {
+    .ciclo-label { font-size: 11px; color: #666; display: block; margin-bottom: 6px; }
+
+    .progress-track {
+      height: 6px;
+      background: rgba(108, 92, 231, 0.15);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 8px;
+
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+        border-radius: 99px;
+        transition: width 0.4s ease;
+      }
+    }
+
+    .ciclo-dots {
+      display: flex;
+      gap: 8px;
+
+      .dot {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        background: rgba(108, 92, 231, 0.2);
+        transition: all 0.2s;
+
+        &.filled {
+          background: #6c5ce7;
+          box-shadow: 0 0 6px rgba(108, 92, 231, 0.5);
+        }
+      }
+    }
+  }
+}

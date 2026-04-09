@@ -26,9 +26,9 @@
     <header class="brand-header">
       <div class="logo" role="img" aria-label="Logo principal"></div>
       <div class="header-left">
-      <h1>Hola, {{ pedido()?.cliente_nombre }}</h1>
-      <p class="folio">Folio: {{ pedido()?.folio }}</p>
-    </div>
+        <h1>Hola, {{ pedido()?.cliente }}</h1>
+        <p class="folio">Folio: {{ pedido()?.folio }}</p>
+      </div>
     </header>
 
     <mat-card class="status-card animate-up">
@@ -56,34 +56,127 @@
       </div>
     </mat-card>
 
-    <mat-card class="details-card animate-up" style="animation-delay: 0.1s;">
+    <!-- ═══ TARJETA DE LEALTAD VIRTUAL ═══════════════════════════════ -->
+    <div class="card-glow-border animate-up" *ngIf="pedido()?.lealtad?.apto" style="animation-delay: 0.1s;">
+      <div class="loyalty-card">
+
+        <!-- Shimmer de fondo decorativo -->
+        <div class="card-shimmer"></div>
+
+        <div class="card-inner">
+          <!-- Cabecera: logo + título -->
+          <div class="card-top">
+            <div class="brand-logo" aria-label="Nano Clean logo"></div>
+            <div class="card-badge">
+              <mat-icon>loyalty</mat-icon>
+              Tarjeta de Lealtad
+            </div>
+          </div>
+
+          <!-- Estado: promo canjeada en ESTE pedido -->
+          <div class="promo-used-badge" *ngIf="pedido()?.promo_canjeada">
+            <mat-icon>check_circle</mat-icon>
+            Promo canjeada en este pedido — Tu descuento ya está aplicado
+          </div>
+
+          <!-- Progreso del ciclo (solo si no hay canjeo exitoso en este pedido) -->
+          <ng-container *ngIf="!pedido()?.promo_canjeada">
+
+            <!-- Desglose de ganancias por lavada -->
+            <div class="cycle-section">
+              <p class="cycle-label">Lo que ganas por cada lavada</p>
+              <div class="earn-grid">
+                <div class="earn-tile" *ngFor="let i of [0,1,2,3]"
+                  [class.done]="i < (pedido()?.lealtad?.servicios_en_ciclo ?? 0)" [class.special]="i === 3">
+                  <span class="earn-icon">
+                    <ng-container *ngIf="i < (pedido()?.lealtad?.servicios_en_ciclo ?? 0)">✓</ng-container>
+                    <ng-container *ngIf="i >= (pedido()?.lealtad?.servicios_en_ciclo ?? 0)">
+                      <ng-container *ngIf="i === 3">🎁</ng-container>
+                      <ng-container *ngIf="i !== 3">{{ i + 1 }}º</ng-container>
+                    </ng-container>
+                  </span>
+                  <span class="earn-amount">{{ i === 3 ? '+$30' : '+$10' }}</span>
+                  <span class="earn-wash">Lavada {{ i + 1 }}</span>
+                </div>
+              </div>
+              <p class="cycle-hint" *ngIf="(pedido()?.lealtad?.servicios_en_ciclo ?? 0) === 3">
+                🎉 ¡Esta es tu próxima lavada especial! Ganarás <strong>$30 MXN</strong> al ser registrada.
+              </p>
+              <p class="cycle-hint" *ngIf="(pedido()?.lealtad?.servicios_en_ciclo ?? 0) < 3">
+                Te faltan <strong>{{ 4 - (pedido()?.lealtad?.servicios_en_ciclo ?? 0) - 1 }}</strong> lavada(s)
+                para tu bonificación especial de <strong>$30 MXN</strong>.
+              </p>
+            </div>
+
+            <!-- Saldo acumulado -->
+            <div class="balance-section" *ngIf="(pedido()?.lealtad?.monedero ?? 0) > 0">
+              <div class="balance-label">Saldo disponible</div>
+              <div class="balance-amount">${{ (pedido()?.lealtad?.monedero ?? 0) | number:'1.2-2' }} <span>MXN</span>
+              </div>
+
+              <!-- Mensaje de éxito post-canjeo -->
+              <div class="canjeo-success" *ngIf="canjeOk()">
+                <mat-icon>celebration</mat-icon>
+                {{ canjeOk() }}
+              </div>
+
+              <!-- Botón de canjeo (solo si el pedido está activo) -->
+              <button class="canjear-btn" *ngIf="pedido()?.lealtad?.puede_canjear && !canjeOk()"
+                [disabled]="canjeando()" (click)="canjearPromo()">
+                <mat-icon *ngIf="!canjeando()">redeem</mat-icon>
+                <mat-spinner diameter="18" *ngIf="canjeando()"></mat-spinner>
+                {{ canjeando() ? 'Canjeando...' : 'Usar saldo acumulado' }}
+              </button>
+
+              <!-- Si no puede canjear (pedido entregado) -->
+              <p class="cant-canjear" *ngIf="!pedido()?.lealtad?.puede_canjear && !canjeOk()">
+                <mat-icon>info</mat-icon>
+                Tu saldo está disponible para tu próximo pedido activo.
+              </p>
+            </div>
+
+            <!-- Sin saldo todavía -->
+            <div class="no-balance" *ngIf="(pedido()?.lealtad?.monedero ?? 0) === 0">
+              <mat-icon>savings</mat-icon>
+              <p>¡Sigue acumulando! Cada lavada suma a tu saldo.</p>
+            </div>
+
+          </ng-container>
+
+        </div><!-- /card-inner -->
+      </div><!-- /loyalty-card -->
+    </div><!-- /card-glow-border -->
+    <!-- ═══ FIN TARJETA DE LEALTAD ═══════════════════════════════════ -->
+
+    <mat-card class="details-card animate-up" style="animation-delay: 0.2s;">
       <h2>Detalles del Pedido</h2>
       <mat-card-content>
         <p class="desc">{{ pedido()?.descripcion }}</p>
 
         <div class="payment-row">
           <span>Total del Servicio</span>
-          <strong>{{ pedido()?.monto_total | currency:'MXN' }}</strong>
+          <strong>{{ pedido()?.total | currency:'MXN' }}</strong>
         </div>
-        <div class="payment-row highlight" *ngIf="(pedido()?.saldo_pendiente || 0) > 0">
+        <div class="payment-row highlight" *ngIf="(pedido()?.pendiente || 0) > 0">
           <span>Saldo Pendiente</span>
-          <span class="debt">{{ pedido()?.saldo_pendiente | currency:'MXN' }}</span>
+          <span class="debt">{{ pedido()?.pendiente | currency:'MXN' }}</span>
         </div>
-        <div class="payment-row success" *ngIf="(pedido()?.saldo_pendiente || 0) <= 0 && (pedido()?.monto_total || 0) > 0">
+        <div class="payment-row success" *ngIf="(pedido()?.pendiente || 0) <= 0 && (pedido()?.total || 0) > 0">
           <span>Estatus Pago:</span>
           <span class="paid">¡Pagado!</span>
         </div>
-        <div class="info-row">
+        <div class="estimated-date">
           <mat-icon>event</mat-icon>
-          <span>Entrega Estimada: <strong>{{ pedido()?.fecha_entrega_estimada | date:'fullDate' }}</strong></span>
+          <span>Entrega Estimada: <strong>{{ pedido()?.fecha_entrega | date:'fullDate' }}</strong></span>
         </div>
       </mat-card-content>
     </mat-card>
 
     <div class="photos-grid animate-up" *ngIf="pedido()?.fotos?.length" style="animation-delay: 0.5s;">
-      <h3>Evidencia Fotográfica</h3>
+      <h2>Evidencia Fotográfica</h2>
       <div class="grid">
-        <div class="photo" *ngFor="let f of pedido()?.fotos" (click)="openPhoto(f.url)">
+        <div class="photo" *ngFor="let f of pedido()?.fotos" (click)="openPhoto(f.url)"
+          (keydown.enter)="openPhoto(f.url)" tabindex="0" role="button" aria-label="Ver foto de evidencia">
           <img [src]="f.url" alt="Evidencia">
           <span class="note" *ngIf="f.nota">{{ f.nota }}</span>
         </div>
@@ -143,12 +236,15 @@
       </mat-card-content>
     </mat-card>
 
+
+
     <footer class="footer">
       <p>¿Dudas?</p>
       <button mat-flat-button class="whatsapp-btn" onclick="window.open('https://wa.me/5212227342492', '_blank')">
         <mat-icon>chat</mat-icon> Hablar con Soporte
       </button>
     </footer>
+
 
   </div>
 

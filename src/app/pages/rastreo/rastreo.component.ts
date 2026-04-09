@@ -12,8 +12,28 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
-export interface PedidoRastreo extends Pedido {
+export interface LealtadInfo {
+  apto: boolean;
+  monedero?: number;
+  contador_servicios?: number;
+  servicios_en_ciclo?: number;
+  servicios_para_proxima?: number;
+  proxima_ganancia?: number;
+  puede_canjear?: boolean;
+}
+
+export interface PedidoRastreo {
+  folio: string;
+  cliente: string;
+  descripcion?: string;
+  estado: string;
+  total: number;
+  pendiente: number;
+  fecha_entrega?: string;
+  descuento_aplicado?: number;
+  promo_canjeada?: boolean;
   fotos?: { url: string; nota?: string }[];
+  lealtad?: LealtadInfo;
 }
 
 @Component({
@@ -36,6 +56,8 @@ export class RastreoComponent implements OnInit {
   loading = signal(true);
   error = signal<string|null>(null);
   pedido = signal<PedidoRastreo|null>(null);
+  canjeando = signal(false);
+  canjeOk = signal<string|null>(null);
 
   // --- CAMBIO 1: Agregamos los pasos nuevos al Array visual ---
   steps = [
@@ -48,8 +70,6 @@ export class RastreoComponent implements OnInit {
   ];
 
   async ngOnInit() {
-    console.log('RastreoComponent initialized');
-    
     const folio = this.route.snapshot.paramMap.get('folio');
     if (!folio) {
       this.error.set('No se especificó un número de pedido.');
@@ -59,12 +79,58 @@ export class RastreoComponent implements OnInit {
 
     try {
       const data = await this.api.getPedidoPublico(folio);
-      this.pedido.set(data);
+      this.pedido.set(data as any);
     } catch (e) {
       this.error.set('No encontramos este pedido. Verifica el enlace.');
     } finally {
       this.loading.set(false);
     }
+
+    // Iniciar tour solo si el pedido cargó correctamente
+    if (this.pedido()) {
+      this.scrollTour();
+    }
+  }
+
+  /** Tour automático: baja hasta el final y regresa al inicio */
+  private scrollTour() {
+    // Aumentamos el delay inicial para permitir que las imágenes y el layout se estabilicen
+    setTimeout(async () => {
+      const pageBottom = document.documentElement.scrollHeight - window.innerHeight;
+      
+      // Si la página es corta (ej. carga lenta), reintentamos obtener la altura un poco después
+      if (pageBottom <= 100) {
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      
+      const realBottom = document.documentElement.scrollHeight - window.innerHeight;
+      if (realBottom <= 50) return; 
+
+      await this.smoothScroll(realBottom, 3500); // Bajamos un poco más lento para que se aprecie
+      await new Promise<void>(r => setTimeout(r, 1200)); // Pausa más larga al fondo
+      await this.smoothScroll(0, 2500);           // Subimos de regreso
+    }, 1500); // 1.5s de espera inicial
+  }
+
+  /** Scroll animado con easing: aceelera y desacelera suavemente */
+  private smoothScroll(target: number, duration: number): Promise<void> {
+    return new Promise(resolve => {
+      const start = window.scrollY;
+      const distance = target - start;
+      if (Math.abs(distance) < 5) { resolve(); return; }
+
+      const startTime = performance.now();
+      const ease = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+
+      const step = (now: number) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        window.scrollTo(0, start + distance * ease(progress));
+        if (progress < 1) requestAnimationFrame(step);
+        else resolve();
+      };
+      requestAnimationFrame(step);
+    });
   }
 
   // Calcula si un paso ya se completó para pintarlo de color
@@ -99,6 +165,23 @@ export class RastreoComponent implements OnInit {
     const idx = estadosOrdenados.indexOf(estadoActual);
     if (idx < 0) return 0;
     return (idx / (estadosOrdenados.length - 1)) * 100;
+  }
+
+  async canjearPromo() {
+    const folio = this.pedido()?.folio;
+    if (!folio) return;
+    this.canjeando.set(true);
+    try {
+      const result = await this.api.canjearPromo(folio);
+      this.canjeOk.set(result.mensaje || '¡Descuento aplicado!');
+      // Refrescar datos del pedido
+      const data = await this.api.getPedidoPublico(folio);
+      this.pedido.set(data as any);
+    } catch (e: any) {
+      this.snack.open(e.message || 'Error al canjear', 'Cerrar', { duration: 4000 });
+    } finally {
+      this.canjeando.set(false);
+    }
   }
 
   selectedPhoto = signal<string | null>(null);

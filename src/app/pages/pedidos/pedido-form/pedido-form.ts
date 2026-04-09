@@ -88,7 +88,6 @@ export class PedidoFormComponent implements OnInit {
     descripcion: ['',],
     monto_total: [0],
     saldo_pendiente: [0],
-    descuento_aplicado: [{ value: 0, disabled: true }],
 
     fecha_entrega_estimada: [new Date(), Validators.required],
     estado: ['recibido'],
@@ -135,41 +134,41 @@ export class PedidoFormComponent implements OnInit {
 
     this.form.get('monto_total')?.valueChanges
       .pipe(distinctUntilChanged())
-      .subscribe(total => {
-        this.recalcularSaldo();
-      });
-
-    this.form.get('descuento_aplicado')?.valueChanges
-      .pipe(distinctUntilChanged())
-      .subscribe(desc => {
-        this.recalcularSaldo();
+      .subscribe(() => {
+        // No hacemos nada especial: el saldo_pendiente lo maneja el admin directamente
       });
   }
 
-  // --- LÓGICA DE MONEDERO Y SALDOS ---
-  private recalcularSaldo() {
-    // Si ya estamos en edición, el usuario puede tener saldos que ha abonado (idealmente no lo sobreescribimos automágicamente)
-    if (this.isEdit()) return; 
+  // --- LÓGICA DE PROMOCIÓN Y LEALTAD ---
 
-    // Solo para pedidos nuevos calculamos Saldo = Total - Descuento
-    const total = Number(this.form.get('monto_total')?.value) || 0;
-    const descuento = Number(this.form.get('descuento_aplicado')?.value) || 0;
-    const nuevoSaldo = Math.max(0, total - descuento);
-    
-    this.form.patchValue({ saldo_pendiente: nuevoSaldo }, { emitEvent: false });
+  // Progreso del cliente en el ciclo de 4 servicios (0-3)
+  get serviciosEnCiclo(): number {
+    return (this.selectedCliente()?.contador_servicios ?? 0) % 4;
   }
 
-  usarMonederoCompleto() {
-    const maxMonedero = this.selectedCliente()?.monedero || 0;
-    const total = Number(this.form.get('monto_total')?.value) || 0;
-    const aplicar = Math.min(maxMonedero, total);
-    
-    this.form.controls.descuento_aplicado.enable();
-    this.form.patchValue({ descuento_aplicado: aplicar });
+  get proximaGanancia(): number {
+    return this.serviciosEnCiclo === 3 ? 30 : 10;
   }
 
-  quitarMonedero() {
-    this.form.patchValue({ descuento_aplicado: 0 });
+  get promoProgressPercent(): number {
+    return (this.serviciosEnCiclo / 4) * 100;
+  }
+
+  // Toggle: cambia apto_promociones del cliente en tiempo real
+  async toggleAptitudPromo(nuevoValor: boolean) {
+    const c = this.selectedCliente();
+    if (!c?.id) return;
+    try {
+      const updated = await this.api.updateCliente(c.id, { apto_promociones: nuevoValor });
+      // Fusionamos con el cliente actual para mantener el resto de sus datos (monedero, etc)
+      this.selectedCliente.set({ ...c, ...updated });
+      this.snack.open(
+        nuevoValor ? 'Cliente inscrito en el programa de lealtad' : 'Cliente excluido del programa de lealtad',
+        'OK', { duration: 3000 }
+      );
+    } catch {
+      this.snack.open('Error al actualizar el estado de lealtad', 'Cerrar');
+    }
   }
 
   async ngOnInit() {
@@ -215,7 +214,6 @@ export class PedidoFormComponent implements OnInit {
     this.form.patchValue({ cliente_nombre: '', cliente_telefono: '', cliente_id: '' });
     this.form.controls.cliente_nombre.enable();
     this.form.controls.cliente_telefono.enable();
-    this.quitarMonedero();
   }
 
   // --- LOGICA FOTOS ---
@@ -312,12 +310,12 @@ export class PedidoFormComponent implements OnInit {
           if (clienteReal) {
             this.selectedCliente.set(clienteReal);
           } else {
-            this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 }); 
+            this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 });
           }
         } catch {
-          this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 }); 
+          this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 });
         }
-        
+
         this.form.controls.cliente_nombre.disable();
         this.form.controls.cliente_telefono.disable();
       }
@@ -354,7 +352,8 @@ export class PedidoFormComponent implements OnInit {
         const nuevoCliente = await this.api.createCliente({
           nombre: v.cliente_nombre || '',
           telefono: v.cliente_telefono || '',
-          permite_whatsapp: true
+          permite_whatsapp: true,
+          apto_promociones: false // Por defecto inicia inactivo al crear cliente rápido
         });
         clientId = nuevoCliente.id;
       }
@@ -367,7 +366,6 @@ export class PedidoFormComponent implements OnInit {
         descripcion: v.descripcion,
         monto_total: v.monto_total,
         saldo_pendiente: v.saldo_pendiente,
-        descuento_aplicado: v.descuento_aplicado || 0,
         fecha_entrega_estimada: v.fecha_entrega_estimada ? new Date(v.fecha_entrega_estimada).toISOString().split('T')[0] : null,
         estado: v.estado
       };

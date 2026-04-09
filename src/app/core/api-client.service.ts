@@ -216,4 +216,14 @@ export class ApiClientService {
   getPedidoPublico(folio: string): Promise<Pedido> {
     return this.get<Pedido>(`/rastreo/${folio}`);
   }
+
+  canjearPromo(folio: string): Promise<{ ok: boolean; descuento_aplicado: number; saldo_pendiente: number; monedero_restante: number; mensaje: string }> {
+    // Endpoint público: usa fetch directo sin autenticación
+    return fetch(`${this.base}/rastreo/${folio}/canjear`, { method: 'POST' })
+      .then(async r => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Error al canjear');
+        return data;
+      });
+  }
 }
