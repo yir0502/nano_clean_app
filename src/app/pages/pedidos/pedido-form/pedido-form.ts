@@ -134,8 +134,11 @@ export class PedidoFormComponent implements OnInit {
 
     this.form.get('monto_total')?.valueChanges
       .pipe(distinctUntilChanged())
-      .subscribe(() => {
-        // No hacemos nada especial: el saldo_pendiente lo maneja el admin directamente
+      .subscribe((val) => {
+        // Al escribir el total, sugerimos el mismo valor como saldo pendiente
+        if (val) {
+          this.form.get('saldo_pendiente')?.setValue(val, { emitEvent: false });
+        }
       });
   }
 
