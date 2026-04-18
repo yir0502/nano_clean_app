@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { trigger, transition, style, animate, query, stagger } from '@angular/animations';
 
 // Material
 import { MatCardModule } from '@angular/material/card';
@@ -33,14 +34,29 @@ import { LiquidarDialogComponent, LiquidarDialogResult } from './liquidar-dialog
     MatDialogModule, MatSnackBarModule
   ],
   templateUrl: './deudas.component.html',
-  styleUrls: ['./deudas.component.scss']
+  styleUrls: ['./deudas.component.scss'],
+  animations: [
+    trigger('listAnimation', [
+      transition('* <=> *', [
+        query(':enter', [
+          style({ opacity: 0, transform: 'translateY(15px)' }),
+          stagger('50ms', [
+            animate('300ms ease-out', style({ opacity: 1, transform: 'translateY(0)' }))
+          ])
+        ], { optional: true })
+      ])
+    ])
+  ]
 })
-export class DeudasComponent implements OnInit {
+export class DeudasComponent implements OnInit, OnDestroy {
   private api = inject(ApiClientService);
   private router = inject(Router);
   private dialog = inject(MatDialog);
   private snack = inject(MatSnackBar);
   protected readonly Number = Number;
+
+  private destroy$ = new Subject<void>();
+  private searchSubject = new Subject<string>();
 
   loading = signal<boolean>(true);
   pedidos = signal<Pedido[]>([]);
@@ -68,7 +84,23 @@ export class DeudasComponent implements OnInit {
 
   async ngOnInit() {
     await this.loadCategoriasIngreso();
+    
+    // Configurar búsqueda con debounce
+    this.searchSubject.pipe(
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntil(this.destroy$)
+    ).subscribe(val => {
+      this.q.set(val);
+      this.load();
+    });
+
     await this.load();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private async loadCategoriasIngreso() {
@@ -158,8 +190,7 @@ export class DeudasComponent implements OnInit {
   }
 
   onSearch(val: string) {
-    this.q.set(val);
-    this.load();
+    this.searchSubject.next(val);
   }
 
   abrirWhatsapp(p: Pedido, clickEvent: Event) {
@@ -213,51 +244,57 @@ export class DeudasComponent implements OnInit {
     if (!result || result.accion === 'cancelar') return;
 
     const montoPago = result.monto;
-    const todayShort = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+    const fechaSeleccionada = result.fecha || new Date();
+    
+    // Formato corto para la nota: DD/MM
+    const todayShort = fechaSeleccionada.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+    // Formato ISO para la BD: YYYY-MM-DD
+    const fechaISO = fechaSeleccionada.toISOString().split('T')[0];
+    
     const detalleStr = p.descripcion ? `(${p.descripcion})` : `(Folio: ${p.folio})`;
     const esLiquidacion = result.accion === 'liquidar';
 
     try {
-      // 1. Buscar movimiento existente del pedido
+      // 1. Obtener historial de movimientos del pedido para conservar notas anteriores
       const movs = await this.api.listMovimientos({ pedido_id: p.id });
-
+      let historialNotas = '';
+      
       if (movs && movs.length > 0) {
-        // Actualizar movimiento existente
-        const mov = movs[0];
-        const oldNota = mov.nota || `Pedido ${p.cliente_nombre} ${detalleStr}`;
-        const etiqueta = esLiquidacion ? 'Liquidacion' : 'Abono';
-        const nuevaNota = `${oldNota} | ${etiqueta}: $${montoPago.toFixed(2)} (${todayShort})`;
-        const nuevoMonto = Number(mov.monto) + montoPago;
-
-        await this.api.updateMovimiento(mov.id, {
-          monto: nuevoMonto,
-          nota: nuevaNota
-        });
-      } else {
-        // Crear movimiento nuevo ligado al pedido
-        const etiqueta = esLiquidacion ? 'Liquidacion' : 'Abono';
-        const cats = this.categoriasIngreso();
-        const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : null);
-        await this.api.createMovimiento({
-          tipo: 'ingreso',
-          monto: montoPago,
-          categoria_id: catId,
-          nota: `Pedido ${p.cliente_nombre} ${detalleStr}. ${etiqueta}: $${montoPago.toFixed(2)} (${todayShort})`,
-          pedido_id: p.id,
-          sucursal_id: p.sucursal_id || null,
-          fecha: new Date().toISOString().split('T')[0],
-          metodo_pago: 'efectivo'
-        });
+        // Ordenar por fecha o created_at (asumiendo que vienen ordenados, tomamos el más reciente que tiene la cadena acumulada)
+        // El primer movimiento en la lista suele ser el más reciente por el ordenamiento del backend.
+        historialNotas = movs[0].nota || ''; 
       }
 
-      // 2. Actualizar saldo_pendiente del pedido
-      const nuevoSaldo = Math.max(0, saldo - montoPago);
-      await this.api.updatePedido(p.id, { saldo_pendiente: nuevoSaldo });
+      // Si no hay historial, creamos una nota base
+      if (!historialNotas) {
+        historialNotas = `Pedido ${p.cliente_nombre} ${detalleStr}`;
+      }
 
+      const etiqueta = esLiquidacion ? 'Liquidacion' : 'Abono';
+      const nuevaNota = `${historialNotas} | ${etiqueta}: $${montoPago.toFixed(2)} (${todayShort})`;
+
+      // 2. Crear movimiento nuevo ligado al pedido con la nueva nota acumulada y la fecha elegida
+      const cats = this.categoriasIngreso();
+      const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : null);
+      
+      await this.api.createMovimiento({
+        tipo: 'ingreso',
+        monto: montoPago,
+        categoria_id: catId,
+        nota: nuevaNota,
+        pedido_id: p.id,
+        sucursal_id: p.sucursal_id || null,
+        fecha: fechaISO,
+        metodo_pago: 'efectivo'
+      });
+
+      // Nota: El backend re-calcula el saldo_pendiente automáticamente al insertar un movimiento.
+      // Sin embargo, podemos forzar un refresco recargando los pedidos
+      
       // 3. Feedback y recargar
       const msg = esLiquidacion
         ? `¡Deuda de ${p.cliente_nombre} liquidada completamente!`
-        : `Abono de $${montoPago.toFixed(2)} registrado. Resta: $${nuevoSaldo.toFixed(2)}`;
+        : `Abono de $${montoPago.toFixed(2)} registrado.`;
       this.snack.open(msg, 'OK', { duration: 4000 });
 
       await this.load();

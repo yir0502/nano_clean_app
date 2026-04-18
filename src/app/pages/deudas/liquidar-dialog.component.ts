@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule, provideNativeDateAdapter } from '@angular/material/core';
 
 export interface LiquidarDialogData {
   folio: string;
@@ -17,6 +19,7 @@ export interface LiquidarDialogData {
 export interface LiquidarDialogResult {
   accion: 'liquidar' | 'abonar' | 'cancelar';
   monto: number;
+  fecha: Date;
 }
 
 @Component({
@@ -24,8 +27,10 @@ export interface LiquidarDialogResult {
   standalone: true,
   imports: [
     CommonModule, FormsModule, MatDialogModule,
-    MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule
+    MatButtonModule, MatIconModule, MatFormFieldModule, MatInputModule,
+    MatDatepickerModule, MatNativeDateModule
   ],
+  providers: [provideNativeDateAdapter()],
   template: `
     <div class="liquidar-dialog">
       <div class="dialog-header">
@@ -57,6 +62,13 @@ export interface LiquidarDialogResult {
           <span matTextPrefix>$&nbsp;</span>
         </mat-form-field>
 
+        <mat-form-field appearance="outline" class="monto-field">
+          <mat-label>Fecha de pago</mat-label>
+          <input matInput [matDatepicker]="picker" [(ngModel)]="fechaPago">
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+
         <div class="pago-info" *ngIf="montoPago > 0 && montoPago < data.saldoPendiente">
           <mat-icon>info</mat-icon>
           <span>Restará <strong>\${{ (data.saldoPendiente - montoPago).toFixed(2) }}</strong> de deuda</span>
@@ -81,105 +93,140 @@ export interface LiquidarDialogResult {
     </div>
   `,
   styles: [`
+    :host {
+      display: block;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(15px);
+      border-radius: 20px;
+    }
+
     .liquidar-dialog {
-      padding: 8px 4px;
-      max-width: 380px;
+      padding: 12px 8px;
+      max-width: 400px;
+      color: #1e293b;
     }
 
     .dialog-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .header-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #0073ff;
-    }
-    .dialog-header h2 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a1a2e;
+      gap: 16px;
+      margin-bottom: 24px;
+      
+      .header-icon {
+        font-size: 36px;
+        width: 36px;
+        height: 36px;
+        color: var(--brand-primary);
+        filter: drop-shadow(0 4px 6px rgba(25, 106, 255, 0.2));
+      }
+      
+      h2 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
     }
 
     .info-row {
       display: flex;
       justify-content: space-between;
-      padding: 6px 0;
-      font-size: 14px;
-    }
-    .info-row .label {
-      color: #888;
-      font-weight: 500;
-    }
-    .info-row .value {
-      font-weight: 600;
-      color: #333;
-    }
-    .info-row .folio {
-      font-family: monospace;
-      color: #0073ff;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      
+      .label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+      }
+      
+      .value {
+        font-weight: 700;
+        color: #334155;
+      }
+      
+      .folio {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--brand-primary);
+      }
     }
 
     .saldo-card {
-      background: linear-gradient(135deg, #fce4ec, #ffcdd2);
-      border-radius: 12px;
-      padding: 14px 18px;
+      background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+      border-radius: 16px;
+      padding: 18px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 12px 0 16px;
-    }
-    .saldo-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: #c62828;
-    }
-    .saldo-value {
-      font-size: 22px;
-      font-weight: 700;
-      color: #b71c1c;
+      margin: 20px 0;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.1);
+
+      .saldo-label {
+        font-size: 14px;
+        font-weight: 700;
+        color: #991b1b;
+        text-transform: uppercase;
+      }
+      
+      .saldo-value {
+        font-size: 26px;
+        font-weight: 900;
+        color: #b91c1c;
+        letter-spacing: -1px;
+      }
     }
 
     .monto-field {
       width: 100%;
+      margin-bottom: 8px;
+      
+      ::ng-deep .mdc-text-field--outlined {
+        --mdc-outlined-text-field-container-shape: 12px;
+      }
     }
 
     .pago-info {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: #e65100;
-      margin-bottom: 16px;
-    }
-    .pago-info mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
-    .pago-info.completo {
-      color: #2e7d32;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #d97706;
+      background: #fffbeb;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      
+      mat-icon { font-size: 20px; width: 20px; height: 20px; }
+      
+      &.completo {
+        background: #ecfdf5;
+        color: #059669;
+      }
     }
 
     .dialog-actions {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-    }
-    .btn-liquidar {
-      background: linear-gradient(135deg, #0073ff, #0059ff) !important;
-      color: white !important;
-      border-radius: 12px !important;
-      padding: 10px 20px !important;
-      font-weight: 600 !important;
-    }
-    .btn-cancelar {
-      border-radius: 12px !important;
-      color: #666 !important;
+      gap: 12px;
+      
+      button {
+        height: 50px;
+        border-radius: 14px !important;
+        font-weight: 700 !important;
+        font-size: 15px !important;
+        letter-spacing: 0.5px;
+      }
+      
+      .btn-liquidar {
+        background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-light)) !important;
+        box-shadow: 0 4px 12px rgba(25, 106, 255, 0.3);
+      }
+      
+      .btn-cancelar {
+        color: #64748b !important;
+      }
     }
   `]
 })
@@ -188,6 +235,7 @@ export class LiquidarDialogComponent {
   private dialogRef = inject(MatDialogRef<LiquidarDialogComponent>);
 
   montoPago = this.data.saldoPendiente;
+  fechaPago = new Date();
   saving = signal(false);
 
   confirmar() {
@@ -195,11 +243,12 @@ export class LiquidarDialogComponent {
     const esTotal = this.montoPago >= this.data.saldoPendiente;
     this.dialogRef.close({
       accion: esTotal ? 'liquidar' : 'abonar',
-      monto: Math.min(this.montoPago, this.data.saldoPendiente)
+      monto: Math.min(this.montoPago, this.data.saldoPendiente),
+      fecha: this.fechaPago
     } as LiquidarDialogResult);
   }
 
   cancelar() {
-    this.dialogRef.close({ accion: 'cancelar', monto: 0 } as LiquidarDialogResult);
+    this.dialogRef.close({ accion: 'cancelar', monto: 0, fecha: new Date() } as LiquidarDialogResult);
   }
 }
