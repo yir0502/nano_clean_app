@@ -4,5 +4,5 @@ const isLocalhost =
 export const ENV = {
   API_URL: isLocalhost
     ? 'http://localhost:3000'
-    : 'https://nanoclean-api.onrender.com',
+    : 'https://nano-clean-api.fly.dev',
 };
