@@ -20,94 +20,110 @@ export interface AccionPedidoDialogData {
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
   template: `
-    <div class="accion-dialog">
-      <div class="dialog-header">
-        <mat-icon class="header-icon">task_alt</mat-icon>
-        <h2>{{ data.titulo }}</h2>
+    <div class="creative-modal-wrapper">
+      <div class="modal-bubbles-container">
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
       </div>
 
-      <p class="dialog-msg">{{ data.mensaje }}</p>
+      <div class="modal-content-glass accion-dialog">
+        <h2 class="dialog-title">{{ data.titulo }}</h2>
+        <p class="dialog-msg">{{ data.mensaje }}</p>
 
-      <div class="dialog-actions">
-        <button *ngFor="let a of data.acciones"
-                mat-flat-button
-                class="btn-accion"
-                [ngClass]="'btn-' + (a.color || 'primary')"
-                (click)="seleccionar(a.valor)">
-          <mat-icon>{{ a.icono }}</mat-icon>
-          {{ a.texto }}
-        </button>
-        <button mat-stroked-button class="btn-skip" (click)="seleccionar('omitir')">
-          Omitir
-        </button>
+        <div class="dialog-actions">
+          <button *ngFor="let a of data.acciones"
+                  mat-button
+                  class="btn-accion"
+                  [ngClass]="'btn-' + (a.color || 'primary')"
+                  (click)="seleccionar(a.valor)">
+            <mat-icon>{{ a.icono }}</mat-icon>
+            {{ a.texto }}
+          </button>
+          <button mat-button class="btn-skip" (click)="seleccionar('omitir')">
+            Omitir
+          </button>
+        </div>
       </div>
     </div>
   `,
   styles: [`
+    .creative-modal-wrapper {
+      font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+    }
+
     .accion-dialog {
-      padding: 8px 4px;
+      padding: 32px 24px;
       max-width: 380px;
     }
 
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .header-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #0073ff;
-    }
-    .dialog-header h2 {
-      margin: 0;
-      font-size: 19px;
-      font-weight: 700;
-      color: #1a1a2e;
+    .dialog-title {
+      font-family: inherit;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 12px 0;
+      letter-spacing: -0.5px;
     }
 
     .dialog-msg {
-      font-size: 14px;
-      color: #555;
-      margin: 0 0 18px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: #475569;
+      margin: 0 0 24px;
       line-height: 1.5;
     }
 
     .dialog-actions {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .btn-accion {
+      font-family: inherit;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 10px 20px !important;
+      height: 48px;
       border-radius: 12px !important;
-      font-weight: 600 !important;
-      font-size: 14px !important;
+      font-weight: 700 !important;
+      font-size: 0.95rem !important;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      color: white !important;
+      box-shadow: 0 4px 15px rgba(0,0,0, 0.1);
     }
     .btn-primary {
-      background: linear-gradient(135deg, #0073ff, #0059ff) !important;
-      color: white !important;
+      background: linear-gradient(135deg, #0073ff, #00c6ff) !important;
     }
     .btn-accent {
-      background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-      color: white !important;
+      background: linear-gradient(135deg, #f59e0b, #fbbf24) !important;
     }
     .btn-whatsapp {
-      background: linear-gradient(135deg, #25D366, #128C7E) !important;
-      color: white !important;
+      background: linear-gradient(135deg, #22c55e, #10b981) !important;
+    }
+
+    .btn-accion:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
     }
 
     .btn-skip {
+      font-family: inherit;
+      height: 48px;
       border-radius: 12px !important;
-      color: #888 !important;
-      font-size: 13px !important;
+      color: #64748b !important;
+      font-size: 0.9rem !important;
+      background-color: transparent !important;
+      border: 1px solid #cbd5e1;
+      font-weight: 600 !important;
+      text-transform: uppercase;
+    }
+    .btn-skip:hover {
+      background-color: #f1f5f9 !important;
+      color: #475569 !important;
     }
   `]
 })

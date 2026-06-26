@@ -18,126 +18,156 @@ export type EntregaDialogResult = 'registrar' | 'deuda';
   standalone: true,
   imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
   template: `
-    <div class="entrega-dialog">
-      <div class="dialog-header">
-        <mat-icon class="header-icon">inventory_2</mat-icon>
-        <h2>Pedido Entregado</h2>
+    <div class="creative-modal-wrapper">
+      <div class="modal-bubbles-container">
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
+        <div class="bubble"></div><div class="bubble"></div><div class="bubble"></div><div class="bubble"></div>
       </div>
 
-      <div class="dialog-body">
-        <p class="info-text">
-          El pedido <strong>{{ data.folio }}</strong> de <strong>{{ data.nombreCliente }}</strong> ha sido marcado como entregado.
-        </p>
+      <div class="modal-content-glass entrega-dialog">
+        <h2 class="dialog-title">Pedido Entregado</h2>
 
-        <div class="saldo-card" *ngIf="data.saldoPendiente > 0">
-          <span class="saldo-label">Saldo pendiente</span>
-          <span class="saldo-value">\${{ data.saldoPendiente.toFixed(2) }}</span>
+        <div class="dialog-body">
+          <p class="info-text">
+            El pedido <strong>{{ data.folio }}</strong> de <strong>{{ data.nombreCliente }}</strong> ha sido marcado como entregado.
+          </p>
+
+          <div class="saldo-card" *ngIf="data.saldoPendiente > 0">
+            <span class="saldo-label">Saldo pendiente</span>
+            <span class="saldo-value">&#36;{{ data.saldoPendiente.toFixed(2) }}</span>
+          </div>
+
+          <p class="question">¿Deseas registrar el cobro ahora?</p>
         </div>
 
-        <p class="question">¿Deseas registrar el cobro ahora?</p>
-      </div>
-
-      <div class="dialog-actions">
-        <button mat-flat-button class="btn-registrar" (click)="elegir('registrar')">
-          <mat-icon>payments</mat-icon>
-          Registrar Cobro
-        </button>
-        <button mat-stroked-button class="btn-deuda" (click)="elegir('deuda')">
-          <mat-icon>schedule</mat-icon>
-          Agregar a Deudas
-        </button>
+        <div class="dialog-actions">
+          <button mat-button class="btn-registrar" (click)="elegir('registrar')">
+            <mat-icon>payments</mat-icon>
+            Registrar Cobro
+          </button>
+          <button mat-button class="btn-deuda" (click)="elegir('deuda')">
+            <mat-icon>schedule</mat-icon>
+            Agregar a Deudas
+          </button>
+        </div>
       </div>
     </div>
   `,
   styles: [`
-    .entrega-dialog {
-      padding: 8px 4px;
-      max-width: 360px;
+    .creative-modal-wrapper {
+      font-family: 'Roboto', 'Helvetica Neue', sans-serif;
     }
 
-    .dialog-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+    .entrega-dialog {
+      padding: 32px 24px;
+      max-width: 380px;
     }
-    .header-icon {
-      font-size: 32px;
-      width: 32px;
-      height: 32px;
-      color: #4caf50;
-    }
-    .dialog-header h2 {
-      margin: 0;
-      font-size: 20px;
-      font-weight: 700;
-      color: #1a1a2e;
+
+    .dialog-title {
+      font-family: inherit;
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 16px 0;
+      letter-spacing: -0.5px;
     }
 
     .dialog-body {
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
+
     .info-text {
-      font-size: 14px;
-      color: #555;
+      font-family: inherit;
+      font-size: 0.95rem;
+      color: #475569;
       line-height: 1.5;
       margin: 0 0 16px;
+    }
+    .info-text strong {
+      color: #0f172a;
     }
 
     .saldo-card {
       background: linear-gradient(135deg, #fff3e0, #ffe0b2);
       border-radius: 12px;
-      padding: 14px 18px;
+      padding: 16px;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
-      margin-bottom: 16px;
+      gap: 4px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(255, 152, 0, 0.15);
+      border: 1px solid rgba(255, 152, 0, 0.3);
     }
     .saldo-label {
-      font-size: 13px;
-      font-weight: 500;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
       color: #e65100;
+      letter-spacing: 0.5px;
     }
     .saldo-value {
-      font-size: 22px;
-      font-weight: 700;
+      font-family: inherit;
+      font-size: 2rem;
+      font-weight: 800;
       color: #bf360c;
     }
 
     .question {
-      font-size: 15px;
-      font-weight: 600;
-      color: #333;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #0f172a;
       margin: 0;
-      text-align: center;
     }
 
     .dialog-actions {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
     }
 
     .btn-registrar {
-      background: linear-gradient(135deg, #4caf50, #388e3c) !important;
+      font-family: inherit;
+      background: linear-gradient(135deg, #22c55e, #10b981) !important;
       color: white !important;
+      height: 48px;
       border-radius: 12px !important;
-      padding: 10px 20px !important;
-      font-weight: 600 !important;
+      font-weight: 700 !important;
+      font-size: 0.95rem !important;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0, 0.1);
+    }
+    .btn-registrar:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
     }
 
     .btn-deuda {
-      border-color: #ff9800 !important;
+      font-family: inherit;
+      background-color: transparent !important;
       color: #e65100 !important;
+      border: 1px solid #ff9800;
+      height: 48px;
       border-radius: 12px !important;
-      padding: 10px 20px !important;
       font-weight: 600 !important;
+      font-size: 0.9rem !important;
+      text-transform: uppercase;
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
+      transition: all 0.3s ease;
+    }
+    .btn-deuda:hover {
+      background-color: #fff3e0 !important;
     }
   `]
 })

@@ -14,6 +14,8 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 // Servicios y Modelos
 import { ApiClientService } from '../../../core/api-client.service';
 import { Categoria } from '../../../core/models';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'app-categorias-listado',
@@ -21,7 +23,7 @@ import { Categoria } from '../../../core/models';
   imports: [
     CommonModule,
     MatToolbarModule, MatIconModule, MatButtonModule, MatListModule, 
-    MatDividerModule, MatProgressSpinnerModule
+    MatDividerModule, MatProgressSpinnerModule, MatDialogModule
   ],
   template: `
     <div class="sticky-toolbar">
@@ -100,6 +102,7 @@ export class CategoriasListadoComponent implements OnInit {
   private api = inject(ApiClientService);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   categorias = signal<Categoria[]>([]);
   loading = signal(true);
@@ -122,10 +125,22 @@ export class CategoriasListadoComponent implements OnInit {
   }
 
   async deleteCategoria(event: MouseEvent, id: string, nombre: string) {
-      // Ya no es estrictamente necesario, pero es un buen hábito.
       event.stopPropagation(); 
       
-      const confirmacion = confirm(`¿Estás seguro de que deseas eliminar la categoría "${nombre}"? Esta acción no se puede deshacer.`);
+      const dialogData: ConfirmDialogData = {
+        title: 'Eliminar categoría',
+        message: `¿Estás seguro de que deseas eliminar la categoría "${nombre}"? Esta acción no se puede deshacer.`,
+        icon: 'delete_forever',
+        color: 'warn'
+      };
+      
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        data: dialogData,
+        width: '360px',
+        panelClass: 'custom-modal-panel'
+      });
+
+      const confirmacion = await dialogRef.afterClosed().toPromise();
 
       if (confirmacion) {
         this.loading.set(true); 

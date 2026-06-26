@@ -15,6 +15,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 import { AuthService } from '../../core/auth.service';
 
 import { ApiClientService } from '../../core/api-client.service';
@@ -30,7 +32,7 @@ import { Sucursal } from '../../core/models';
     MatCardModule, MatFormFieldModule, MatInputModule, MatSelectModule,
     MatButtonModule, MatIconModule, MatButtonToggleModule,
     MatDatepickerModule, MatNativeDateModule, MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule, MatDialogModule
   ],
   templateUrl: './movimiento-form.component.html',
   styleUrls: ['./movimiento-form.component.scss']
@@ -41,6 +43,7 @@ export class MovimientoFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private snack = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   saving = signal<boolean>(false);
   loading = signal<boolean>(true);
@@ -230,7 +233,21 @@ export class MovimientoFormComponent implements OnInit {
 
   async delete() {
     if (!this.isEdit() || !this.movimientoId()) return;
-    const ok = confirm('¿Eliminar este movimiento? Esta acción no se puede deshacer.');
+
+    const dialogData: ConfirmDialogData = {
+      title: 'Eliminar movimiento',
+      message: '¿Estás seguro de eliminar este movimiento? Esta acción no se puede deshacer.',
+      icon: 'delete_forever',
+      color: 'warn'
+    };
+    
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '360px',
+      panelClass: 'custom-modal-panel'
+    });
+
+    const ok = await dialogRef.afterClosed().toPromise();
     if (!ok) return;
     try {
       await this.api.deleteMovimiento(this.movimientoId()!);

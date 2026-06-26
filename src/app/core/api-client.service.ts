@@ -12,7 +12,7 @@ export class ApiClientService {
   private auth = inject(AuthService);
   private snack = inject(MatSnackBar);
 
-  private base = ENV.API_URL || 'http://localhost:3000';
+  private base = ENV.API_URL || 'http://localhost:3001';
   
   // Caché de memoria para catálogos estáticos
   private cacheCategorias = new Map<string, Categoria[]>();
@@ -149,6 +149,11 @@ export class ApiClientService {
     return this.get<PaginatedResponse<Cliente>>('/clientes', p);
   }
 
+  getCliente(id: string): Promise<Cliente> {
+    const p = { org_id: this.auth.orgId };
+    return this.get<Cliente>(`/clientes/${id}`, p);
+  }
+
   getClientStats(): Promise<any> {
     const p = { org_id: this.auth.orgId };
     return this.get<any>('/clientes/stats', p);
@@ -181,6 +186,11 @@ export class ApiClientService {
   }): Promise<Pedido[]> {
     const p = { org_id: this.auth.orgId, ...params };
     return this.get<Pedido[]>('/pedidos', p);
+  }
+
+  getPedido(id: string): Promise<Pedido> {
+    const p = { org_id: this.auth.orgId };
+    return this.get<Pedido>(`/pedidos/${id}`, p);
   }
 
   createPedido(payload: Partial<Pedido>): Promise<Pedido> {

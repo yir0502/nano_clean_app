@@ -81,25 +81,30 @@
           <ng-container *ngIf="selectedCliente()?.apto_promociones !== false">
             <div class="lealtad-stats">
               <div class="stat-item">
-                <span class="stat-label">Saldo acumulado</span>
+                <span class="stat-label">Saldo disponible</span>
                 <span class="stat-value green">${{ (selectedCliente()?.monedero ?? 0) | number:'1.2-2' }}</span>
               </div>
               <div class="stat-item">
-                <span class="stat-label">Servicios totales</span>
-                <span class="stat-value">{{ selectedCliente()?.contador_servicios ?? 0 }}</span>
+                <span class="stat-label">Historial de servicios</span>
+                <span class="stat-value">{{ selectedCliente()?.contador_servicios ?? 0 }} <small>totales</small></span>
               </div>
-              <div class="stat-item">
-                <span class="stat-label">Próxima ganancia</span>
-                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 60">${{ proximaGanancia }}
-                  en {{ 4 - serviciosEnCiclo } servicio(s)</span>
-                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 60">Bloqueada por
-                  límite</span>
+              <div class="stat-item highlight-box">
+                <span class="stat-label">Siguiente recompensa</span>
+                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 60">
+                  +${{ proximaGanancia }} <small>en el próximo servicio</small>
+                </span>
+                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 60">
+                  Tope alcanzado
+                </span>
               </div>
             </div>
 
             <!-- Barra de progreso del ciclo actual -->
             <div class="ciclo-progress">
-              <span class="ciclo-label">Ciclo actual: {{ serviciosEnCiclo }} de 4</span>
+              <div class="ciclo-header-flex">
+                <span class="ciclo-label">Progreso hacia bono especial ($30)</span>
+                <span class="ciclo-count">{{ serviciosEnCiclo }} / 4</span>
+              </div>
               <div class="progress-track">
                 <div class="progress-fill" [style.width.%]="promoProgressPercent"></div>
               </div>
@@ -110,10 +115,9 @@
 
             <!-- Hint administrativo -->
             <div class="lealtad-hint"
-              style="margin-top: 12px; font-size: 13px; color: #555; text-align: center; background: #fdfae3; padding: 8px; border-radius: 8px;">
-              <mat-icon
-                style="font-size: 16px; width: 16px; height: 16px; vertical-align: middle; margin-right: 4px; color: #ffa000;">info</mat-icon>
-              {{ getLoyaltyMessage() }}
+              style="margin-top: 16px; font-size: 13px; color: #7f6e1f; text-align: left; background: #fffcf0; padding: 10px; border-radius: 8px; border: 1px solid #ffecb3; display: flex; align-items: flex-start; gap: 8px;">
+              <mat-icon style="color: #ffc107; font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; margin-top: -1px;">stars</mat-icon>
+              <span>{{ getLoyaltyMessage() }}</span>
             </div>
           </ng-container>
 
@@ -164,12 +168,18 @@
     </mat-card>
 
     <mat-card class="form-card">
-      <mat-card-header class="card-header-with-button">
-        <mat-card-title>Evidencia Fotográfica</mat-card-title>
-        <button type="button" mat-stroked-button (click)="fileInput.click()">
-          <mat-icon>add_a_photo</mat-icon> Agregar
-        </button>
-        <input #fileInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" style="display:none">
+      <mat-card-header class="evidencia-header">
+        <mat-card-title style="margin-bottom: 8px;">Evidencia Fotográfica</mat-card-title>
+        <div class="evidencia-actions">
+          <button type="button" mat-stroked-button color="primary" (click)="cameraInput.click()">
+            <mat-icon>camera_alt</mat-icon> Tomar foto
+          </button>
+          <button type="button" mat-stroked-button (click)="galleryInput.click()">
+            <mat-icon>photo_library</mat-icon> Galería
+          </button>
+        </div>
+        <input #cameraInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" capture="environment" style="display:none">
+        <input #galleryInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" style="display:none">
       </mat-card-header>
 
       <mat-card-content>

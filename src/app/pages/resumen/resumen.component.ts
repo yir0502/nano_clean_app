@@ -11,6 +11,8 @@ import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 import { NgChartsModule } from 'ng2-charts';
 import type { ChartConfiguration, ChartData, ChartType, ChartOptions } from 'chart.js';
@@ -34,7 +36,7 @@ const C_EGRESO_LINE = 'hsl(0, 83%, 60%)';
   imports: [
     CommonModule, RouterLink,
     MatCardModule, MatListModule, MatIconModule, MatDividerModule, MatButtonToggleModule,
-    NgChartsModule, MatButtonModule, MatChipsModule
+    NgChartsModule, MatButtonModule, MatChipsModule, MatDialogModule
   ],
   templateUrl: './resumen.component.html',
   styleUrls: ['./resumen.component.scss'],
@@ -47,6 +49,7 @@ export class ResumenComponent implements OnInit {
   private api = inject(ApiClientService);
   private snack = inject(MatSnackBar);
   public pedidoActions = inject(PedidoActionsService);
+  private dialog = inject(MatDialog);
 
   // Estado via Signals
   loading = signal(true);
@@ -313,7 +316,21 @@ export class ResumenComponent implements OnInit {
   // --- Acciones de Pedido Lógica Refinada ---
   async deletePedido(pedido: Pedido, event: MouseEvent) {
     event.stopPropagation();
-    const confirmacion = confirm(`¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`);
+    
+    const dialogData: ConfirmDialogData = {
+      title: 'Eliminar pedido',
+      message: `¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`,
+      icon: 'delete_forever',
+      color: 'warn'
+    };
+    
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '360px',
+      panelClass: 'custom-modal-panel'
+    });
+
+    const confirmacion = await dialogRef.afterClosed().toPromise();
     if (!confirmacion) return;
 
     try {

@@ -18,6 +18,25 @@
   display: flex; justify-content: space-between; align-items: center;
 }
 
+.evidencia-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start !important;
+  
+  .evidencia-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    width: 100%;
+    
+    button {
+      flex: 1;
+      min-width: 120px;
+    }
+  }
+}
+
 .form-card {
   margin-bottom: 16px;
   border-radius: 16px;
@@ -142,19 +161,38 @@
   .lealtad-stats {
     display: flex;
     gap: 16px;
-    margin-bottom: 14px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 
     .stat-item {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
+      flex: 1;
+      min-width: 100px;
 
-      .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+      &.highlight-box {
+        background: rgba(108, 92, 231, 0.08);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px dashed rgba(108, 92, 231, 0.3);
+      }
+
+      .stat-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;}
       .stat-value {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         color: #333;
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+
+        small {
+          font-size: 11px;
+          font-weight: 500;
+          opacity: 0.8;
+        }
+
         &.green { color: #27ae60; }
         &.accent { color: #6c5ce7; }
       }
@@ -162,20 +200,28 @@
   }
 
   .ciclo-progress {
-    .ciclo-label { font-size: 11px; color: #666; display: block; margin-bottom: 6px; }
+    .ciclo-header-flex {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      
+      .ciclo-label { font-size: 12px; color: #666; font-weight: 500; }
+      .ciclo-count { font-size: 12px; color: #6c5ce7; font-weight: 700; }
+    }
 
     .progress-track {
-      height: 6px;
-      background: rgba(108, 92, 231, 0.15);
+      height: 8px;
+      background: rgba(108, 92, 231, 0.1);
       border-radius: 99px;
       overflow: hidden;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
 
       .progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #6c5ce7, #a29bfe);
+        background: linear-gradient(90deg, #a29bfe, #6c5ce7);
         border-radius: 99px;
-        transition: width 0.4s ease;
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
 

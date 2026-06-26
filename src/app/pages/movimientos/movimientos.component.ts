@@ -13,6 +13,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 import { ApiClientService } from '../../core/api-client.service';
 import { Categoria, Movimiento } from '../../core/models';
@@ -29,32 +31,49 @@ type TipoFiltro = 'todos' | 'ingreso' | 'egreso';
     MatButtonModule, MatButtonToggleModule,
     MatSelectModule, MatFormFieldModule, MatInputModule,
     MatDatepickerModule, MatNativeDateModule,
-    MatProgressSpinnerModule, MatSnackBarModule
+    MatProgressSpinnerModule, MatSnackBarModule, MatDialogModule
   ],
   templateUrl: './movimientos.component.html',
   styleUrls: ['./movimientos.component.scss']
 })
 export class MovimientosComponent implements OnInit {
   constructor(
-    // ...tus inyecciones actuales
-    private snack: MatSnackBar
+    private snack: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
    async onDelete(m: Movimiento, ev?: Event) {
     ev?.stopPropagation(); // no navegar ni disparar otros clicks del item
 
     const montoAbs = Math.abs(Number(m.monto) || 0);
-    const ok = confirm(`¿Eliminar el ${m.tipo} de ${montoAbs.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 })}?`);
+    const text = `¿Eliminar el ${m.tipo} de ${montoAbs.toLocaleString('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 })}?`;
+    
+    const dialogData: ConfirmDialogData = {
+      message: text,
+      icon: 'delete_outline',
+      color: 'warn'
+    };
+
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '360px',
+      panelClass: 'custom-modal-panel'
+    });
+
+    const ok = await dialogRef.afterClosed().toPromise();
     if (!ok) return;
 
     try {
+      this.snack.open('Eliminando...', '', { duration: 1000 });
       await this.api.deleteMovimiento(m.id);
       // Quita el registro de la lista actual sin recargar
       this.items.set(this.items().filter(x => x.id !== m.id));
       this.snack.open('Movimiento eliminado', 'OK', { duration: 2000 });
     } catch (e: any) {
-      this.snack.open(e?.message || 'No se pudo eliminar', 'OK', { duration: 3000 });
-    } }
+      console.error('Error al eliminar movimiento:', e);
+      this.snack.open(e?.message || 'No se pudo eliminar', 'OK', { duration: 4000 });
+    } 
+  }
   private api = inject(ApiClientService);
 
   // Estado general

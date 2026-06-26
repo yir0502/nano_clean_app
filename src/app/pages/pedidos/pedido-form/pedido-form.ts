@@ -27,6 +27,7 @@ import { Cliente, Sucursal } from '../../../core/models';
 import { A11yModule } from "@angular/cdk/a11y";
 import { EntregaDialogComponent, EntregaDialogResult } from '../entrega-dialog.component';
 import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../accion-pedido-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 interface FotoPreview {
   file?: File;
@@ -135,8 +136,8 @@ export class PedidoFormComponent implements OnInit {
     this.form.get('monto_total')?.valueChanges
       .pipe(distinctUntilChanged())
       .subscribe((val) => {
-        // Al escribir el total, sugerimos el mismo valor como saldo pendiente
-        if (val) {
+        // Al escribir el total, sugerimos el mismo valor como saldo pendiente solo al crear
+        if (val && !this.isEdit()) {
           this.form.get('saldo_pendiente')?.setValue(val, { emitEvent: false });
         }
       });
@@ -162,13 +163,14 @@ export class PedidoFormComponent implements OnInit {
   getLoyaltyMessage(): string {
     const monedero = this.selectedCliente()?.monedero ?? 0;
     if (monedero >= 60) {
-      return 'El cliente ha alcanzado el límite de $60.00 MXN. Debe canjear su saldo para poder seguir acumulando.';
+      return 'Límite de monedero ($60.00 MXN) alcanzado. Sugiere al cliente canjear su saldo.';
     }
     const count = this.serviciosEnCiclo;
+    const faltan = 4 - count;
     if (count === 3) {
-      return '¡Tu próximo servicio te otorga el bono especial de $30.00 MXN!';
+      return '¡El próximo servicio otorgará un bono especial de $30.00 MXN al cliente!';
     } else {
-      return `Falta(n) ${4 - count - 1} servicio(s) para el bono especial de $30.00 MXN.`;
+      return `Falta(n) ${faltan} servicio(s) para el bono especial de $30.00 MXN.`;
     }
   }
 
@@ -259,7 +261,20 @@ export class PedidoFormComponent implements OnInit {
     // CASO A: Es una foto YA guardada en el servidor (tiene ID)
     if (foto.id && this.pedidoId()) {
 
-      const confirmacion = confirm('¿Eliminar esta evidencia permanentemente?');
+      const dialogData: ConfirmDialogData = {
+        title: 'Eliminar evidencia',
+        message: '¿Estás seguro de eliminar esta evidencia permanentemente?',
+        icon: 'delete_forever',
+        color: 'warn'
+      };
+      
+      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+        data: dialogData,
+        width: '360px',
+        panelClass: 'custom-modal-panel'
+      });
+
+      const confirmacion = await dialogRef.afterClosed().toPromise();
       if (!confirmacion) return;
 
       this.loading.set(true); // Bloqueamos un poco la UI para evitar doble click
@@ -294,10 +309,7 @@ export class PedidoFormComponent implements OnInit {
     this.loading.set(true);
     try {
       // 1. Cargar Pedido
-      // (Usamos listPedidos porque no tenemos getById, idealmente crear getPedido(id))
-      const lista = await this.api.listPedidos({ limit: 1000, q: '' });
-      const p = lista.find(x => x.id === id);
-
+      const p = await this.api.getPedido(id);
       if (!p) throw new Error('Pedido no encontrado');
 
       // Guardamos el folio en la señal
@@ -323,8 +335,7 @@ export class PedidoFormComponent implements OnInit {
       if (p.cliente_id) {
         try {
           // Necesitamos el monedero real
-          const clienteRes = await this.api.listClientes({ q: p.cliente_nombre || '', limit: 1 });
-          const clienteReal = clienteRes.data.find(c => c.id === p.cliente_id);
+          const clienteReal = await this.api.getCliente(p.cliente_id);
           if (clienteReal) {
             this.selectedCliente.set(clienteReal);
           } else {
@@ -431,7 +442,8 @@ export class PedidoFormComponent implements OnInit {
             montoTotal: montoTotal
           },
           disableClose: true,
-          width: '400px'
+          width: '400px',
+          panelClass: 'custom-modal-panel'
         });
 
         const resultado: EntregaDialogResult | undefined = await firstValueFrom(dialogRef.afterClosed());
@@ -489,7 +501,8 @@ export class PedidoFormComponent implements OnInit {
             acciones
           } as AccionPedidoDialogData,
           disableClose: true,
-          width: '400px'
+          width: '400px',
+          panelClass: 'custom-modal-panel'
         });
 
         const resultado = await firstValueFrom(dialogRef.afterClosed());
@@ -529,7 +542,8 @@ export class PedidoFormComponent implements OnInit {
             acciones
           } as AccionPedidoDialogData,
           disableClose: true,
-          width: '400px'
+          width: '400px',
+          panelClass: 'custom-modal-panel'
         });
 
         const resultado = await firstValueFrom(dialogRef.afterClosed());
@@ -550,7 +564,8 @@ export class PedidoFormComponent implements OnInit {
             ]
           } as AccionPedidoDialogData,
           disableClose: true,
-          width: '400px'
+          width: '400px',
+          panelClass: 'custom-modal-panel'
         });
 
         const resultado = await firstValueFrom(dialogRef.afterClosed());
@@ -608,7 +623,10 @@ export class PedidoFormComponent implements OnInit {
         msg = `¡Hola *${nombre}*! 👋\n\nTe escribimos de Nano Clean respecto a tu pedido *${folio}*.\n\nTotal: *${montoStr}*\n\n¡Gracias por tu preferencia! 🙏`;
     }
 
-    const tel = telefono.replace(/\D/g, '');
+    let tel = telefono.replace(/\D/g, '');
+    if (tel.length === 10) {
+      tel = '52' + tel;
+    }
     window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
   }
 }

@@ -154,7 +154,7 @@ export interface LiquidarDialogResult {
 
     .saldo-card {
       background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-      border-radius: 16px;
+      border-radius: 14px;
       padding: 18px;
       display: flex;
       justify-content: space-between;

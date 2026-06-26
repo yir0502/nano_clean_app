@@ -137,6 +137,171 @@ mat-toolbar.bubbly {
   height: 45px;
 }
 
+/* ==========================================================================
+   DISEÑO CREATIVO DE BURBUJAS (NANO CLEAN) PARA MODALES
+   ========================================================================== */
+.modal-bubbles-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  z-index: 0;
+  /* Gradiente Celeste Claro de Rastreo de Pedido */
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+}
+
+.modal-bubbles-container .bubble {
+  position: absolute;
+  bottom: -100px;
+  background: rgba(14, 165, 233, 0.2);
+  border: 1px solid rgba(14, 165, 233, 0.4);
+  border-radius: 50%;
+  box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.8);
+  animation: float-bubble infinite linear;
+}
+
+@keyframes float-bubble {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-150%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Distribución de burbujas */
+.bubble:nth-child(1) {
+  width: 40px;
+  height: 40px;
+  left: 10%;
+  animation-duration: 8s;
+  animation-delay: 0s;
+}
+
+.bubble:nth-child(2) {
+  width: 80px;
+  height: 80px;
+  left: 20%;
+  animation-duration: 12s;
+  animation-delay: 2s;
+}
+
+.bubble:nth-child(3) {
+  width: 30px;
+  height: 30px;
+  left: 35%;
+  animation-duration: 7s;
+  animation-delay: 4s;
+}
+
+.bubble:nth-child(4) {
+  width: 60px;
+  height: 60px;
+  left: 50%;
+  animation-duration: 11s;
+  animation-delay: 1s;
+}
+
+.bubble:nth-child(5) {
+  width: 50px;
+  height: 50px;
+  left: 65%;
+  animation-duration: 9s;
+  animation-delay: 3s;
+}
+
+.bubble:nth-child(6) {
+  width: 70px;
+  height: 70px;
+  left: 80%;
+  animation-duration: 14s;
+  animation-delay: 0.5s;
+}
+
+.bubble:nth-child(7) {
+  width: 45px;
+  height: 45px;
+  left: 90%;
+  animation-duration: 10s;
+  animation-delay: 5s;
+}
+
+/* Wrapper principal y efecto de cristal */
+.creative-modal-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background-color: transparent;
+  animation: modal-enter-scale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-content-glass {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 0px 24px 24px;
+  text-align: center;
+  box-shadow: inset 0 2px 20px rgba(255, 255, 255, 0.6), 0 8px 32px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.custom-modal-panel {
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .mdc-dialog__surface {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Forzar que los textos del dialogo sean oscuros y sin sombras */
+  .dialog-title {
+    color: #0f172a !important;
+    text-shadow: none !important;
+  }
+
+  .dialog-content,
+  .dialog-content p,
+  .dialog-msg,
+  .info-text,
+  .question {
+    color: #475569 !important;
+    text-shadow: none !important;
+  }
+}
+
+@keyframes modal-enter-scale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 mat-toolbar.bubbly::before {
   content: '';
   position: absolute;

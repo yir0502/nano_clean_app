@@ -21,6 +21,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { ApiClientService } from '../../core/api-client.service';
 import { Cliente } from '../../core/models';
 import { ClienteDialogComponent } from './cliente-dialog.component';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
 
 // Charts
 import { NgChartsModule } from 'ng2-charts';
@@ -300,7 +301,22 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async onDelete(cliente: Cliente, event: MouseEvent) {
     event.stopPropagation();
-    if (!confirm(`¿Eliminar a ${cliente.nombre}?`)) return;
+
+    const dialogData: ConfirmDialogData = {
+      title: 'Eliminar cliente',
+      message: `¿Estás seguro de eliminar a ${cliente.nombre}? Esta acción no se puede deshacer.`,
+      icon: 'delete_forever',
+      color: 'warn'
+    };
+    
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '360px',
+      panelClass: 'custom-modal-panel'
+    });
+
+    const confirmacion = await dialogRef.afterClosed().toPromise();
+    if (!confirmacion) return;
 
     try {
       await this.api.deleteCliente(cliente.id);
@@ -371,7 +387,10 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
       rawMsg += `\n\nVer Promo: ${this.promoLink()}`;
     }
 
-    const tel = cliente.telefono.replace(/\D/g, '');
+    let tel = cliente.telefono.replace(/\D/g, '');
+    if (tel.length === 10) {
+      tel = '52' + tel;
+    }
     window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(rawMsg)}`, '_blank');
 
     // Marcamos como enviado hoy si no lo estaba
@@ -402,7 +421,10 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const rawMsg = this.reminderMessage().replace('[Nombre]', cliente.nombre.split(' ')[0]);
-    const tel = cliente.telefono.replace(/\D/g, '');
+    let tel = cliente.telefono.replace(/\D/g, '');
+    if (tel.length === 10) {
+      tel = '52' + tel;
+    }
     window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(rawMsg)}`, '_blank');
 
     // Incrementar contador de invitaciones

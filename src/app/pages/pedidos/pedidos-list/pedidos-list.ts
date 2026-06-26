@@ -14,6 +14,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 import { ApiClientService } from '../../../core/api-client.service';
 import { PedidoActionsService } from '../../../core/pedido-actions.service';
@@ -25,7 +27,7 @@ import { Pedido } from '../../../core/models';
   imports: [
     CommonModule, FormsModule,
     MatCardModule, MatButtonModule, MatIconModule, MatListModule,
-    MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatChipsModule, MatTooltipModule
+    MatTabsModule, MatFormFieldModule, MatInputModule, MatProgressSpinnerModule, MatChipsModule, MatTooltipModule, MatDialogModule
   ],
   templateUrl: './pedidos-list.html',
   styleUrls: ['./pedidos-list.scss']
@@ -35,6 +37,7 @@ export class PedidosListComponent implements OnInit {
   private router = inject(Router);
   private snack = inject(MatSnackBar);
   public pedidoActions = inject(PedidoActionsService);
+  private dialog = inject(MatDialog);
 
   // Estado
   activeTab = signal<number>(0); // 0 = Activos, 1 = Historial
@@ -72,7 +75,20 @@ export class PedidosListComponent implements OnInit {
   async deletePedido(pedido: Pedido, event: MouseEvent) {
     event.stopPropagation(); // Evita entrar al detalle del pedido
 
-    const confirmacion = confirm(`¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`);
+    const dialogData: ConfirmDialogData = {
+      title: 'Eliminar pedido',
+      message: `¿Estás seguro de eliminar el pedido ${pedido.folio}? Esta acción no se puede deshacer.`,
+      icon: 'delete_forever',
+      color: 'warn'
+    };
+    
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: dialogData,
+      width: '360px',
+      panelClass: 'custom-modal-panel'
+    });
+
+    const confirmacion = await dialogRef.afterClosed().toPromise();
     if (!confirmacion) return;
 
     try {

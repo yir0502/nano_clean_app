@@ -202,6 +202,9 @@ export class DeudasComponent implements OnInit, OnDestroy {
     const msg = `Hola *${p.cliente_nombre}* \uD83D\uDC4B\n\nTe escribimos de Nano Clean para recordarte amablemente que hay un saldo pendiente de *$${saldo}* correspondiente a tu pedido *${p.folio}*.\n\nPor favor, contáctanos en cuanto puedas para liquidar tu cuenta \uD83D\uDCB5.\n\n¡Muchas gracias por tu preferencia! \uD83D\uDE4F`;
 
     let telLimpio = p.cliente_telefono.replace(/\D/g, '');
+    if (telLimpio.length === 10) {
+      telLimpio = '52' + telLimpio;
+    }
     window.open(`https://api.whatsapp.com/send?phone=${telLimpio}&text=${encodeURIComponent(msg)}`, '_blank');
   }
 

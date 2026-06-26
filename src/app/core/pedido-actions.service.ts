@@ -60,7 +60,10 @@ ${urlRastreo}
 - Lavandería Nano Clean \uD83E\uDD16`;
 
     // Limpiar teléfono para API
-    const telefono = pedido.cliente_telefono.replace(/\\D/g, '');
+    let telefono = pedido.cliente_telefono.replace(/\D/g, '');
+    if (telefono.length === 10) {
+      telefono = '52' + telefono;
+    }
 
     const link = `https://api.whatsapp.com/send?phone=${telefono}&text=${encodeURIComponent(msg)}`;
     window.open(link, '_blank');

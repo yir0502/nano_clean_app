@@ -13,7 +13,9 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 // Servicios y Modelos
 import { ApiClientService } from '../../../core/api-client.service';
-import { Sucursal } from '../../../core/models'; // **Asegúrate de que este modelo exista**
+import { Sucursal } from '../../../core/models';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 @Component({
     selector: 'app-sucursales-listado',
@@ -21,7 +23,7 @@ import { Sucursal } from '../../../core/models'; // **Asegúrate de que este mod
     imports: [
         CommonModule,
         MatToolbarModule, MatIconModule, MatButtonModule, MatListModule,
-        MatDividerModule, MatProgressSpinnerModule
+        MatDividerModule, MatProgressSpinnerModule, MatDialogModule
     ],
     template: `
     <div class="sticky-toolbar">
@@ -96,6 +98,7 @@ export class SucursalesListadoComponent implements OnInit {
     private api = inject(ApiClientService);
     private router = inject(Router);
     private snackBar = inject(MatSnackBar);
+    private dialog = inject(MatDialog);
 
     sucursales = signal<Sucursal[]>([]);
     loading = signal(true);
@@ -125,7 +128,20 @@ export class SucursalesListadoComponent implements OnInit {
     async deleteSucursal(event: MouseEvent, id: string, nombre: string) {
         event.stopPropagation();
 
-        const confirmacion = confirm(`¿Estás seguro de que deseas eliminar la sucursal "${nombre}"? Esta acción no se puede deshacer.`);
+        const dialogData: ConfirmDialogData = {
+          title: 'Eliminar sucursal',
+          message: `¿Estás seguro de que deseas eliminar la sucursal "${nombre}"? Esta acción no se puede deshacer.`,
+          icon: 'delete_forever',
+          color: 'warn'
+        };
+        
+        const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+          data: dialogData,
+          width: '360px',
+          panelClass: 'custom-modal-panel'
+        });
+
+        const confirmacion = await dialogRef.afterClosed().toPromise();
 
         if (confirmacion) {
             this.loading.set(true);
