@@ -75,6 +75,10 @@ export class PedidoFormComponent implements OnInit {
   // Para guardar el folio y usarlo en el mensaje
   currentFolio = signal<string>('');
 
+  // Para recalculación de saldos en edición
+  montoPagadoInicial = signal<number>(0);
+  descuentoInicial = signal<number>(0);
+
   // Estados del pedido para la UI
   readonly ESTADOS = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado', 'cancelado'];
 
@@ -136,9 +140,16 @@ export class PedidoFormComponent implements OnInit {
     this.form.get('monto_total')?.valueChanges
       .pipe(distinctUntilChanged())
       .subscribe((val) => {
-        // Al escribir el total, sugerimos el mismo valor como saldo pendiente solo al crear
-        if (val && !this.isEdit()) {
-          this.form.get('saldo_pendiente')?.setValue(val, { emitEvent: false });
+        const total = Number(val) || 0;
+        if (!this.isEdit()) {
+          // Al escribir el total, sugerimos el mismo valor como saldo pendiente solo al crear
+          this.form.get('saldo_pendiente')?.setValue(total, { emitEvent: false });
+        } else {
+          // En edición, si cambia el total, sugerimos el saldo pendiente neto menos lo ya pagado
+          const pagado = this.montoPagadoInicial();
+          const desc = this.descuentoInicial();
+          const nuevoPendiente = Math.max(0, total - desc - pagado);
+          this.form.get('saldo_pendiente')?.setValue(nuevoPendiente, { emitEvent: false });
         }
       });
   }
@@ -198,7 +209,6 @@ export class PedidoFormComponent implements OnInit {
     if (id && id !== 'nuevo') {
       this.isEdit.set(true);
       this.pedidoId.set(id);
-      this.form.controls.saldo_pendiente.disable(); // El motor bidireccional se encargará de esto en edición
       await this.loadPedido(id);
     } else {
       // Default: sucursal 1 y fecha +3 días
@@ -314,6 +324,13 @@ export class PedidoFormComponent implements OnInit {
 
       // Guardamos el folio en la señal
       this.currentFolio.set(p.folio || '');
+
+      // Guardamos los montos iniciales para recalcular saldo pendiente si se edita el total
+      const totalVal = Number(p.monto_total) || 0;
+      const pendienteVal = Number(p.saldo_pendiente) || 0;
+      const descuentoVal = Number(p.descuento_aplicado) || 0;
+      this.montoPagadoInicial.set(Math.max(0, totalVal - descuentoVal - pendienteVal));
+      this.descuentoInicial.set(descuentoVal);
 
       // 2. Cargar Evidencias existentes
       const evidencias = await this.api.listEvidencias(id);
