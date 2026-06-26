@@ -384,3 +384,69 @@ mat-toolbar .mat-mdc-button {
 .mat-mdc-dialog-container .mdc-dialog__surface {
   border-radius: 12px !important;
 }
+
+/* ==========================================================================
+   TOAST NOTIFICATION PERSONALIZADO (MatSnackBar)
+   ========================================================================== */
+.cdk-overlay-container {
+  .mat-mdc-snack-bar-container {
+    --mdc-snackbar-container-color: rgba(15, 23, 42, 0.95) !important; // Fondo oscuro moderno
+    --mdc-snackbar-supporting-text-color: #f8fafc !important; // Texto claro
+    
+    border-radius: 16px !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    margin-bottom: 30px !important; // Despegado del borde inferior
+    padding: 4px 8px !important;
+    min-width: 300px !important;
+    max-width: 90vw !important;
+
+    .mdc-snackbar__surface {
+      background-color: transparent !important;
+      box-shadow: none !important;
+      border-radius: inherit !important;
+    }
+
+    /* Animación de entrada flotante */
+    animation: snackbar-float-up 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+
+    /* Texto */
+    .mdc-snackbar__label {
+      font-family: inherit !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      letter-spacing: 0.2px !important;
+      padding: 10px 8px !important;
+      line-height: 1.4 !important;
+    }
+
+    /* Botón de acción (ej. "OK", "Cerrar") */
+    .mat-mdc-snack-bar-action {
+      button {
+        color: #38bdf8 !important; // Celeste brillante llamativo
+        font-weight: 700 !important;
+        font-size: 12px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        
+        &:hover {
+          background-color: rgba(56, 189, 248, 0.08) !important;
+          border-radius: 8px !important;
+        }
+      }
+    }
+  }
+}
+
+@keyframes snackbar-float-up {
+  0% {
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}

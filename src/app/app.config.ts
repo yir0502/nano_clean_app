@@ -7,6 +7,7 @@ import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth.interceptor';
 import { loaderInterceptor } from './core/loader.interceptor';
+import { MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,5 +18,15 @@ export const appConfig: ApplicationConfig = {
     
     // Interceptores: Autenticación global y Loader automático
     provideHttpClient(withFetch(), withInterceptors([authInterceptor, loaderInterceptor])), 
+
+    // Configuración por defecto para avisos y notificaciones (Toast)
+    { 
+      provide: MAT_SNACK_BAR_DEFAULT_OPTIONS, 
+      useValue: { 
+        duration: 2500, 
+        horizontalPosition: 'center', 
+        verticalPosition: 'bottom' 
+      } 
+    }
   ],
 };
