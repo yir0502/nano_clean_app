@@ -131,6 +131,16 @@
       <mat-card-header><mat-card-title class="titulo-seccion">Detalles</mat-card-title></mat-card-header>
       <mat-card-content>
 
+        <!-- Banner de descuento pre-canjeado o aplicado -->
+        <div class="descuento-banner" *ngIf="descuentoInicial() > 0"
+          style="margin-bottom: 16px; padding: 12px 16px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; color: #2e7d32; display: flex; align-items: center; gap: 8px;">
+          <mat-icon style="color: #4caf50;">local_offer</mat-icon>
+          <div>
+            <strong>Descuento de monedero aplicado: ${{ descuentoInicial() | number:'1.2-2' }} MXN.</strong>
+            <span style="font-size: 13px; display: block; color: #4e7f50;">El saldo pendiente a pagar sugerido ya contempla esta reducción.</span>
+          </div>
+        </div>
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Sucursal</mat-label>
           <mat-select formControlName="sucursal_id">
