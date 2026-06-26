@@ -390,23 +390,23 @@ mat-toolbar .mat-mdc-button {
    ========================================================================== */
 .cdk-overlay-container {
   .mat-mdc-snack-bar-container {
-    --mdc-snackbar-container-color: rgba(15, 23, 42, 0.95) !important; // Fondo oscuro moderno
-    --mdc-snackbar-supporting-text-color: #f8fafc !important; // Texto claro
-    
     border-radius: 16px !important;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-    margin-bottom: 30px !important; // Despegado del borde inferior
-    padding: 4px 8px !important;
-    min-width: 300px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    margin: 0 auto 40px auto !important; // Centrado horizontal perfecto y despegado del bottom
+    padding: 2px 6px !important;
+    width: max-content !important;
+    min-width: 280px !important;
     max-width: 90vw !important;
 
     .mdc-snackbar__surface {
-      background-color: transparent !important;
+      background-color: #1e293b !important; // Fondo Slate 800 oscuro de alto contraste
       box-shadow: none !important;
       border-radius: inherit !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding: 4px 8px !important;
     }
 
     /* Animación de entrada flotante */
@@ -414,11 +414,12 @@ mat-toolbar .mat-mdc-button {
 
     /* Texto */
     .mdc-snackbar__label {
+      color: #f8fafc !important; // Texto Slate 50 (Blanco de alto contraste)
       font-family: inherit !important;
       font-size: 14px !important;
       font-weight: 500 !important;
       letter-spacing: 0.2px !important;
-      padding: 10px 8px !important;
+      padding: 8px 12px !important;
       line-height: 1.4 !important;
     }
 
@@ -427,12 +428,12 @@ mat-toolbar .mat-mdc-button {
       button {
         color: #38bdf8 !important; // Celeste brillante llamativo
         font-weight: 700 !important;
-        font-size: 12px !important;
+        font-size: 13px !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
         
         &:hover {
-          background-color: rgba(56, 189, 248, 0.08) !important;
+          background-color: rgba(56, 189, 248, 0.1) !important;
           border-radius: 8px !important;
         }
       }
