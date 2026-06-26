@@ -76,7 +76,15 @@
           <!-- Estado: promo canjeada en ESTE pedido -->
           <div class="promo-used-badge" *ngIf="pedido()?.promo_canjeada">
             <mat-icon>check_circle</mat-icon>
-            Promo canjeada en este pedido — Tu descuento ya está aplicado
+            <div style="display: flex; flex-direction: column; text-align: left; gap: 2px;">
+              <span style="font-weight: 700; font-size: 14px;">🎁 Descuento de ${{ (pedido()?.descuento_aplicado || 0) | number:'1.2-2' }} MXN aplicado</span>
+              <span style="font-size: 12px; opacity: 0.9;" *ngIf="(pedido()?.total || 0) > 0">
+                Tu descuento se aplicó al total del servicio (saldo pendiente: {{ (pedido()?.pendiente || 0) | currency:'MXN' }}).
+              </span>
+              <span style="font-size: 12px; opacity: 0.9; color: #ffeb3b; font-weight: 500;" *ngIf="(pedido()?.total || 0) === 0">
+                En espera del total para aplicar el descuento de forma automática.
+              </span>
+            </div>
           </div>
 
           <!-- Progreso del ciclo (solo si no hay canjeo exitoso en este pedido) -->
@@ -154,6 +162,17 @@
         <div class="payment-row">
           <span>Total del Servicio</span>
           <strong>{{ pedido()?.total | currency:'MXN' }}</strong>
+        </div>
+        <div class="payment-row" *ngIf="(pedido()?.descuento_aplicado || 0) > 0" style="color: #2e7d32; background-color: #e8f5e9; margin: 0 -16px; padding: 8px 16px;">
+          <span style="display: flex; align-items: center; gap: 4px; font-weight: 600;">
+            <mat-icon style="font-size: 18px; width: 18px; height: 18px;">local_offer</mat-icon>
+            Descuento de Monedero
+          </span>
+          <strong style="font-weight: 700;">-${{ (pedido()?.descuento_aplicado || 0) | number:'1.2-2' }} MXN</strong>
+        </div>
+        <div *ngIf="(pedido()?.descuento_aplicado || 0) > 0 && (pedido()?.total || 0) === 0" 
+             style="font-size: 12px; color: #2e7d32; font-style: italic; margin: 8px 0; text-align: left; padding: 4px 0;">
+          * En espera del total para aplicar el descuento de forma automática.
         </div>
         <div class="payment-row highlight" *ngIf="(pedido()?.pendiente || 0) > 0">
           <span>Saldo Pendiente</span>

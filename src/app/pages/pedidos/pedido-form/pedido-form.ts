@@ -158,6 +158,8 @@ export class PedidoFormComponent implements OnInit {
 
   // Progreso del cliente en el ciclo de 4 servicios (0-3)
   get serviciosEnCiclo(): number {
+    const monedero = Number(this.selectedCliente()?.monedero) || 0;
+    if (monedero === 0) return 0;
     return (this.selectedCliente()?.contador_servicios ?? 0) % 4;
   }
 
