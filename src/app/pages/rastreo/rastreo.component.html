@@ -74,7 +74,7 @@
           </div>
 
           <!-- Estado: promo canjeada en ESTE pedido -->
-          <div class="promo-used-badge" *ngIf="pedido()?.promo_canjeada">
+          <div class="promo-used-badge" *ngIf="pedido()?.promo_canjeada && (pedido()?.descuento_aplicado || 0) > 0">
             <mat-icon>check_circle</mat-icon>
             <div style="display: flex; flex-direction: column; text-align: left; gap: 2px;">
               <span style="font-weight: 700; font-size: 14px;">🎁 Descuento de ${{ (pedido()?.descuento_aplicado || 0) | number:'1.2-2' }} MXN aplicado</span>
@@ -88,7 +88,7 @@
           </div>
 
           <!-- Progreso del ciclo (solo si no hay canjeo exitoso en este pedido) -->
-          <ng-container *ngIf="!pedido()?.promo_canjeada">
+          <ng-container *ngIf="!pedido()?.promo_canjeada || (pedido()?.descuento_aplicado || 0) === 0">
 
             <!-- Desglose de ganancias por lavada -->
             <div class="cycle-section">

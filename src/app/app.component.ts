@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal, ViewChild } from '@angular/core';
 import { Router, NavigationEnd, ActivatedRoute, RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
+import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter, map, startWith } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from './core/auth.service';
@@ -26,6 +27,17 @@ export class AppComponent {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   public auth = inject(AuthService);
+  private swUpdate = inject(SwUpdate, { optional: true });
+
+  constructor() {
+    if (this.swUpdate?.isEnabled) {
+      this.swUpdate.versionUpdates.pipe(
+        filter((evt): evt is VersionReadyEvent => evt.type === 'VERSION_READY')
+      ).subscribe(() => {
+        window.location.reload();
+      });
+    }
+  }
 
   // Señales para controlar los estados de los menús
   fabMenuOpen = signal(false);
