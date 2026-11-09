@@ -89,7 +89,7 @@ export const routes: Routes = [
   },
 
   {
-    path: 'rastreo/:folio',
+    path: 'rastreo/:orgId/:folio',
     data: { 
       hideChrome: true,
       hideFab: true

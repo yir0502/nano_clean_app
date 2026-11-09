@@ -90,10 +90,10 @@
               </div>
               <div class="stat-item highlight-box">
                 <span class="stat-label">Siguiente recompensa</span>
-                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 60">
+                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 50">
                   +${{ proximaGanancia }} <small>en el próximo servicio</small>
                 </span>
-                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 60">
+                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 50">
                   Tope alcanzado
                 </span>
               </div>
@@ -102,7 +102,7 @@
             <!-- Barra de progreso del ciclo actual -->
             <div class="ciclo-progress">
               <div class="ciclo-header-flex">
-                <span class="ciclo-label">Progreso hacia bono especial ($30)</span>
+                <span class="ciclo-label">Progreso hacia bono especial ($20)</span>
                 <span class="ciclo-count">{{ serviciosEnCiclo }} / 4</span>
               </div>
               <div class="progress-track">

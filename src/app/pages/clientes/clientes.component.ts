@@ -36,7 +36,7 @@ ChartJS.register(...registerables);
   template: `
     <h2 mat-dialog-title>⚙️ Plantillas de Campaña</h2>
     <div mat-dialog-content class="form-cols">
-      <p class="mb-4 text-gray-600" style="font-size: 13px;">Usa <strong>[Nombre]</strong> para personalizar. Los textos quedarán guardados en tu dispositivo.</p>
+      <p class="mb-4 text-gray-600" style="font-size: 13px;">Usa <strong>[Nombre]</strong> y <strong>[Monedero]</strong> para personalizar. Los textos quedarán guardados en tu dispositivo.</p>
       
       <h3>Mensaje Promocional</h3>
       <mat-form-field appearance="outline" style="width: 100%">
@@ -382,7 +382,10 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    let rawMsg = this.promoMessage().replace('[Nombre]', cliente.nombre.split(' ')[0]);
+    const saldoMonedero = `$${Math.min(50, Number(cliente.monedero || 0)).toFixed(2)}`;
+    let rawMsg = this.promoMessage()
+      .replace(/\[Nombre\]/g, cliente.nombre.split(' ')[0])
+      .replace(/\[Monedero\]/g, saldoMonedero);
     if (this.promoLink()) {
       rawMsg += `\n\nVer Promo: ${this.promoLink()}`;
     }
@@ -420,17 +423,21 @@ export class ClientesComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    const rawMsg = this.reminderMessage().replace('[Nombre]', cliente.nombre.split(' ')[0]);
+    const saldoMonedero = `$${Math.min(50, Number(cliente.monedero || 0)).toFixed(2)}`;
+    const rawMsg = this.reminderMessage()
+      .replace(/\[Nombre\]/g, cliente.nombre.split(' ')[0])
+      .replace(/\[Monedero\]/g, saldoMonedero);
     let tel = cliente.telefono.replace(/\D/g, '');
     if (tel.length === 10) {
       tel = '52' + tel;
     }
     window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(rawMsg)}`, '_blank');
 
-    // Incrementar contador de invitaciones
+    // Incrementar contador de invitaciones y registrar fecha del último recordatorio
     const newCount = (cliente.invitaciones_enviadas || 0) + 1;
-    this.api.updateCliente(cliente.id, { invitaciones_enviadas: newCount }).then(updated => {
-      this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, invitaciones_enviadas: newCount } : c));
+    const today = new Date().toISOString();
+    this.api.updateCliente(cliente.id, { invitaciones_enviadas: newCount, ultimo_recordatorio_at: today }).then(() => {
+      this.items.update(list => list.map(c => c.id === cliente.id ? { ...c, invitaciones_enviadas: newCount, ultimo_recordatorio_at: today } : c));
     }).catch(err => console.error('Error al actualizar contador de invitaciones', err));
   }
 

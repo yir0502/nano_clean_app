@@ -44,7 +44,8 @@ export class PedidoActionsService {
     }
 
     const baseUrl = window.location.origin;
-    const urlRastreo = `${baseUrl}/rastreo/${pedido.folio}`;
+    const orgId = localStorage.getItem('sb_org_id') || '';
+    const urlRastreo = orgId ? `${baseUrl}/rastreo/${orgId}/${pedido.folio}` : '';
 
     const estadoLimpio = pedido.estado.replace('_', ' ');
     const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);

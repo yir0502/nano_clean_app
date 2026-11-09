@@ -52,6 +52,7 @@ export interface Cliente {
   frecuencia_recordatorio: number;
   ultima_visita?: string;
   fecha_ultima_promo?: string;
+  ultimo_recordatorio_at?: string;
   total_gastado?: number;
   invitaciones_enviadas?: number;
   monedero?: number;

@@ -163,8 +163,8 @@ export class PedidoFormComponent implements OnInit {
 
   get proximaGanancia(): number {
     const monedero = this.selectedCliente()?.monedero ?? 0;
-    if (monedero >= 60) return 0;
-    return this.serviciosEnCiclo === 3 ? 30 : 10;
+    if (monedero >= 50) return 0;
+    return this.serviciosEnCiclo === 3 ? 20 : 10;
   }
 
   get promoProgressPercent(): number {
@@ -173,15 +173,15 @@ export class PedidoFormComponent implements OnInit {
 
   getLoyaltyMessage(): string {
     const monedero = this.selectedCliente()?.monedero ?? 0;
-    if (monedero >= 60) {
-      return 'Límite de monedero ($60.00 MXN) alcanzado. Sugiere al cliente canjear su saldo.';
+    if (monedero >= 50) {
+      return 'Límite de monedero ($50.00 MXN) alcanzado. Sugiere al cliente canjear su saldo.';
     }
     const count = this.serviciosEnCiclo;
     const faltan = 4 - count;
     if (count === 3) {
-      return '¡El próximo servicio otorgará un bono especial de $30.00 MXN al cliente!';
+      return '¡El próximo servicio otorgará un bono especial de $20.00 MXN al cliente!';
     } else {
-      return `Falta(n) ${faltan} servicio(s) para el bono especial de $30.00 MXN.`;
+      return `Falta(n) ${faltan} servicio(s) para el bono especial de $20.00 MXN.`;
     }
   }
 
@@ -443,7 +443,7 @@ export class PedidoFormComponent implements OnInit {
       const esListo = v.estado === 'listo';
       const montoTotal = Number(v.monto_total) || 0;
       const saldoPend = Number(v.saldo_pendiente) || 0;
-      const anticipo = montoTotal - saldoPend;
+      const anticipo = Math.max(0, montoTotal - this.descuentoInicial() - saldoPend);
       const nombreCliente = v.cliente_nombre || 'Cliente';
       const telefonoCliente = v.cliente_telefono || '';
       const todayShort = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
@@ -624,7 +624,8 @@ export class PedidoFormComponent implements OnInit {
     let msg = '';
     const montoStr = `$${monto.toFixed(2)}`;
     const baseUrl = globalThis.location.origin;
-    const urlRastreo = `${baseUrl}/rastreo/${folio}`;
+    const orgId = localStorage.getItem('sb_org_id') || '';
+    const urlRastreo = orgId ? `${baseUrl}/rastreo/${orgId}/${folio}` : '';
 
     switch (estado) {
       case 'recibido':
