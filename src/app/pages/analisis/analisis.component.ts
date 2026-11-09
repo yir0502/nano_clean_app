@@ -1,4 +1,3 @@
-// src/app/pages/categorias/categorias.component.ts
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -32,7 +31,7 @@ const C_EGR_LINE  = 'hsl(0, 83%, 60%)';
 type RangePreset = 'mes'|'3m'|'6m'|'12m';
 
 @Component({
-  selector: 'app-categorias',
+  selector: 'app-analisis',
   standalone: true,
   providers: [{ provide: MAT_DATE_LOCALE, useValue: 'es-MX' }],
   imports: [
@@ -42,10 +41,10 @@ type RangePreset = 'mes'|'3m'|'6m'|'12m';
     MatDividerModule, MatSnackBarModule, MatSlideToggleModule,
     NgChartsModule
   ],
-  templateUrl: './categorias.component.html',
-  styleUrls: ['./categorias.component.scss']
+  templateUrl: './analisis.component.html',
+  styleUrls: ['./analisis.component.scss']
 })
-export class CategoriasComponent implements OnInit {
+export class AnalisisComponent implements OnInit {
   private api = inject(ApiClientService);
   private fb = inject(FormBuilder);
   private snack = inject(MatSnackBar);
@@ -61,13 +60,10 @@ export class CategoriasComponent implements OnInit {
   desde      = signal<Date>(this.firstDayThisMonth());
   hasta      = signal<Date>(new Date());
 
-  // Datos (rango actual)
   items = signal<Movimiento[]>([]);
-  // Datos (mes actual) → para reparto cuando el switch está activo
   monthItems = signal<Movimiento[]>([]);
-  useMesActual = signal<boolean>(true); // 🔛 por defecto
+  useMesActual = signal<boolean>(true);
 
-  // KPIs (del rango seleccionado)
   totalIngresos = computed(() =>
     this.items().filter(m => m.tipo === 'ingreso').reduce((s,m) => s + Math.abs(+m.monto || 0), 0)
   );
@@ -76,7 +72,6 @@ export class CategoriasComponent implements OnInit {
   );
   totalBalance = computed(() => this.totalIngresos() - this.totalEgresos());
 
-  // Balance del mes actual (para reparto si el switch está activo)
   private balanceFrom(items: Movimiento[]) {
     const ing = items.filter(m => m.tipo==='ingreso').reduce((s,m)=> s + Math.abs(+m.monto || 0), 0);
     const egr = items.filter(m => m.tipo==='egreso' ).reduce((s,m)=> s + Math.abs(+m.monto || 0), 0);
@@ -84,7 +79,6 @@ export class CategoriasComponent implements OnInit {
   }
   balanceMesActual = computed(() => this.balanceFrom(this.monthItems()));
 
-  // Serie y donas (del rango seleccionado)
   serieData: ChartData<'bar'> = { labels: [], datasets: [] };
   serieOpts: ChartOptions<'bar'> = {
     responsive: true, maintainAspectRatio: false,
@@ -97,7 +91,6 @@ export class CategoriasComponent implements OnInit {
   donaEgr: ChartData<'doughnut'> = { labels: [], datasets: [] };
   donaOpts: ChartOptions<'doughnut'> = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } };
 
-  // Reparto (4 miembros) — usa balance positivo; fuente: rango o mes actual según switch
   repartoForm = this.fb.group({
     aNombre: this.fb.nonNullable.control('Socio A', { validators: [Validators.maxLength(50)] }),
     aPct:    this.fb.nonNullable.control<number>(34, { validators: [Validators.min(0), Validators.max(100)] }),
@@ -115,10 +108,9 @@ export class CategoriasComponent implements OnInit {
     return sum !== 100 ? `Suma ${sum}%. Se recomienda 100%.` : '';
   });
 
-  // Fuente de balance para reparto:
   private repartoBalance = computed(() => {
     const base = this.useMesActual() ? this.balanceMesActual() : this.totalBalance();
-    return Math.max(base, 0); // solo positivo
+    return Math.max(base, 0);
   });
 
   repartoResult = computed(() => {
@@ -147,8 +139,8 @@ export class CategoriasComponent implements OnInit {
 
       if (sucs.length) this.sucursalId.set(sucs[0].id);
 
-      await this.reload();              // rango actual
-      await this.reloadMesActual();     // mes actual (para reparto)
+      await this.reload();
+      await this.reloadMesActual();
     } catch (e: any) {
       this.error.set(e?.message || 'Error cargando análisis');
     } finally {
@@ -156,7 +148,6 @@ export class CategoriasComponent implements OnInit {
     }
   }
 
-  // ===== UI actions
   async setPreset(p: RangePreset) {
     this.preset.set(p);
     if (p === 'mes')  { this.desde.set(this.firstDayThisMonth()); this.hasta.set(new Date()); }
@@ -172,13 +163,12 @@ export class CategoriasComponent implements OnInit {
   async onSucursalChange(id: string){
     this.sucursalId.set(id);
     await this.reload();
-    if (this.useMesActual()) await this.reloadMesActual(); // 👈 mes actual depende de sucursal
+    if (this.useMesActual()) await this.reloadMesActual();
   }
 
   toggleMesActual(checked: boolean){
     this.useMesActual.set(checked);
     localStorage.setItem('nano_clean_reparto_use_mes_actual', JSON.stringify(checked));
-    // si se activó y aún no tenemos datos del mes, los cargamos
     if (checked && this.monthItems().length === 0) {
       this.reloadMesActual();
     }
@@ -192,7 +182,6 @@ export class CategoriasComponent implements OnInit {
   saveReparto() {
     localStorage.setItem('nano_clean_reparto', JSON.stringify(this.repartoForm.getRawValue()));
     this.snack.open('Reparto guardado', 'OK', { duration: 1500 });
-    // recargar pagina para ver cambios
     location.reload();
   }
   private restoreReparto() {
@@ -204,7 +193,6 @@ export class CategoriasComponent implements OnInit {
     if (raw) { try { this.useMesActual.set(JSON.parse(raw)); } catch {} }
   }
 
-  // ===== Carga datos
   private firstDayThisMonth(){ const n=new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); }
   private iso(d: Date){ return d.toISOString().slice(0,10); }
   private weekKey(fechaISO: string){
@@ -232,52 +220,49 @@ export class CategoriasComponent implements OnInit {
     return Array.from(map.values());
   }
 
-  // helper: nombre del mes actual (para la leyenda)
-private mesActualLabel(): string {
-  const s = new Intl.DateTimeFormat('es-MX', { month:'long', year:'numeric' }).format(new Date());
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-// helper: asegura un nombre válido
-private safeCatName(raw: any, categoria_id?: string | null): string {
-  const s = (raw ?? '').toString().trim();
-  if (s) return s;
-  return categoria_id ? 'Desconocida' : 'Sin categoría';
-}
-
-private buildDonuts(items: Movimiento[]){
-  const byIng = new Map<string, number>();
-  const byEgr = new Map<string, number>();
-
-  for (const m of items){
-    const name = this.safeCatName((m as any).categoria_nombre, m.categoria_id);
-    const acc = Math.abs(Number(m.monto) || 0);
-    if (m.tipo === 'ingreso') byIng.set(name, (byIng.get(name) || 0) + acc);
-    else                      byEgr.set(name, (byEgr.get(name) || 0) + acc);
+  private mesActualLabel(): string {
+    const s = new Intl.DateTimeFormat('es-MX', { month:'long', year:'numeric' }).format(new Date());
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  private safeCatName(raw: any, categoria_id?: string | null): string {
+    const s = (raw ?? '').toString().trim();
+    if (s) return s;
+    return categoria_id ? 'Desconocida' : 'Sin categoría';
   }
 
-  const mes = this.mesActualLabel();
+  private buildDonuts(items: Movimiento[]){
+    const byIng = new Map<string, number>();
+    const byEgr = new Map<string, number>();
 
-  const ingLabels = Array.from(byIng.keys());
-  const egrLabels = Array.from(byEgr.keys());
+    for (const m of items){
+      const name = this.safeCatName((m as any).categoria_nombre, m.categoria_id);
+      const acc = Math.abs(Number(m.monto) || 0);
+      if (m.tipo === 'ingreso') byIng.set(name, (byIng.get(name) || 0) + acc);
+      else                      byEgr.set(name, (byEgr.get(name) || 0) + acc);
+    }
 
-  this.donaIng = {
-    labels: ingLabels,
-    datasets: [{
-      label: `Ingresos (${mes})`,               // 👈 evita "undefined" en la leyenda
-      data: ingLabels.map(k => byIng.get(k)!),
-      backgroundColor: ingLabels.map((_, i) => this.pickColor(i, true))
-    }]
-  };
+    const mes = this.mesActualLabel();
+    const ingLabels = Array.from(byIng.keys());
+    const egrLabels = Array.from(byEgr.keys());
 
-  this.donaEgr = {
-    labels: egrLabels,
-    datasets: [{
-      label: `Egresos (${mes})`,                // 👈 evita "undefined"
-      data: egrLabels.map(k => byEgr.get(k)!),
-      backgroundColor: egrLabels.map((_, i) => this.pickColor(i, false))
-    }]
-  };
-}
+    this.donaIng = {
+      labels: ingLabels,
+      datasets: [{
+        label: `Ingresos (${mes})`,
+        data: ingLabels.map(k => byIng.get(k)!),
+        backgroundColor: ingLabels.map((_, i) => this.pickColor(i, true))
+      }]
+    };
+
+    this.donaEgr = {
+      labels: egrLabels,
+      datasets: [{
+        label: `Egresos (${mes})`,
+        data: egrLabels.map(k => byEgr.get(k)!),
+        backgroundColor: egrLabels.map((_, i) => this.pickColor(i, false))
+      }]
+    };
+  }
 
   private pickColor(i: number, ingreso: boolean){
     const base = ingreso ? C_ING_LINE : C_EGR_LINE;
@@ -330,3 +315,4 @@ private buildDonuts(items: Movimiento[]){
     this.monthItems.set(rows || []);
   }
 }
+

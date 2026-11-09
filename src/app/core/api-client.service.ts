@@ -85,6 +85,11 @@ export class ApiClientService {
     return this.get<Movimiento[]>('/movimientos', p);
   }
 
+  getMovimiento(id: string): Promise<Movimiento> {
+    const p = { org_id: this.auth.orgId };
+    return this.get<Movimiento>(`/movimientos/${id}`, p);
+  }
+
   createMovimiento(payload: any): Promise<Movimiento> {
     return this.post<Movimiento>('/movimientos', payload);
   }
@@ -169,10 +174,6 @@ export class ApiClientService {
 
   updateCliente(id: string, payload: Partial<Cliente>): Promise<Cliente> {
     return this.put<Cliente>(`/clientes/${id}`, payload);
-  }
-
-  sendMassMessage(payload: { message: string, template?: string }): Promise<{ ok: boolean }> {
-    return this.post<{ ok: boolean }>('/clientes/mass-message', payload);
   }
 
   // --- PEDIDOS Y TRACKING ---

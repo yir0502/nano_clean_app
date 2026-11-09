@@ -59,7 +59,7 @@
         <mat-icon>request_quote</mat-icon><span>Deudas</span>
         <i class="indicator"></i>
       </a>
-      <a mat-button routerLink="/categorias" routerLinkActive="active">
+      <a mat-button routerLink="/analisis" routerLinkActive="active">
         <mat-icon>attach_money</mat-icon><span>Análisis</span>
         <i class="indicator"></i>
       </a>
@@ -67,14 +67,14 @@
 
     <div *ngIf="!hideFab()" class="fab-container">
       <div class="fab-options" [class.open]="fabMenuOpen()">
-        <button mat-mini-fab (click)="navigateAndCloseFab('/administracion/sucursales/nuevo')" 
-                aria-label="Agregar sucursal" class="fab-option">
-          <span class="label"><mat-icon class="icon-label">store</mat-icon>Sucursal</span>
-        </button>
-
         <button mat-mini-fab (click)="navigateAndCloseFab('/administracion/categorias/nuevo')" 
                 aria-label="Agregar categoría" class="fab-option">
           <span class="label"><mat-icon class="icon-label">category</mat-icon>Categoría</span>
+        </button>
+
+        <button mat-mini-fab (click)="navigateAndCloseFab('/clientes')" 
+                aria-label="Clientes" class="fab-option">
+          <span class="label"><mat-icon class="icon-label">group</mat-icon>Clientes</span>
         </button>
 
         <button mat-mini-fab (click)="navigateAndCloseFab('/movimientos/nuevo')" 

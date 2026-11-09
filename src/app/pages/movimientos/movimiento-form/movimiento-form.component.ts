@@ -1,8 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, Location } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Location } from '@angular/common';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -16,12 +15,11 @@ import { MatNativeDateModule, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { AuthService } from '../../core/auth.service';
+import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import { AuthService } from '../../../core/auth.service';
 
-import { ApiClientService } from '../../core/api-client.service';
-import { Categoria, Movimiento } from '../../core/models';
-import { Sucursal } from '../../core/models';
+import { ApiClientService } from '../../../core/api-client.service';
+import { Categoria, Movimiento, Sucursal } from '../../../core/models';
 
 @Component({
   selector: 'app-movimiento-form',
@@ -44,6 +42,7 @@ export class MovimientoFormComponent implements OnInit {
   private router = inject(Router);
   private snack = inject(MatSnackBar);
   private dialog = inject(MatDialog);
+  private location = inject(Location);
 
   saving = signal<boolean>(false);
   loading = signal<boolean>(true);
@@ -52,7 +51,6 @@ export class MovimientoFormComponent implements OnInit {
   sucursales: Sucursal[] = [];
   categorias = signal<Categoria[]>([]);
 
-  // Métodos de pago (ajústalos si quieres)
   readonly metodosPago = [
     { id: 'efectivo', label: 'Efectivo', icon: 'attach_money' },
     { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt' },
@@ -74,26 +72,21 @@ export class MovimientoFormComponent implements OnInit {
 
   titulo = computed(() => this.isEdit() ? 'Editar movimiento' : 'Nuevo movimiento');
   constructor(private auth: AuthService) {}
+
   async ngOnInit(): Promise<void> {
-    // Detecta si es edición
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'nuevo') {
       this.isEdit.set(true);
       this.movimientoId.set(id);
     }
 
-    // Cargar categorías según tipo (y recargar al cambiar)
     this.loadCategorias(this.form.controls.tipo.value);
     this.form.controls.tipo.valueChanges.subscribe(t => this.loadCategorias(t));
 
-    // --- NUEVO: PRELLENADO DESDE URL (PEDIDOS) ---
-    // Esto captura los datos que enviaste desde el botón "REGISTRAR INGRESO"
     this.route.queryParams.subscribe(params => {
-      // Solo aplicamos si NO es edición (es un movimiento nuevo) y viene un monto
       if (!this.isEdit() && params['monto']) {
-        
         this.form.patchValue({
-          tipo: 'ingreso', // Forzamos que sea ingreso
+          tipo: 'ingreso',
           monto: Number(params['monto']),
           nota: params['descripcion'] || '',
           sucursal_id: params['sucursal_id'] || null,
@@ -101,26 +94,22 @@ export class MovimientoFormComponent implements OnInit {
           categoria_id: params['categoria_id'] || null
         });
 
-        // Recargamos categorías por si estaba en 'egreso' por defecto
         this.loadCategorias('ingreso');
-        
-        // Bloquear switch de Tipo para no romper semántica contable si proviene de Pedido
+
         if (params['pedido_id']) {
           this.form.controls.tipo.disable();
         }
       }
     });
 
-    // Si edición, cargar datos y parchear
     if (this.isEdit()) {
       await this.loadMovimiento(this.movimientoId()!);
     } else {
       this.loading.set(false);
     }
 
-    // Cargar sucursales de forma asíncrona pero asegurando que termine tras inicializar
     await this.loadSucursales();
-    if (!this.isEdit()) {
+    if (!this.isEdit() && !this.form.controls.sucursal_id.value) {
       this.form.controls.sucursal_id.setValue(this.sucursales.length > 0 ? this.sucursales[0].id : null);
     }
   }
@@ -130,19 +119,14 @@ export class MovimientoFormComponent implements OnInit {
       const cats = await this.api.listCategorias(tipo);
       this.categorias.set(cats);
 
-      // Si la categoría seleccionada ya no aplica para el nuevo tipo, límpiala
       const sel = this.form.controls.categoria_id.value;
       if (sel && !cats.some(c => c.id === sel)) {
         this.form.controls.categoria_id.setValue(null);
       }
 
-      // 1. Si no estamos en modo edición (o si la categoría es null)
-      // 2. Y si la nueva lista de categorías no está vacía
       if (!this.isEdit() && !this.form.controls.categoria_id.value && cats.length > 0) {
-        this.form.controls.categoria_id.setValue(cats[1].id);
+        this.form.controls.categoria_id.setValue(cats.length > 1 ? cats[1].id : cats[0].id);
       }
-      // ***************************************************************
-
     } catch (e) {
       this.snack.open('No se pudieron cargar las categorías', 'OK', { duration: 2500 });
     }
@@ -151,7 +135,6 @@ export class MovimientoFormComponent implements OnInit {
   private async loadSucursales() {
     try {
       this.sucursales = await this.api.listSucursales({ activo: 1 });
-      // Si no hay sucursales, deshabilita el campo
       if (this.sucursales.length === 0) {
         this.form.controls.sucursal_id.disable();
       } else {
@@ -164,15 +147,11 @@ export class MovimientoFormComponent implements OnInit {
 
   private async loadMovimiento(id: string) {
     try {
-      // No tenemos GET /movimientos/:id, así que buscamos en listado y filtramos
-      const all = await this.api.listMovimientos();
-      const found = all.find(m => m.id === id);
+      const found = await this.api.getMovimiento(id);
       if (!found) throw new Error('No encontrado');
 
-      // Revisamos si la ruta traía intención de inyectar montos o notas combinadas (como liquidaciones)
       const queryPayload = this.route.snapshot.queryParams;
 
-      // Parchea formulario con datos remotos + overrides guiados por URL
       this.form.patchValue({
         tipo: found.tipo as any,
         monto: queryPayload['monto'] ? Number(queryPayload['monto']) : Number(found.monto),
@@ -183,7 +162,7 @@ export class MovimientoFormComponent implements OnInit {
         metodo_pago: found.metodo_pago || 'efectivo',
         nota: queryPayload['nota'] ? queryPayload['nota'] : (found.nota || '')
       });
-      // Bloquear seguridad contable
+
       if (found.pedido_id) this.form.controls.tipo.disable();
     } catch (e) {
       this.snack.open('No se pudo cargar el movimiento', 'OK', { duration: 2500 });
@@ -200,7 +179,6 @@ export class MovimientoFormComponent implements OnInit {
     }
     this.saving.set(true);
 
-    // Construir payload
     const v = this.form.getRawValue();
     const fechaISO = v.fecha ? this.formatDate(v.fecha) : this.formatDate(new Date());
     const payload = {
@@ -209,7 +187,7 @@ export class MovimientoFormComponent implements OnInit {
       categoria_id: v.categoria_id,
       sucursal_id: v.sucursal_id,
       pedido_id: v.pedido_id,
-      fecha: fechaISO,             // YYYY-MM-DD
+      fecha: fechaISO,
       metodo_pago: v.metodo_pago,
       nota: v.nota?.trim() || '',
       org_id: this.auth.orgId
@@ -240,7 +218,7 @@ export class MovimientoFormComponent implements OnInit {
       icon: 'delete_forever',
       color: 'warn'
     };
-    
+
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       data: dialogData,
       width: '360px',
@@ -264,12 +242,13 @@ export class MovimientoFormComponent implements OnInit {
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
   }
-  private location = inject(Location);
+
   close() {
     if (window.history.length > 1) {
-      this.location.back();             // vuelve a la pantalla anterior
+      this.location.back();
     } else {
-      this.router.navigateByUrl('/movimientos');  // fallback
+      this.router.navigateByUrl('/movimientos');
     }
   }
 }
+

@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiClientService } from '../../core/api-client.service';
 import { PedidoActionsService } from '../../core/pedido-actions.service';
 import { Pedido } from '../../core/models';
+import { BUSINESS_CONFIG } from '../../core/config/business.config';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
@@ -52,6 +53,7 @@ export class RastreoComponent implements OnInit {
   private api = inject(ApiClientService);
   private snack = inject(MatSnackBar);
   public pedidoActions = inject(PedidoActionsService);
+  public readonly config = BUSINESS_CONFIG;
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -104,8 +106,8 @@ export class RastreoComponent implements OnInit {
   getLoyaltyMessage(): string {
     const monedero = this.pedido()?.lealtad?.monedero ?? 0;
 
-    if (monedero >= 50) {
-      return '¡Felicidades! Has alcanzado el límite máximo ($50.00 MXN). Canjéalo ahora para poder seguir acumulando en tus siguientes visitas.';
+    if (monedero >= this.config.lealtad.monederoMax) {
+      return `¡Felicidades! Has alcanzado el límite máximo ($${this.config.lealtad.monederoMax.toFixed(2)} MXN). Canjéalo ahora para poder seguir acumulando en tus siguientes visitas.`;
     }
 
     const count = this.pedido()?.lealtad?.servicios_en_ciclo ?? 0;
@@ -169,5 +171,9 @@ export class RastreoComponent implements OnInit {
 
   closePhoto() {
     this.selectedPhoto.set(null);
+  }
+
+  abrirSoporte() {
+    window.open(`https://wa.me/${this.config.whatsappSoporte}`, '_blank');
   }
 }

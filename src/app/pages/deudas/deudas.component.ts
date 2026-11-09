@@ -21,7 +21,7 @@ import { ChartConfiguration } from 'chart.js';
 
 import { ApiClientService } from '../../core/api-client.service';
 import { Pedido, Categoria } from '../../core/models';
-import { LiquidarDialogComponent, LiquidarDialogResult } from './liquidar-dialog.component';
+import { LiquidarDialogComponent, LiquidarDialogResult } from './dialogs/liquidar-dialog.component';
 
 @Component({
   selector: 'app-deudas',

@@ -7,21 +7,21 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSelectModule } from '@angular/material/select';
-import { Cliente } from '../../core/models';
+import { Cliente } from '../../../core/models';
 
 @Component({
   selector: 'app-cliente-dialog',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, 
+    CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule,
     MatInputModule, MatFormFieldModule, MatSlideToggleModule, MatSelectModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data ? 'Editar' : 'Nuevo' }} Cliente</h2>
-    
+
     <form [formGroup]="form" (ngSubmit)="save()">
       <div mat-dialog-content class="dialog-content">
-        
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Nombre Completo</mat-label>
           <input matInput formControlName="nombre" placeholder="Ej: Juan Pérez">
@@ -34,7 +34,7 @@ import { Cliente } from '../../core/models';
             <input matInput formControlName="telefono" type="tel" placeholder="52...">
             <mat-error *ngIf="form.get('telefono')?.hasError('required')">Requerido</mat-error>
           </mat-form-field>
-          
+
           <mat-form-field appearance="outline" class="half-width">
             <mat-label>Email (Opcional)</mat-label>
             <input matInput formControlName="email">
@@ -48,7 +48,14 @@ import { Cliente } from '../../core/models';
         </mat-form-field>
 
         <hr class="divider">
-        
+
+        <div class="toggle-row">
+          <span class="toggle-label">¿Inscrito en Programa de Lealtad (Monedero)?</span>
+          <mat-slide-toggle formControlName="apto_promociones" color="primary">
+            {{ form.get('apto_promociones')?.value ? 'Sí' : 'No' }}
+          </mat-slide-toggle>
+        </div>
+
         <div class="toggle-row">
           <span class="toggle-label">¿Permite notificaciones por WhatsApp?</span>
           <mat-slide-toggle formControlName="permite_whatsapp" color="primary">
@@ -57,14 +64,14 @@ import { Cliente } from '../../core/models';
         </div>
 
         <mat-form-field appearance="outline" class="full-width" *ngIf="form.get('permite_whatsapp')?.value">
-          <mat-label>Recordatorio automático</mat-label>
+          <mat-label>Ciclo habitual de visita</mat-label>
           <mat-select formControlName="frecuencia_recordatorio">
-            <mat-option [value]="0">Manual (Sin automático)</mat-option>
+            <mat-option [value]="0">Sin definir</mat-option>
             <mat-option [value]="7">Semanal (7 días)</mat-option>
             <mat-option [value]="15">Quincenal (15 días)</mat-option>
             <mat-option [value]="30">Mensual (30 días)</mat-option>
           </mat-select>
-          <mat-hint>Cada cuánto recordarle traer ropa.</mat-hint>
+          <mat-hint>Frecuencia esperada de visita del cliente.</mat-hint>
         </mat-form-field>
 
       </div>
@@ -98,6 +105,7 @@ export class ClienteDialogComponent implements OnInit {
       telefono: ['', [Validators.required, Validators.minLength(10)]],
       email: ['', [Validators.email]],
       direccion: [''],
+      apto_promociones: [false],
       permite_whatsapp: [true],
       frecuencia_recordatorio: [15],
       org_id: localStorage.getItem('sb_org_id') || ''
@@ -116,3 +124,4 @@ export class ClienteDialogComponent implements OnInit {
     }
   }
 }
+

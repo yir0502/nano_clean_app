@@ -25,8 +25,8 @@ import { MatChipsModule } from '@angular/material/chips'; // <--- Nuevo
 import { ApiClientService } from '../../../core/api-client.service';
 import { Cliente, Sucursal } from '../../../core/models';
 import { A11yModule } from "@angular/cdk/a11y";
-import { EntregaDialogComponent, EntregaDialogResult } from '../entrega-dialog.component';
-import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../accion-pedido-dialog.component';
+import { EntregaDialogComponent, EntregaDialogResult } from '../dialogs/entrega-dialog.component';
+import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../dialogs/accion-pedido-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 interface FotoPreview {

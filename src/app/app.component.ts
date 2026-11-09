@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, ViewChild } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, NavigationEnd, ActivatedRoute, RouterLink, RouterOutlet, RouterLinkActive } from '@angular/router';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 import { filter, map, startWith } from 'rxjs/operators';
@@ -44,13 +44,10 @@ export class AppComponent {
   menuOpen = signal(false); // NUEVA señal para el Sidenav
 
   additionalNavOptions = [
-    { path: '/administracion', icon: 'category', label: 'Administración' },
-    { path: '/clientes', icon: 'group', label: 'Clientes' },
     { path: '/pedidos', icon: 'work', label: 'Pedidos' },
+    { path: '/clientes', icon: 'group', label: 'Clientes' },
     { path: '/deudas', icon: 'request_quote', label: 'Deudas' },
-    { path: '/inventario', icon: 'inventory', label: 'Inventario' },
-    { path: '/pedidos_proveedores', icon: 'local_shipping', label: 'Pedidos Proveedores' },
-    // Agrega más opciones aquí
+    { path: '/administracion', icon: 'category', label: 'Administración' },
   ];
 
   private hideSig = toSignal(
@@ -69,9 +66,9 @@ export class AppComponent {
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
       map(() => {
-        const url = this.router.url;
-        return url.includes('/movimientos/nuevo') ||
-          (url.includes('/movimientos/') && url.length > '/movimientos/'.length);
+        let r: ActivatedRoute | null = this.route;
+        while (r?.firstChild) r = r.firstChild;
+        return r?.snapshot.data?.['hideFab'] === true;
       }),
       startWith(false)
     )
@@ -95,11 +92,11 @@ export class AppComponent {
   }
 
   logoutAndClose() {
-      this.logout();
-      this.menuOpen.set(false);
+    this.logout();
+    this.menuOpen.set(false);
   }
 
-  // Métodos del FAB (renombré uno para evitar confusión)
+  // Métodos del FAB
   toggleFabMenu() {
     this.fabMenuOpen.update(val => !val);
   }
@@ -108,7 +105,6 @@ export class AppComponent {
     this.router.navigateByUrl(path);
     this.fabMenuOpen.set(false);
   }
-
 
   logout() {
     this.auth.logout();

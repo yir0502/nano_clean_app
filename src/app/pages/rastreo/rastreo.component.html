@@ -210,27 +210,27 @@
         </div>
         <div class="header-text">
           <mat-card-title>Datos de Transferencia</mat-card-title>
-          <mat-card-subtitle>Banco NU MEXICO</mat-card-subtitle>
+          <mat-card-subtitle>{{ config.datosBancarios.banco }}</mat-card-subtitle>
         </div>
       </mat-card-header>
 
       <mat-card-content>
         <div class="pay-list">
 
-          <div class="pay-item ripple" (click)="copyToClipboard('01016008413', 'Cuenta')">
+          <div class="pay-item ripple" (click)="copyToClipboard(config.datosBancarios.cuenta, 'Cuenta')">
             <div class="info">
               <span class="label">Cuenta</span>
-              <span class="value">01016008413</span>
+              <span class="value">{{ config.datosBancarios.cuenta }}</span>
             </div>
             <button mat-icon-button class="copy-btn">
               <mat-icon>content_copy</mat-icon>
             </button>
           </div>
 
-          <div class="pay-item ripple" (click)="copyToClipboard('638180010160084138', 'CLABE')">
+          <div class="pay-item ripple" (click)="copyToClipboard(config.datosBancarios.clabe, 'CLABE')">
             <div class="info">
               <span class="label">CLABE Interbancaria</span>
-              <span class="value">638180010160084138</span>
+              <span class="value">{{ config.datosBancarios.clabe }}</span>
             </div>
             <button mat-icon-button class="copy-btn">
               <mat-icon>content_copy</mat-icon>
@@ -240,7 +240,7 @@
           <div class="pay-item">
             <div class="info">
               <span class="label">Beneficiario</span>
-              <span class="value text-wrap">Jair Daniel Santana Feliciano</span>
+              <span class="value text-wrap">{{ config.datosBancarios.beneficiario }}</span>
             </div>
           </div>
 
@@ -257,7 +257,7 @@
 
     <footer class="footer">
       <p>¿Dudas?</p>
-      <button mat-flat-button class="whatsapp-btn" onclick="window.open('https://wa.me/5212227342492', '_blank')">
+      <button mat-flat-button class="whatsapp-btn" (click)="abrirSoporte()">
         <mat-icon>chat</mat-icon> Hablar con Soporte
       </button>
     </footer>

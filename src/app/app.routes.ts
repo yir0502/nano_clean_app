@@ -19,17 +19,20 @@ export const routes: Routes = [
   { path: 'movimientos/nuevo',
     data: { hideFab: true },
     canMatch: [authGuard],
-    loadComponent: () => import('./pages/movimiento-form/movimiento-form.component').then(m => m.MovimientoFormComponent) },
+    loadComponent: () => import('./pages/movimientos/movimiento-form/movimiento-form.component').then(m => m.MovimientoFormComponent) },
 
   { path: 'movimientos/:id',
+    data: { hideFab: true },
     canMatch: [authGuard],
-    loadComponent: () => import('./pages/movimiento-form/movimiento-form.component').then(m => m.MovimientoFormComponent) },
+    loadComponent: () => import('./pages/movimientos/movimiento-form/movimiento-form.component').then(m => m.MovimientoFormComponent) },
 
-  { path: 'categorias',
+  { path: 'analisis',
     canMatch: [authGuard],
-    loadComponent: () => import('./pages/categorias/categorias.component').then(m => m.CategoriasComponent) },
+    loadComponent: () => import('./pages/analisis/analisis.component').then(m => m.AnalisisComponent) },
 
-{ 
+  { path: 'categorias', redirectTo: 'analisis', pathMatch: 'full' },
+
+  { 
     path: 'administracion',
     canMatch: [authGuard],
     loadComponent: () => import('./pages/administracion/admin-list/administracion.component').then(m => m.AdministracionComponent) 
