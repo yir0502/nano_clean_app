@@ -99,6 +99,22 @@ export const routes: Routes = [
     },
     loadComponent: () => import('./pages/rastreo/rastreo.component').then(m => m.RastreoComponent)
   },
+  {
+    path: 'rastreo/:folio',
+    data: { 
+      hideChrome: true,
+      hideFab: true
+    },
+    loadComponent: () => import('./pages/rastreo/rastreo.component').then(m => m.RastreoComponent)
+  },
+  {
+    path: 'rastreo',
+    data: { 
+      hideChrome: true,
+      hideFab: true
+    },
+    loadComponent: () => import('./pages/rastreo/rastreo.component').then(m => m.RastreoComponent)
+  },
 
   { path: '**', redirectTo: 'resumen' }
 ];

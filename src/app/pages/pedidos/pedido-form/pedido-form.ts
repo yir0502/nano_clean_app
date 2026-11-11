@@ -625,20 +625,20 @@ export class PedidoFormComponent implements OnInit {
     const montoStr = `$${monto.toFixed(2)}`;
     const baseUrl = globalThis.location.origin;
     const orgId = localStorage.getItem('sb_org_id') || '';
-    const urlRastreo = orgId ? `${baseUrl}/rastreo/${orgId}/${folio}` : '';
+    const urlRastreo = orgId ? `${baseUrl}/rastreo/${orgId}/${folio}` : `${baseUrl}/rastreo/${folio}`;
 
     switch (estado) {
       case 'recibido':
         msg = `Hola *${nombre}* 👋\n\nTu pedido *${folio}* ha sido recibido.\n\nPuedes ver los detalles, saldo y fotos aquí:\n${urlRastreo}\n\n¡Gracias por tu confianza! \n- Lavandería Nano Clean`;
         break;
       case 'listo':
-        msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* por un total de ${montoStr}\n\nPuedes pasar a recogerlo en un plazo máximo de 2 semanas o tambien puedes solicitar envio a domicilio.\n\n¡Gracias por tu preferencia! 🙏`;
+        msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* por un total de ${montoStr}.\n\nPuedes ver el estado y saldo de tu pedido aquí:\n${urlRastreo}\n\nPuedes pasar a recogerlo en un plazo máximo de 2 semanas o solicitar envío a domicilio.\n\n¡Gracias por tu preferencia! 🙏`;
         break;
       case 'entregado':
         msg = `¡Hola *${nombre}*! 👋\n\nGracias por tu preferencia, tu pedido *${folio}* ha sido entregado.\n\n¡Esperamos verte pronto! 🌟`;
         break;
       default:
-        msg = `¡Hola *${nombre}*! 👋\n\nTe escribimos de Nano Clean respecto a tu pedido *${folio}*.\n\nTotal: *${montoStr}*\n\n¡Gracias por tu preferencia! 🙏`;
+        msg = `¡Hola *${nombre}*! 👋\n\nTe escribimos de Nano Clean respecto a tu pedido *${folio}*.\n\nTotal: *${montoStr}*\n${urlRastreo}\n\n¡Gracias por tu preferencia! 🙏`;
     }
 
     let tel = telefono.replace(/\D/g, '');

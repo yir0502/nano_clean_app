@@ -7,6 +7,11 @@ import { AuthService } from './auth.service';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
+
+  // Rutas publicas (ej: rastreo de pedidos para clientes) no llevan auth ni fuerzan /login
+  if (req.url.includes('/rastreo')) {
+    return next(req);
+  }
   
   // 0. Validar proactivamente antes de enviar nada
   // Evitas que la app se quede colgada esperando al server si el token ya murió localmente

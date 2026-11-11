@@ -224,12 +224,23 @@ export class ApiClientService {
   }
 
   // --- RASTREO PÚBLICO ---
-  getPedidoPublico(orgId: string, folio: string): Promise<Pedido> {
-    return this.get<Pedido>(`/rastreo/${orgId}/${folio}`);
+  getPedidoPublico(orgId: string | null | undefined, folio: string): Promise<Pedido> {
+    const cleanOrg = (orgId || '').trim();
+    const cleanFolio = (folio || '').trim();
+    const path = cleanOrg ? `/rastreo/${cleanOrg}/${cleanFolio}` : `/rastreo/${cleanFolio}`;
+    return fetch(`${this.base}${path}`)
+      .then(async r => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Pedido no encontrado');
+        return data;
+      });
   }
 
-  canjearPromo(orgId: string, folio: string): Promise<{ ok: boolean; descuento_aplicado: number; saldo_pendiente: number; monedero_restante: number; mensaje: string }> {
-    return fetch(`${this.base}/rastreo/${orgId}/${folio}/canjear`, { method: 'POST' })
+  canjearPromo(orgId: string | null | undefined, folio: string): Promise<{ ok: boolean; descuento_aplicado: number; saldo_pendiente: number; monedero_restante: number; mensaje: string }> {
+    const cleanOrg = (orgId || '').trim();
+    const cleanFolio = (folio || '').trim();
+    const path = cleanOrg ? `/rastreo/${cleanOrg}/${cleanFolio}/canjear` : `/rastreo/${cleanFolio}/canjear`;
+    return fetch(`${this.base}${path}`, { method: 'POST' })
       .then(async r => {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || 'Error al canjear');

@@ -72,9 +72,16 @@ export class RastreoComponent implements OnInit {
   ];
 
   async ngOnInit() {
-    const orgId = this.route.snapshot.paramMap.get('orgId');
-    const folio = this.route.snapshot.paramMap.get('folio');
-    if (!folio || !orgId) {
+    let orgId = this.route.snapshot.paramMap.get('orgId');
+    let folio = this.route.snapshot.paramMap.get('folio');
+
+    // Soporte para ruta /rastreo/:folio sin orgId
+    if (!folio && orgId && !this.isUuid(orgId)) {
+      folio = orgId;
+      orgId = null;
+    }
+
+    if (!folio) {
       this.error.set('No se especificó un número de pedido.');
       this.loading.set(false);
       return;
@@ -83,11 +90,15 @@ export class RastreoComponent implements OnInit {
     try {
       const data = await this.api.getPedidoPublico(orgId, folio);
       this.pedido.set(data as any);
-    } catch (e) {
-      this.error.set('No encontramos este pedido. Verifica el enlace.');
+    } catch (e: any) {
+      this.error.set(e?.message || 'No encontramos este pedido. Verifica el enlace.');
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private isUuid(val: string): boolean {
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
   }
 
 
@@ -148,8 +159,11 @@ export class RastreoComponent implements OnInit {
 
   async canjearPromo() {
     const folio = this.pedido()?.folio;
-    const orgId = this.route.snapshot.paramMap.get('orgId');
-    if (!folio || !orgId) return;
+    let orgId = this.route.snapshot.paramMap.get('orgId');
+    if (!orgId || !this.isUuid(orgId)) {
+      orgId = (this.pedido() as any)?.org_id || null;
+    }
+    if (!folio) return;
     this.canjeando.set(true);
     try {
       const result = await this.api.canjearPromo(orgId, folio);
