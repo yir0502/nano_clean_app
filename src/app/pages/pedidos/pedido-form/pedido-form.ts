@@ -205,16 +205,65 @@ export class PedidoFormComponent implements OnInit {
   async ngOnInit() {
     await this.loadSucursales();
 
+    this.form.get('sucursal_id')?.valueChanges.subscribe(val => {
+      if (val) localStorage.setItem('nc_last_sucursal_id', val);
+    });
+
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'nuevo') {
       this.isEdit.set(true);
       this.pedidoId.set(id);
       await this.loadPedido(id);
     } else {
-      // Default: sucursal 1 y fecha +3 días
-      if (this.sucursales().length) this.form.patchValue({ sucursal_id: this.sucursales()[0].id });
-      const f = new Date(); f.setDate(f.getDate() + 3);
-      this.form.patchValue({ fecha_entrega_estimada: f });
+      const lastSucursal = localStorage.getItem('nc_last_sucursal_id');
+      const matched = this.sucursales().find(s => s.id === lastSucursal);
+      const defaultSucursalId = matched ? matched.id : (this.sucursales().length ? this.sucursales()[0].id : '');
+      if (defaultSucursalId) {
+        this.form.patchValue({ sucursal_id: defaultSucursalId });
+      }
+      this.setFechaOffset(1);
+    }
+  }
+
+  setFechaOffset(dias: number) {
+    const d = new Date();
+    d.setDate(d.getDate() + dias);
+    d.setHours(12, 0, 0, 0);
+    this.form.patchValue({ fecha_entrega_estimada: d });
+  }
+
+  isFechaOffsetActivo(dias: number): boolean {
+    const val = this.form.get('fecha_entrega_estimada')?.value;
+    if (!val) return false;
+    const current = new Date(val);
+    const target = new Date();
+    target.setDate(target.getDate() + dias);
+    return current.getFullYear() === target.getFullYear() &&
+           current.getMonth() === target.getMonth() &&
+           current.getDate() === target.getDate();
+  }
+
+  get saldoMaximoPendiente(): number {
+    const total = Number(this.form.get('monto_total')?.value) || 0;
+    const desc = this.descuentoInicial();
+    return Math.max(0, total - desc);
+  }
+
+  get anticipoCalculado(): number {
+    const total = Number(this.form.get('monto_total')?.value) || 0;
+    const saldo = Number(this.form.get('saldo_pendiente')?.value) || 0;
+    const desc = this.descuentoInicial();
+    return Math.max(0, total - desc - saldo);
+  }
+
+  aplicarPresetAnticipo(tipo: 'cero' | 'total' | 'mitad') {
+    const maxPendiente = this.saldoMaximoPendiente;
+    if (tipo === 'cero') {
+      this.form.patchValue({ saldo_pendiente: 0 });
+    } else if (tipo === 'total') {
+      this.form.patchValue({ saldo_pendiente: maxPendiente });
+    } else if (tipo === 'mitad') {
+      this.form.patchValue({ saldo_pendiente: Math.round(maxPendiente / 2) });
     }
   }
 

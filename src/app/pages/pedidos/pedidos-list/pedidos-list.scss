@@ -110,23 +110,64 @@
   }
 
   .order-actions {
-    padding: 0; 
-  }
+    display: flex;
+    align-items: stretch;
+    border-top: 1px solid #f0f0f0;
+    padding: 0;
 
-  .whatsapp-button {
-    background-color: #25D366; /* Verde oficial WhatsApp */
-    color: white;
-    border: none;
-    font-size: 12px;
-    font-weight: 600;
-    width: 100%;
-    height: 36px;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    cursor: pointer;
-    transition: background 0.2s;
+    .advance-status-btn {
+      flex: 1;
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s, opacity 0.2s;
+      color: #ffffff;
 
-    mat-icon { font-size: 16px; width: 16px; height: 16px; }
-    &:hover { background-color: #1ebc57; }
+      mat-icon { font-size: 18px; width: 18px; height: 18px; }
+      .btn-spinner ::ng-deep circle { stroke: #ffffff !important; }
+
+      &.btn-lavando { background-color: #ff9800; &:hover { background-color: #f57c00; } }
+      &.btn-secando { background-color: #f59e0b; color: #1e293b; &:hover { background-color: #d97706; } }
+      &.btn-doblando { background-color: #eab308; color: #1e293b; &:hover { background-color: #ca8a04; } }
+      &.btn-listo { background-color: #10b981; &:hover { background-color: #059669; } }
+      &.btn-entregar { background-color: #0284c7; &:hover { background-color: #0369a1; } }
+
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
+
+    .whatsapp-button {
+      flex: 0 0 auto;
+      min-width: 100px;
+      padding: 0 12px;
+      background-color: #25D366;
+      color: white;
+      border: none;
+      font-size: 12px;
+      font-weight: 600;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-left: 1px solid rgba(0,0,0,0.06);
+
+      mat-icon { font-size: 16px; width: 16px; height: 16px; }
+      &:hover { background-color: #1ebc57; }
+
+      &:only-child {
+        flex: 1;
+        width: 100%;
+        border-left: none;
+      }
+    }
   }
   
   /* Variante para historial */

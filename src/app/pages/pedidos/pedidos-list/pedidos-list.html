@@ -55,8 +55,19 @@
             </div>
 
             <div class="order-actions">
+              <button *ngIf="activeTab() === 0 && getNextStatusInfo(p.estado) as nextStep"
+                      type="button"
+                      class="advance-status-btn"
+                      [ngClass]="nextStep.colorClass"
+                      [disabled]="updatingStatusId() === p.id"
+                      (click)="avanzarEstado(p, $event)">
+                <mat-spinner *ngIf="updatingStatusId() === p.id" diameter="16" class="btn-spinner"></mat-spinner>
+                <mat-icon *ngIf="updatingStatusId() !== p.id">{{ nextStep.icon }}</mat-icon>
+                <span>{{ nextStep.label }}</span>
+              </button>
+
               <button (click)="pedidoActions.sendWhatsapp(p); $event.stopPropagation()" class="whatsapp-button">
-                <mat-icon>share</mat-icon> Compartir al cliente
+                <mat-icon>share</mat-icon> WhatsApp
               </button>
             </div>
 

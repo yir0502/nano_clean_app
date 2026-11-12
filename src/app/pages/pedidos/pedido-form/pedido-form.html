@@ -164,15 +164,53 @@
             <mat-label>Saldo pendiente a pagar ($)</mat-label>
             <input matInput type="number" formControlName="saldo_pendiente">
           </mat-form-field>
-
         </div>
+
+        <div class="anticipo-presets-container" *ngIf="(form.get('monto_total')?.value || 0) > 0">
+          <span class="preset-label">Anticipo rápido:</span>
+          <div class="preset-chips">
+            <button type="button" class="preset-chip" (click)="aplicarPresetAnticipo('total')">
+              Debe todo (${{ saldoMaximoPendiente | number:'1.2-2' }})
+            </button>
+            <button type="button" class="preset-chip" (click)="aplicarPresetAnticipo('mitad')">
+              50% anticipo (${{ (saldoMaximoPendiente / 2) | number:'1.2-2' }})
+            </button>
+            <button type="button" class="preset-chip" (click)="aplicarPresetAnticipo('cero')">
+              Pagó todo ($0)
+            </button>
+          </div>
+          <div class="anticipo-resumen-badge"
+               [class.has-anticipo]="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
+               [class.total-liquidado]="form.get('saldo_pendiente')?.value === 0">
+            <span *ngIf="form.get('saldo_pendiente')?.value === 0">
+              Pagado en su totalidad ($0.00 pendiente)
+            </span>
+            <span *ngIf="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0">
+              Anticipo a registrar: ${{ anticipoCalculado | number:'1.2-2' }} MXN | Restan: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN
+            </span>
+            <span *ngIf="anticipoCalculado === 0 && (form.get('saldo_pendiente')?.value || 0) > 0">
+              Sin anticipo (liquidación total contra entrega: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN)
+            </span>
+          </div>
+        </div>
+
         <div class="row">
-          <mat-form-field appearance="outline" class="half-width">
+          <mat-form-field appearance="outline" class="full-width">
             <mat-label>Fecha Entrega</mat-label>
             <input matInput [matDatepicker]="picker" formControlName="fecha_entrega_estimada">
             <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
             <mat-datepicker #picker></mat-datepicker>
           </mat-form-field>
+        </div>
+
+        <div class="date-presets-container">
+          <span class="preset-label">Entrega rápida:</span>
+          <div class="preset-chips">
+            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(0)" (click)="setFechaOffset(0)">Hoy</button>
+            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(1)" (click)="setFechaOffset(1)">Mañana</button>
+            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(2)" (click)="setFechaOffset(2)">En 2 días</button>
+            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(3)" (click)="setFechaOffset(3)">En 3 días</button>
+          </div>
         </div>
       </mat-card-content>
     </mat-card>
