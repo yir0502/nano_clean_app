@@ -60,6 +60,8 @@ export interface Cliente {
   apto_promociones?: boolean;
 }
 
+export type MetodoPago = 'efectivo' | 'transferencia' | 'tarjeta' | 'mercado_pago' | 'otro';
+
 export interface Pedido {
   id: string;
   org_id: string;
@@ -79,6 +81,23 @@ export interface Pedido {
   sucursal_nombre?: string;
   descuento_aplicado?: number;
   puntos_generados?: boolean;
+  movimiento_registrado?: boolean;
+  whatsapp_automatico?: boolean;
+  whatsapp_disparado?: boolean;
+}
+
+export interface PedidoCreatePayload extends Partial<Pedido> {
+  registrar_pago?: boolean;
+  metodo_pago?: MetodoPago | null;
+  categoria_ingreso_id?: string | null;
+  omitir_whatsapp?: boolean;
+}
+
+export interface PedidoUpdatePayload extends Partial<Pedido> {
+  monto_cobrado?: number;
+  metodo_pago?: MetodoPago | null;
+  categoria_ingreso_id?: string | null;
+  omitir_whatsapp?: boolean;
 }
 
 export interface PedidoEvidencia {

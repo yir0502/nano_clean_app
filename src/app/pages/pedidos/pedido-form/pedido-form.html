@@ -1,13 +1,18 @@
 <div class="container">
 
   <div class="header">
-    <button mat-icon-button (click)="location.back()">
+    <button mat-icon-button type="button" (click)="location.back()">
       <mat-icon>arrow_back</mat-icon>
     </button>
     <div class="title-col">
       <h2>{{ titulo() }}</h2>
-      <span class="subtitle" *ngIf="isEdit()">Gestión y seguimiento</span>
+      <span class="subtitle" *ngIf="isEdit()">Folio {{ currentFolio() }}</span>
     </div>
+    <span class="header-spacer"></span>
+    <button *ngIf="isEdit()" mat-stroked-button type="button" class="ticket-header-btn" (click)="abrirModalTicketActual()">
+      <mat-icon>qr_code_2</mat-icon>
+      Ticket QR
+    </button>
   </div>
 
   <form [formGroup]="form" (ngSubmit)="save()">
@@ -21,8 +26,8 @@
           <div class="circle">
             <mat-icon *ngIf="st === 'recibido'">hourglass_empty</mat-icon>
             <mat-icon *ngIf="st === 'lavando'">local_laundry_service</mat-icon>
-
-            <mat-icon *ngIf="st === 'secando'">dry</mat-icon> <mat-icon *ngIf="st === 'doblando'">layers</mat-icon>
+            <mat-icon *ngIf="st === 'secando'">dry</mat-icon>
+            <mat-icon *ngIf="st === 'doblando'">layers</mat-icon>
             <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
             <mat-icon *ngIf="st === 'entregado'">inventory_2</mat-icon>
             <mat-icon *ngIf="st === 'cancelado'">block</mat-icon>
@@ -34,8 +39,11 @@
     </div>
 
     <mat-card class="form-card">
-      <mat-card-header>
+      <mat-card-header class="card-header-with-button">
         <mat-card-title class="titulo-seccion">Cliente</mat-card-title>
+        <button *ngIf="selectedCliente() && !isEdit()" mat-button color="warn" type="button" (click)="clearCliente()">
+          <mat-icon>person_remove</mat-icon> Cambiar
+        </button>
       </mat-card-header>
       <mat-card-content class="card-content">
         <div class="row">
@@ -61,7 +69,6 @@
           </mat-form-field>
         </div>
 
-        <!-- PANEL DE LEALTAD (solo si hay cliente seleccionado) -->
         <div class="lealtad-panel" *ngIf="selectedCliente()">
 
           <div class="lealtad-header">
@@ -69,7 +76,6 @@
               <mat-icon class="lealtad-icon">loyalty</mat-icon>
               <span>Programa de Lealtad</span>
             </div>
-            <!-- Toggle: cambia apto_promociones del cliente en el acto -->
             <button mat-stroked-button [color]="selectedCliente()?.apto_promociones !== false ? 'primary' : 'warn'"
               type="button" (click)="toggleAptitudPromo(selectedCliente()?.apto_promociones === false)">
               <mat-icon>{{ selectedCliente()?.apto_promociones !== false ? 'check_circle' : 'block' }}</mat-icon>
@@ -77,7 +83,6 @@
             </button>
           </div>
 
-          <!-- Solo mostramos el progreso si es apto -->
           <ng-container *ngIf="selectedCliente()?.apto_promociones !== false">
             <div class="lealtad-stats">
               <div class="stat-item">
@@ -99,7 +104,6 @@
               </div>
             </div>
 
-            <!-- Barra de progreso del ciclo actual -->
             <div class="ciclo-progress">
               <div class="ciclo-header-flex">
                 <span class="ciclo-label">Progreso hacia bono especial ($20)</span>
@@ -113,31 +117,25 @@
               </div>
             </div>
 
-            <!-- Hint administrativo -->
-            <div class="lealtad-hint"
-              style="margin-top: 16px; font-size: 13px; color: #7f6e1f; text-align: left; background: #fffcf0; padding: 10px; border-radius: 8px; border: 1px solid #ffecb3; display: flex; align-items: flex-start; gap: 8px;">
-              <mat-icon style="color: #ffc107; font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; margin-top: -1px;">stars</mat-icon>
+            <div class="lealtad-hint">
+              <mat-icon class="hint-star">stars</mat-icon>
               <span>{{ getLoyaltyMessage() }}</span>
             </div>
           </ng-container>
 
         </div>
-
-
       </mat-card-content>
     </mat-card>
 
     <mat-card class="form-card">
-      <mat-card-header><mat-card-title class="titulo-seccion">Detalles</mat-card-title></mat-card-header>
+      <mat-card-header><mat-card-title class="titulo-seccion">Detalles y Cobro</mat-card-title></mat-card-header>
       <mat-card-content>
 
-        <!-- Banner de descuento pre-canjeado o aplicado -->
-        <div class="descuento-banner" *ngIf="descuentoInicial() > 0"
-          style="margin-bottom: 16px; padding: 12px 16px; background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; color: #2e7d32; display: flex; align-items: center; gap: 8px;">
-          <mat-icon style="color: #4caf50;">local_offer</mat-icon>
+        <div class="descuento-banner" *ngIf="descuentoInicial() > 0">
+          <mat-icon>local_offer</mat-icon>
           <div>
             <strong>Descuento de monedero aplicado: ${{ descuentoInicial() | number:'1.2-2' }} MXN.</strong>
-            <span style="font-size: 13px; display: block; color: #4e7f50;">El saldo pendiente a pagar sugerido ya contempla esta reducción.</span>
+            <span>El saldo pendiente sugerido ya contempla esta reducción.</span>
           </div>
         </div>
 
@@ -149,9 +147,51 @@
           <mat-icon matPrefix>store</mat-icon>
         </mat-form-field>
 
+        <div class="quick-pos-box">
+          <span class="preset-label">Captura rápida por toque o peso:</span>
+          <div class="kilo-calc-row">
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              class="mini-num-input"
+              placeholder="Kg (ej. 4.5)"
+              [ngModel]="kilosCaptura()"
+              [ngModelOptions]="{standalone: true}"
+              (ngModelChange)="kilosCaptura.set($event)" />
+            <span class="calc-x">x</span>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              class="mini-num-input"
+              placeholder="$/kg"
+              [ngModel]="tarifaKg() || null"
+              [ngModelOptions]="{standalone: true}"
+              (ngModelChange)="actualizarTarifaKg($event)" />
+            <button
+              type="button"
+              class="apply-kg-btn"
+              [disabled]="!(kilosCaptura() && kilosCaptura()! > 0)"
+              (click)="aplicarCalculoKilos()">
+              + Agregar kg
+            </button>
+          </div>
+
+          <div class="preset-chips">
+            <button
+              type="button"
+              class="preset-chip"
+              *ngFor="let p of prendasRapidas"
+              (click)="agregarPrendaRapida(p)">
+              + {{ p }}
+            </button>
+          </div>
+        </div>
+
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Descripción de prendas</mat-label>
-          <textarea matInput formControlName="descripcion" rows="3"></textarea>
+          <textarea matInput formControlName="descripcion" rows="2"></textarea>
         </mat-form-field>
 
         <div class="row">
@@ -169,16 +209,44 @@
         <div class="anticipo-presets-container" *ngIf="(form.get('monto_total')?.value || 0) > 0">
           <span class="preset-label">Anticipo rápido:</span>
           <div class="preset-chips">
-            <button type="button" class="preset-chip" (click)="aplicarPresetAnticipo('total')">
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="anticipoCalculado === 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
+              (click)="aplicarPresetAnticipo('total')">
               Debe todo (${{ saldoMaximoPendiente | number:'1.2-2' }})
             </button>
-            <button type="button" class="preset-chip" (click)="aplicarPresetAnticipo('mitad')">
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
+              (click)="aplicarPresetAnticipo('mitad')">
               50% anticipo (${{ (saldoMaximoPendiente / 2) | number:'1.2-2' }})
             </button>
-            <button type="button" class="preset-chip" (click)="aplicarPresetAnticipo('cero')">
+            <button
+              type="button"
+              class="preset-chip"
+              [class.active]="form.get('saldo_pendiente')?.value === 0"
+              (click)="aplicarPresetAnticipo('cero')">
               Pagó todo ($0)
             </button>
           </div>
+
+          <div class="metodo-inline-box" *ngIf="!isEdit() && anticipoCalculado > 0">
+            <span class="preset-label">Método de cobro (se registra automático en caja):</span>
+            <div class="preset-chips">
+              <button
+                type="button"
+                class="preset-chip"
+                *ngFor="let m of metodosPago"
+                [class.active]="metodoPago() === m.id"
+                (click)="metodoPago.set(m.id)">
+                <mat-icon class="chip-mini-icon">{{ m.icon }}</mat-icon>
+                {{ m.label }}
+              </button>
+            </div>
+          </div>
+
           <div class="anticipo-resumen-badge"
                [class.has-anticipo]="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
                [class.total-liquidado]="form.get('saldo_pendiente')?.value === 0">
@@ -186,10 +254,10 @@
               Pagado en su totalidad ($0.00 pendiente)
             </span>
             <span *ngIf="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0">
-              Anticipo a registrar: ${{ anticipoCalculado | number:'1.2-2' }} MXN | Restan: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN
+              Anticipo automático en caja: ${{ anticipoCalculado | number:'1.2-2' }} MXN | Restan: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN
             </span>
             <span *ngIf="anticipoCalculado === 0 && (form.get('saldo_pendiente')?.value || 0) > 0">
-              Sin anticipo (liquidación total contra entrega: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN)
+              Sin anticipo (liquidación contra entrega: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN)
             </span>
           </div>
         </div>
@@ -217,7 +285,7 @@
 
     <mat-card class="form-card">
       <mat-card-header class="evidencia-header">
-        <mat-card-title style="margin-bottom: 8px;">Evidencia Fotográfica</mat-card-title>
+        <mat-card-title class="titulo-evidencia">Evidencia Fotográfica</mat-card-title>
         <div class="evidencia-actions">
           <button type="button" mat-stroked-button color="primary" (click)="cameraInput.click()">
             <mat-icon>camera_alt</mat-icon> Tomar foto
@@ -233,12 +301,12 @@
       <mat-card-content>
         <div class="photos-grid" *ngIf="fotos().length > 0; else noPhotos">
           <div class="photo-item" *ngFor="let f of fotos(); let i = index">
-            <img [src]="f.url">
+            <img [src]="f.url" alt="Evidencia">
             <button type="button" class="remove-btn" (click)="removeFoto(i)">
               <mat-icon>close</mat-icon>
             </button>
             <span class="badge" *ngIf="f.id">Guardada</span>
-            <span class="badge new" *ngIf="!f.id">Nueva</span>
+            <span class="badge new" *ngIf="!f.id">Optimizada</span>
           </div>
         </div>
         <ng-template #noPhotos>

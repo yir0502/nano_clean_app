@@ -44,9 +44,10 @@ export class AppComponent {
   menuOpen = signal(false); // NUEVA señal para el Sidenav
 
   additionalNavOptions = [
-    { path: '/pedidos', icon: 'work', label: 'Pedidos' },
+    { path: '/pedidos', icon: 'local_laundry_service', label: 'Pedidos' },
     { path: '/clientes', icon: 'group', label: 'Clientes' },
     { path: '/deudas', icon: 'request_quote', label: 'Deudas' },
+    { path: '/analisis', icon: 'attach_money', label: 'Análisis' },
     { path: '/administracion', icon: 'category', label: 'Administración' },
   ];
 

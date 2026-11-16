@@ -47,6 +47,10 @@
       <a mat-button (click)="toggleMenu()" aria-label="Más opciones de navegación" class="more-options-button" [class.active]="menuOpen()">
         <mat-icon>menu_open</mat-icon> <i class="indicator"></i>
       </a>
+      <a mat-button routerLink="/pedidos" routerLinkActive="active">
+        <mat-icon>local_laundry_service</mat-icon><span>Pedidos</span>
+        <i class="indicator"></i>
+      </a>
       <a mat-button routerLink="/resumen" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
         <mat-icon>insights</mat-icon><span>Resumen</span>
         <i class="indicator"></i>
@@ -57,10 +61,6 @@
       </a>
       <a mat-button routerLink="/deudas" routerLinkActive="active">
         <mat-icon>request_quote</mat-icon><span>Deudas</span>
-        <i class="indicator"></i>
-      </a>
-      <a mat-button routerLink="/analisis" routerLinkActive="active">
-        <mat-icon>attach_money</mat-icon><span>Análisis</span>
         <i class="indicator"></i>
       </a>
     </nav>

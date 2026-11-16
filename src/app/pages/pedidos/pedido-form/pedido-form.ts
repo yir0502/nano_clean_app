@@ -1,12 +1,10 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { CommonModule, Location } from '@angular/common';
+import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Location } from '@angular/common';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { of, firstValueFrom } from 'rxjs';
 
-// Material Modules
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -18,15 +16,17 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
-import { MatAutocompleteModule } from '@angular/material/autocomplete'; // <--- Nuevo
-import { MatChipsModule } from '@angular/material/chips'; // <--- Nuevo
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatChipsModule } from '@angular/material/chips';
+import { A11yModule } from '@angular/cdk/a11y';
 
-// Servicios y Modelos
 import { ApiClientService } from '../../../core/api-client.service';
-import { Cliente, Sucursal } from '../../../core/models';
-import { A11yModule } from "@angular/cdk/a11y";
-import { EntregaDialogComponent, EntregaDialogResult } from '../dialogs/entrega-dialog.component';
+import { Cliente, MetodoPago, Pedido, PedidoCreatePayload, PedidoUpdatePayload, Sucursal } from '../../../core/models';
+import { TicketPrintService } from '../../../core/ticket-print.service';
+import { PedidoActionsService } from '../../../core/pedido-actions.service';
+import { EntregaDialogComponent, EntregaDialogResponse } from '../dialogs/entrega-dialog.component';
 import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../dialogs/accion-pedido-dialog.component';
+import { TicketDialogComponent, TicketDialogData } from '../dialogs/ticket-dialog.component';
 import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
 
 interface FotoPreview {
@@ -35,19 +35,32 @@ interface FotoPreview {
   id?: string;
 }
 
+const STORAGE_TARIFA_KG = 'nc_tarifa_kg';
+
 @Component({
   selector: 'app-pedido-form',
   standalone: true,
   imports: [
-    CommonModule, ReactiveFormsModule,
-    MatCardModule, MatFormFieldModule, MatInputModule,
-    MatButtonModule, MatIconModule, MatDatepickerModule, MatNativeDateModule,
-    MatSnackBarModule, MatProgressSpinnerModule, MatSelectModule,
-    MatAutocompleteModule, MatChipsModule,
-    A11yModule, MatDialogModule
+    CommonModule,
+    ReactiveFormsModule,
+    FormsModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatIconModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
+    MatSnackBarModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+    MatAutocompleteModule,
+    MatChipsModule,
+    A11yModule,
+    MatDialogModule,
   ],
   templateUrl: './pedido-form.html',
-  styleUrls: ['./pedido-form.scss']
+  styleUrls: ['./pedido-form.scss'],
 })
 export class PedidoFormComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -56,96 +69,110 @@ export class PedidoFormComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private snack = inject(MatSnackBar);
   private dialog = inject(MatDialog);
+  private ticketService = inject(TicketPrintService);
+  private pedidoActions = inject(PedidoActionsService);
   public location = inject(Location);
 
-  // Estados
   loading = signal<boolean>(false);
   saving = signal<boolean>(false);
   isEdit = signal<boolean>(false);
   pedidoId = signal<string | null>(null);
+  pedidoCargado = signal<Pedido | null>(null);
 
-  // Datos
   sucursales = signal<Sucursal[]>([]);
   clientesFiltrados = signal<Cliente[]>([]);
-  fotos = signal<FotoPreview[]>([]); // Lista de fotos (nuevas y existentes)
-
-  // Cliente seleccionado del autocompletado
+  fotos = signal<FotoPreview[]>([]);
   selectedCliente = signal<Cliente | null>(null);
-
-  // Para guardar el folio y usarlo en el mensaje
   currentFolio = signal<string>('');
 
-  // Para recalculación de saldos en edición
   montoPagadoInicial = signal<number>(0);
   descuentoInicial = signal<number>(0);
+  estadoOriginal = signal<string>('recibido');
 
-  // Estados del pedido para la UI
-  readonly ESTADOS = ['recibido', 'lavando', 'secando', 'doblando', 'listo', 'entregado', 'cancelado'];
+  metodoPago = signal<MetodoPago>('efectivo');
+  kilosCaptura = signal<number | null>(null);
+  tarifaKg = signal<number>(Number(localStorage.getItem(STORAGE_TARIFA_KG) || 0));
+
+  readonly ESTADOS: Pedido['estado'][] = [
+    'recibido',
+    'lavando',
+    'secando',
+    'doblando',
+    'listo',
+    'entregado',
+    'cancelado',
+  ];
+
+  readonly prendasRapidas: string[] = [
+    'Lavado y secado',
+    'Edredón Mat.',
+    'Edredón King',
+    'Cobertor',
+    'Sábanas',
+    'Tenis',
+    'Planchado',
+  ];
+
+  readonly metodosPago: { id: MetodoPago; label: string; icon: string }[] = [
+    { id: 'efectivo', label: 'Efectivo', icon: 'attach_money' },
+    { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt' },
+    { id: 'tarjeta', label: 'Tarjeta', icon: 'credit_card' },
+    { id: 'mercado_pago', label: 'Mercado Pago', icon: 'qr_code_scanner' },
+  ];
 
   form = this.fb.group({
-    // Cliente
     cliente_nombre: ['', Validators.required],
     cliente_telefono: ['', [Validators.required, Validators.minLength(10)]],
     cliente_id: [''],
-
-    // Pedido
     sucursal_id: ['', Validators.required],
-    descripcion: ['',],
+    descripcion: [''],
     monto_total: [0],
     saldo_pendiente: [0],
-
     fecha_entrega_estimada: [new Date(), Validators.required],
-    estado: ['recibido'],
-
-    // Nota global para evidencias nuevas
-    evidencia_nota: ['']
+    estado: ['recibido' as Pedido['estado']],
+    evidencia_nota: [''],
   });
 
-  titulo = computed(() => this.isEdit() ? `Editar Pedido` : 'Nuevo Pedido');
+  titulo = computed(() => (this.isEdit() ? 'Editar Pedido' : 'Nuevo Pedido'));
 
   constructor() {
-    // Escuchar cambios en el nombre para autocompletar
-    this.form.get('cliente_nombre')?.valueChanges
-      .pipe(
+    this.form
+      .get('cliente_nombre')
+      ?.valueChanges.pipe(
         debounceTime(300),
         distinctUntilChanged(),
-        switchMap(val => {
-          if (!val || typeof val !== 'string') return of({ data: [], count: 0 });
+        switchMap((val) => {
+          if (!val || typeof val !== 'string') return of({ data: [] as Cliente[], count: 0 });
           return this.api.listClientes({ q: val, limit: 5 });
         })
       )
-      .subscribe(res => this.clientesFiltrados.set(res.data));
+      .subscribe((res) => this.clientesFiltrados.set(res.data));
 
-    // Escuchar cambios en teléfono para validar existencia
-    this.form.get('cliente_telefono')?.valueChanges
-      .pipe(
-        debounceTime(500),
+    this.form
+      .get('cliente_telefono')
+      ?.valueChanges.pipe(
+        debounceTime(450),
         distinctUntilChanged(),
-        switchMap(val => {
-          if (!val || val.length < 10) return of({ data: [], count: 0 });
-          // Buscamos si existe alguien con ese teléfono
+        switchMap((val) => {
+          if (!val || val.length < 10) return of({ data: [] as Cliente[], count: 0 });
           return this.api.listClientes({ q: val, limit: 1 });
         })
       )
-      .subscribe(res => {
-        // Si encontramos un cliente por teléfono y NO hemos seleccionado uno explícitamente
+      .subscribe((res) => {
         if (res.data.length > 0 && !this.selectedCliente()) {
-          const c = res.data[0];
-          // Autocompletamos instantáneamente en lugar de arrojar una alerta
-          this.selectCliente(c);
-          this.snack.open(`Cliente vinculado con exito`, 'Cerrar', { duration: 3000 });
+          this.selectCliente(res.data[0]);
+          this.snack.open('Cliente vinculado automáticamente', 'OK', { duration: 2500 });
         }
       });
 
-    this.form.get('monto_total')?.valueChanges
-      .pipe(distinctUntilChanged())
+    this.form
+      .get('monto_total')
+      ?.valueChanges.pipe(distinctUntilChanged())
       .subscribe((val) => {
         const total = Number(val) || 0;
         if (!this.isEdit()) {
-          // Al escribir el total, sugerimos el mismo valor como saldo pendiente solo al crear
           this.form.get('saldo_pendiente')?.setValue(total, { emitEvent: false });
         } else {
-          // En edición, si cambia el total, sugerimos el saldo pendiente neto menos lo ya pagado
           const pagado = this.montoPagadoInicial();
           const desc = this.descuentoInicial();
           const nuevoPendiente = Math.max(0, total - desc - pagado);
@@ -154,9 +181,6 @@ export class PedidoFormComponent implements OnInit {
       });
   }
 
-  // --- LÓGICA DE PROMOCIÓN Y LEALTAD ---
-
-  // Progreso del cliente en el ciclo de 4 servicios (0-3)
   get serviciosEnCiclo(): number {
     return (this.selectedCliente()?.contador_servicios ?? 0) % 4;
   }
@@ -179,33 +203,31 @@ export class PedidoFormComponent implements OnInit {
     const count = this.serviciosEnCiclo;
     const faltan = 4 - count;
     if (count === 3) {
-      return '¡El próximo servicio otorgará un bono especial de $20.00 MXN al cliente!';
-    } else {
-      return `Falta(n) ${faltan} servicio(s) para el bono especial de $20.00 MXN.`;
+      return 'El próximo servicio otorgará un bono especial de $20.00 MXN al cliente.';
     }
+    return `Falta(n) ${faltan} servicio(s) para el bono especial de $20.00 MXN.`;
   }
 
-  // Toggle: cambia apto_promociones del cliente en tiempo real
-  async toggleAptitudPromo(nuevoValor: boolean) {
+  async toggleAptitudPromo(nuevoValor: boolean): Promise<void> {
     const c = this.selectedCliente();
     if (!c?.id) return;
     try {
       const updated = await this.api.updateCliente(c.id, { apto_promociones: nuevoValor });
-      // Fusionamos con el cliente actual para mantener el resto de sus datos (monedero, etc)
       this.selectedCliente.set({ ...c, ...updated });
       this.snack.open(
         nuevoValor ? 'Cliente inscrito en el programa de lealtad' : 'Cliente excluido del programa de lealtad',
-        'OK', { duration: 3000 }
+        'OK',
+        { duration: 3000 }
       );
     } catch {
       this.snack.open('Error al actualizar el estado de lealtad', 'Cerrar');
     }
   }
 
-  async ngOnInit() {
+  async ngOnInit(): Promise<void> {
     await this.loadSucursales();
 
-    this.form.get('sucursal_id')?.valueChanges.subscribe(val => {
+    this.form.get('sucursal_id')?.valueChanges.subscribe((val) => {
       if (val) localStorage.setItem('nc_last_sucursal_id', val);
     });
 
@@ -216,8 +238,8 @@ export class PedidoFormComponent implements OnInit {
       await this.loadPedido(id);
     } else {
       const lastSucursal = localStorage.getItem('nc_last_sucursal_id');
-      const matched = this.sucursales().find(s => s.id === lastSucursal);
-      const defaultSucursalId = matched ? matched.id : (this.sucursales().length ? this.sucursales()[0].id : '');
+      const matched = this.sucursales().find((s) => s.id === lastSucursal);
+      const defaultSucursalId = matched ? matched.id : this.sucursales().length ? this.sucursales()[0].id : '';
       if (defaultSucursalId) {
         this.form.patchValue({ sucursal_id: defaultSucursalId });
       }
@@ -225,7 +247,40 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  setFechaOffset(dias: number) {
+  agregarPrendaRapida(prenda: string): void {
+    const actual = (this.form.get('descripcion')?.value || '').trim();
+    const nuevoTexto = actual ? `${actual}, ${prenda}` : prenda;
+    this.form.patchValue({ descripcion: nuevoTexto });
+  }
+
+  actualizarTarifaKg(valor: string | number): void {
+    const num = Math.max(0, Number(valor) || 0);
+    this.tarifaKg.set(num);
+    if (num > 0) {
+      localStorage.setItem(STORAGE_TARIFA_KG, String(num));
+    }
+  }
+
+  aplicarCalculoKilos(): void {
+    const kg = Number(this.kilosCaptura()) || 0;
+    if (kg <= 0) return;
+
+    const tarifa = this.tarifaKg();
+    const etiquetaKg = `${kg} kg lavado y secado`;
+    const descActual = (this.form.get('descripcion')?.value || '').trim();
+    const nuevaDesc = descActual ? `${descActual}, ${etiquetaKg}` : etiquetaKg;
+    this.form.patchValue({ descripcion: nuevaDesc });
+
+    if (tarifa > 0) {
+      const subtotalKg = Math.round(kg * tarifa * 100) / 100;
+      const totalActual = Number(this.form.get('monto_total')?.value) || 0;
+      this.form.patchValue({ monto_total: Math.round((totalActual + subtotalKg) * 100) / 100 });
+    }
+
+    this.kilosCaptura.set(null);
+  }
+
+  setFechaOffset(dias: number): void {
     const d = new Date();
     d.setDate(d.getDate() + dias);
     d.setHours(12, 0, 0, 0);
@@ -238,9 +293,11 @@ export class PedidoFormComponent implements OnInit {
     const current = new Date(val);
     const target = new Date();
     target.setDate(target.getDate() + dias);
-    return current.getFullYear() === target.getFullYear() &&
-           current.getMonth() === target.getMonth() &&
-           current.getDate() === target.getDate();
+    return (
+      current.getFullYear() === target.getFullYear() &&
+      current.getMonth() === target.getMonth() &&
+      current.getDate() === target.getDate()
+    );
   }
 
   get saldoMaximoPendiente(): number {
@@ -256,7 +313,7 @@ export class PedidoFormComponent implements OnInit {
     return Math.max(0, total - desc - saldo);
   }
 
-  aplicarPresetAnticipo(tipo: 'cero' | 'total' | 'mitad') {
+  aplicarPresetAnticipo(tipo: 'cero' | 'total' | 'mitad'): void {
     const maxPendiente = this.saldoMaximoPendiente;
     if (tipo === 'cero') {
       this.form.patchValue({ saldo_pendiente: 0 });
@@ -267,162 +324,219 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  // --- LOGICA CLIENTES ---
-
-  displayCliente(cliente: any): string {
-    // Angular Material le pasará el objeto del evento OptionSelected, o un string si se patchea
+  displayCliente(cliente: Cliente | string | null): string {
     if (typeof cliente === 'string') return cliente;
     return cliente && cliente.nombre ? cliente.nombre : '';
   }
 
-  selectCliente(c: Cliente) {
+  selectCliente(c: Cliente): void {
     this.selectedCliente.set(c);
     this.form.patchValue({
       cliente_nombre: c.nombre,
       cliente_telefono: c.telefono,
-      cliente_id: c.id
+      cliente_id: c.id,
     });
-    // Bloqueamos edición rápida para no corromper datos del cliente accidentalmente
-    // (Si quieren editar cliente, mejor ir a la sección clientes)
     this.form.controls.cliente_nombre.disable();
     this.form.controls.cliente_telefono.disable();
   }
 
-  clearCliente() {
+  clearCliente(): void {
     this.selectedCliente.set(null);
     this.form.patchValue({ cliente_nombre: '', cliente_telefono: '', cliente_id: '' });
     this.form.controls.cliente_nombre.enable();
     this.form.controls.cliente_telefono.enable();
   }
 
-  // --- LOGICA FOTOS ---
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = input.files;
+    if (!files || files.length === 0) return;
 
-  onFileSelected(event: any) {
-    const files = event.target.files;
-    if (files) {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const reader = new FileReader();
-        reader.onload = (e: any) => {
-          this.fotos.update(prev => [...prev, {
-            file: file,
-            url: e.target.result
-          }]);
-        };
-        reader.readAsDataURL(file);
-      }
+    const listaArchivos = Array.from(files);
+    input.value = '';
+
+    for (const rawFile of listaArchivos) {
+      const comprimido = await this.comprimirImagenCliente(rawFile);
+      const previewUrl = URL.createObjectURL(comprimido);
+      this.fotos.update((prev) => [...prev, { file: comprimido, url: previewUrl }]);
     }
   }
 
-  async removeFoto(index: number) {
+  private comprimirImagenCliente(file: File): Promise<File> {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) {
+        resolve(file);
+        return;
+      }
+
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        const maxDim = 1280;
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const cleanName = file.name.replace(/\.[^.]+$/, '') + '.webp';
+            resolve(new File([blob], cleanName, { type: 'image/webp' }));
+          },
+          'image/webp',
+          0.8
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objUrl);
+        resolve(file);
+      };
+
+      img.src = objUrl;
+    });
+  }
+
+  async removeFoto(index: number): Promise<void> {
     const foto = this.fotos()[index];
 
-    // CASO A: Es una foto YA guardada en el servidor (tiene ID)
     if (foto.id && this.pedidoId()) {
-
       const dialogData: ConfirmDialogData = {
         title: 'Eliminar evidencia',
         message: '¿Estás seguro de eliminar esta evidencia permanentemente?',
         icon: 'delete_forever',
-        color: 'warn'
+        color: 'warn',
       };
-      
+
       const dialogRef = this.dialog.open(ConfirmDialogComponent, {
         data: dialogData,
         width: '360px',
-        panelClass: 'custom-modal-panel'
+        panelClass: 'custom-modal-panel',
       });
 
-      const confirmacion = await dialogRef.afterClosed().toPromise();
+      const confirmacion = await firstValueFrom(dialogRef.afterClosed());
       if (!confirmacion) return;
 
-      this.loading.set(true); // Bloqueamos un poco la UI para evitar doble click
+      this.loading.set(true);
       try {
         await this.api.deleteEvidencia(this.pedidoId()!, foto.id);
-
         this.snack.open('Evidencia eliminada', 'OK', { duration: 2000 });
-
-        // Actualizamos la lista visualmente quitando el elemento
-        this.fotos.update(prev => prev.filter((_, i) => i !== index));
-
-      } catch (e: any) {
+        this.fotos.update((prev) => prev.filter((_, i) => i !== index));
+      } catch {
         this.snack.open('Error al eliminar evidencia', 'Cerrar');
       } finally {
         this.loading.set(false);
       }
-
     } else {
-      // CASO B: Es una foto nueva (local) que aún no se guarda
-      // Simplemente la sacamos del array
-      this.fotos.update(prev => prev.filter((_, i) => i !== index));
+      if (foto.url.startsWith('blob:')) {
+        URL.revokeObjectURL(foto.url);
+      }
+      this.fotos.update((prev) => prev.filter((_, i) => i !== index));
     }
   }
 
-  // --- CARGA DE DATOS ---
-
-  async loadSucursales() {
-    try { this.sucursales.set(await this.api.listSucursales({ activo: 1 })); } catch { }
+  async loadSucursales(): Promise<void> {
+    try {
+      this.sucursales.set(await this.api.listSucursales({ activo: 1 }));
+    } catch {
+      // Manejado globalmente por ApiClientService
+    }
   }
 
-  async loadPedido(id: string) {
+  async loadPedido(id: string): Promise<void> {
     this.loading.set(true);
     try {
-      // 1. Cargar Pedido
       const p = await this.api.getPedido(id);
       if (!p) throw new Error('Pedido no encontrado');
 
-      // Guardamos el folio en la señal
+      this.pedidoCargado.set(p);
       this.currentFolio.set(p.folio || '');
+      this.estadoOriginal.set(p.estado);
 
-      // Guardamos los montos iniciales para recalcular saldo pendiente si se edita el total
       const totalVal = Number(p.monto_total) || 0;
       const pendienteVal = Number(p.saldo_pendiente) || 0;
       const descuentoVal = Number(p.descuento_aplicado) || 0;
       this.montoPagadoInicial.set(Math.max(0, totalVal - descuentoVal - pendienteVal));
       this.descuentoInicial.set(descuentoVal);
 
-      // 2. Cargar Evidencias existentes
       const evidencias = await this.api.listEvidencias(id);
 
-      // 3. Patch Formulario
-      this.form.patchValue({
-        cliente_nombre: p.cliente_nombre,
-        cliente_telefono: p.cliente_telefono,
-        cliente_id: p.cliente_id,
-        sucursal_id: p.sucursal_id,
-        descripcion: p.descripcion,
-        monto_total: Number(p.monto_total),
-        saldo_pendiente: Number(p.saldo_pendiente),
-        fecha_entrega_estimada: p.fecha_entrega_estimada ? new Date(p.fecha_entrega_estimada + 'T00:00:00') : new Date(),
-        estado: p.estado
-      }, { emitEvent: false });
+      this.form.patchValue(
+        {
+          cliente_nombre: p.cliente_nombre,
+          cliente_telefono: p.cliente_telefono,
+          cliente_id: p.cliente_id,
+          sucursal_id: p.sucursal_id,
+          descripcion: p.descripcion,
+          monto_total: Number(p.monto_total),
+          saldo_pendiente: Number(p.saldo_pendiente),
+          fecha_entrega_estimada: p.fecha_entrega_estimada ? new Date(p.fecha_entrega_estimada + 'T00:00:00') : new Date(),
+          estado: p.estado,
+        },
+        { emitEvent: false }
+      );
 
-      // Si tiene cliente ID, cargamos sus datos completos para obetner monedero
       if (p.cliente_id) {
         try {
-          // Necesitamos el monedero real
           const clienteReal = await this.api.getCliente(p.cliente_id);
           if (clienteReal) {
             this.selectedCliente.set(clienteReal);
           } else {
-            this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 });
+            this.selectedCliente.set({
+              id: p.cliente_id,
+              nombre: p.cliente_nombre || '',
+              telefono: p.cliente_telefono || '',
+              permite_whatsapp: true,
+              frecuencia_recordatorio: 0,
+              monedero: 0,
+            });
           }
         } catch {
-          this.selectedCliente.set({ id: p.cliente_id, nombre: p.cliente_nombre || '', telefono: p.cliente_telefono || '', permite_whatsapp: true, frecuencia_recordatorio: 0, monedero: 0 });
+          this.selectedCliente.set({
+            id: p.cliente_id,
+            nombre: p.cliente_nombre || '',
+            telefono: p.cliente_telefono || '',
+            permite_whatsapp: true,
+            frecuencia_recordatorio: 0,
+            monedero: 0,
+          });
         }
 
         this.form.controls.cliente_nombre.disable();
         this.form.controls.cliente_telefono.disable();
       }
 
-      // 4. Cargar fotos al estado
-      const fotosExistentes: FotoPreview[] = evidencias.map(e => ({
-        url: e.url,
-        id: e.id
-      }));
-      this.fotos.set(fotosExistentes);
-
-    } catch (e) {
+      this.fotos.set(
+        evidencias.map((e) => ({
+          url: e.url,
+          id: e.id,
+        }))
+      );
+    } catch {
       this.snack.open('Error al cargar pedido', 'Cerrar');
       this.location.back();
     } finally {
@@ -430,270 +544,212 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  // --- GUARDADO ---
-  async save() {
+  abrirModalTicketActual(): void {
+    const base = this.pedidoCargado();
+    if (!base) return;
+    const v = this.form.getRawValue();
+    const sucursalNombre = this.sucursales().find((s) => s.id === v.sucursal_id)?.nombre || base.sucursal_nombre;
+    const pedidoVista: Pedido = {
+      ...base,
+      cliente_nombre: v.cliente_nombre || base.cliente_nombre,
+      cliente_telefono: v.cliente_telefono || base.cliente_telefono,
+      descripcion: v.descripcion || base.descripcion,
+      monto_total: Number(v.monto_total || 0),
+      saldo_pendiente: Number(v.saldo_pendiente || 0),
+      sucursal_nombre: sucursalNombre,
+    };
+
+    this.dialog.open(TicketDialogComponent, {
+      data: { pedido: pedidoVista, esCreacion: false } as TicketDialogData,
+      width: '390px',
+    });
+  }
+
+  async save(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
+
+    const v = this.form.getRawValue();
+    const esEntregado = v.estado === 'entregado';
+    const esListo = v.estado === 'listo';
+    const montoTotal = Number(v.monto_total) || 0;
+    const saldoPend = Number(v.saldo_pendiente) || 0;
+    const anticipo = Math.max(0, montoTotal - this.descuentoInicial() - saldoPend);
+    const nombreCliente = v.cliente_nombre || 'Cliente';
+    const telefonoCliente = v.cliente_telefono || '';
+
+    let montoCobradoEntrega = 0;
+    let metodoCobroEntrega: MetodoPago | undefined;
+
+    if (this.isEdit() && esEntregado && this.estadoOriginal() !== 'entregado' && saldoPend > 0) {
+      const dialogRef = this.dialog.open(EntregaDialogComponent, {
+        data: {
+          nombreCliente,
+          folio: this.currentFolio(),
+          saldoPendiente: saldoPend,
+          montoTotal,
+        },
+        disableClose: true,
+        width: '400px',
+        panelClass: 'custom-modal-panel',
+      });
+
+      const decision = await firstValueFrom(dialogRef.afterClosed());
+      if (!decision) return;
+
+      if (decision.accion === 'cobrar') {
+        montoCobradoEntrega = saldoPend;
+        metodoCobroEntrega = decision.metodoPago || 'efectivo';
+      }
+    }
+
     this.saving.set(true);
 
     try {
-      const v = this.form.getRawValue();
       let clientId = v.cliente_id;
 
-      // 1. Crear Cliente si no existe
       if (!clientId) {
         const nuevoCliente = await this.api.createCliente({
           nombre: v.cliente_nombre || '',
           telefono: v.cliente_telefono || '',
           permite_whatsapp: true,
-          apto_promociones: false // Por defecto inicia inactivo al crear cliente rápido
+          apto_promociones: false,
         });
         clientId = nuevoCliente.id;
       }
 
-      // 2. Payload
-      const payload: any = {
-        cliente_id: clientId,
-        cliente_nombre: v.cliente_nombre, // Importante para el mensaje
-        sucursal_id: v.sucursal_id,
-        descripcion: v.descripcion,
-        monto_total: v.monto_total,
-        saldo_pendiente: v.saldo_pendiente,
-        fecha_entrega_estimada: v.fecha_entrega_estimada ? new Date(v.fecha_entrega_estimada).toISOString().split('T')[0] : null,
-        estado: v.estado
-      };
+      const fechaEntregaIso = v.fecha_entrega_estimada
+        ? new Date(v.fecha_entrega_estimada).toISOString().split('T')[0]
+        : undefined;
 
-      let pedidoId = this.pedidoId();
-      let folioFinal = this.currentFolio(); // Usamos el que ya teníamos
+      const sucursalNombre = this.sucursales().find((s) => s.id === v.sucursal_id)?.nombre || 'Mostrador';
+      let resultadoPedido: Pedido;
 
-      // 3. Guardar / Actualizar
-      if (this.isEdit() && pedidoId) {
-        await this.api.updatePedido(pedidoId, payload);
+      if (this.isEdit() && this.pedidoId()) {
+        const updatePayload: PedidoUpdatePayload = {
+          descripcion: v.descripcion || '',
+          sucursal_id: v.sucursal_id,
+          monto_total: montoTotal,
+          saldo_pendiente: saldoPend,
+          fecha_entrega_estimada: fechaEntregaIso,
+          estado: v.estado || 'recibido',
+        };
+        if (montoCobradoEntrega > 0) {
+          updatePayload.monto_cobrado = montoCobradoEntrega;
+          updatePayload.metodo_pago = metodoCobroEntrega;
+        }
+        resultadoPedido = await this.api.updatePedido(this.pedidoId()!, updatePayload);
       } else {
-        const nuevo = await this.api.createPedido(payload);
-        pedidoId = nuevo.id;
-        folioFinal = nuevo.folio || ''; // Si es nuevo, tomamos el folio generado
+        const createPayload: PedidoCreatePayload = {
+          cliente_id: clientId,
+          sucursal_id: v.sucursal_id,
+          descripcion: v.descripcion || '',
+          monto_total: montoTotal,
+          saldo_pendiente: saldoPend,
+          fecha_entrega_estimada: fechaEntregaIso,
+          registrar_pago: anticipo > 0,
+          metodo_pago: anticipo > 0 ? this.metodoPago() : null,
+        };
+        resultadoPedido = await this.api.createPedido(createPayload);
       }
 
-      // 4. Subir Fotos
-      const nuevasFotos = this.fotos().filter(f => f.file);
-      if (pedidoId && nuevasFotos.length > 0) {
-        const uploads = nuevasFotos.map(f =>
-          this.api.uploadEvidencia(pedidoId!, f.file!, 'ingreso', v.evidencia_nota || '')
+      const pedidoIdFinal = resultadoPedido.id;
+      const nuevasFotos = this.fotos().filter((f) => f.file);
+      if (pedidoIdFinal && nuevasFotos.length > 0) {
+        const uploads = nuevasFotos.map((f) =>
+          this.api.uploadEvidencia(pedidoIdFinal, f.file!, 'ingreso', v.evidencia_nota || '')
         );
         await Promise.all(uploads);
       }
 
-      // --- LOGICA DE NOTIFICACIONES Y FLUJO ---
+      const pedidoEnriquecido: Pedido = {
+        ...resultadoPedido,
+        cliente_nombre: nombreCliente,
+        cliente_telefono: telefonoCliente,
+        sucursal_nombre: sucursalNombre,
+        descripcion: v.descripcion || resultadoPedido.descripcion,
+      };
 
-      const esEntregado = v.estado === 'entregado';
-      const esListo = v.estado === 'listo';
-      const montoTotal = Number(v.monto_total) || 0;
-      const saldoPend = Number(v.saldo_pendiente) || 0;
-      const anticipo = Math.max(0, montoTotal - this.descuentoInicial() - saldoPend);
-      const nombreCliente = v.cliente_nombre || 'Cliente';
-      const telefonoCliente = v.cliente_telefono || '';
-      const todayShort = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
-      const detalleStr = payload.descripcion ? `(${payload.descripcion})` : `(Folio: ${folioFinal})`;
+      if (!this.isEdit()) {
+        const etiquetaMetodo =
+          anticipo > 0 ? this.metodosPago.find((m) => m.id === this.metodoPago())?.label : undefined;
 
-      // CASO 1: ENTREGADO -> Diálogo obligatorio para decidir cobro o deuda
-      if (esEntregado && saldoPend > 0) {
-        const dialogRef = this.dialog.open(EntregaDialogComponent, {
-          data: {
-            nombreCliente,
-            folio: folioFinal,
-            saldoPendiente: saldoPend,
-            montoTotal: montoTotal
-          },
-          disableClose: true,
-          width: '400px',
-          panelClass: 'custom-modal-panel'
-        });
-
-        const resultado: EntregaDialogResult | undefined = await firstValueFrom(dialogRef.afterClosed());
-
-        if (resultado === 'registrar') {
-          // Buscar movimiento existente (anticipo previo)
-          const movs = await this.api.listMovimientos({ pedido_id: pedidoId });
-          if (movs && movs.length > 0) {
-            const targetMov = movs[0];
-            const oldNota = targetMov.nota ? targetMov.nota : `Pedido ${nombreCliente} ${detalleStr}`;
-            const nuevaNota = `${oldNota} | Liquidacion: $${saldoPend.toFixed(2)} (${todayShort})`;
-            const globalTotal = Number(targetMov.monto) + saldoPend;
-
-            this.router.navigate(['/movimientos', targetMov.id], {
-              queryParams: {
-                monto: globalTotal.toFixed(2),
-                nota: nuevaNota
-              }
-            });
-          } else {
-            // Obtener categoría de ingreso por defecto
-            const cats = await this.api.listCategorias('ingreso');
-            const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : undefined);
-            this.router.navigate(['/movimientos/nuevo'], {
-              queryParams: {
-                monto: saldoPend.toFixed(2),
-                descripcion: `Pedido ${nombreCliente} ${detalleStr}. Liquidacion: $${saldoPend.toFixed(2)} (${todayShort})`,
-                tipo: 'ingreso',
-                cliente_id: clientId,
-                pedido_id: pedidoId,
-                sucursal_id: v.sucursal_id || undefined,
-                categoria_id: catId
-              }
-            });
-          }
-        } else {
-          // 'deuda' o cerrado sin selección → queda en deudas automáticamente
-          this.snack.open('Pedido entregado. El saldo pendiente quedó registrado en Deudas.', 'OK', { duration: 4000 });
-          this.router.navigateByUrl('/pedidos');
-        }
-
-        // CASO 2: NUEVO PEDIDO CON ANTICIPO -> Diálogo obligatorio
-      } else if (!this.isEdit() && anticipo > 0) {
-        const acciones: any[] = [
-          { texto: 'Registrar Ingreso', icono: 'payments', valor: 'registrar', color: 'primary' }
-        ];
-        if (telefonoCliente) {
-          acciones.push({ texto: 'Avisar por WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' });
-        }
-
-        const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
-          data: {
-            titulo: '¡Pedido Guardado!',
-            mensaje: `Pedido ${folioFinal} creado con abono de $${anticipo.toFixed(2)}. ¿Qué deseas hacer?`,
-            acciones
-          } as AccionPedidoDialogData,
-          disableClose: true,
-          width: '400px',
-          panelClass: 'custom-modal-panel'
-        });
-
-        const resultado = await firstValueFrom(dialogRef.afterClosed());
-
-        if (resultado === 'registrar') {
-          const cats = await this.api.listCategorias('ingreso');
-          const catId = cats.length > 1 ? cats[1].id : (cats.length > 0 ? cats[0].id : undefined);
-          this.router.navigate(['/movimientos/nuevo'], {
-            queryParams: {
-              monto: anticipo.toFixed(2),
-              descripcion: `Pedido ${nombreCliente} ${detalleStr}. Anticipo: $${anticipo.toFixed(2)} (${todayShort})`,
-              tipo: 'ingreso',
-              cliente_id: clientId,
-              pedido_id: pedidoId,
-              sucursal_id: v.sucursal_id || undefined,
-              categoria_id: catId
-            }
+        if (this.ticketService.autoPrintEnabled) {
+          await this.ticketService.imprimirTicket({
+            ...pedidoEnriquecido,
+            metodo_pago_texto: etiquetaMetodo,
           });
-        } else if (resultado === 'whatsapp') {
-          this.abrirWhatsapp(telefonoCliente, nombreCliente, folioFinal, 'recibido', montoTotal);
-          this.router.navigateByUrl('/pedidos');
-        } else {
-          this.router.navigateByUrl('/pedidos');
         }
 
-        // CASO 3: LISTO -> Diálogo obligatorio para WhatsApp
-      } else if (esListo) {
-        const acciones: any[] = [];
-        if (telefonoCliente) {
-          acciones.push({ texto: 'Avisar por WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' });
-        }
-
-        const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
+        const ticketRef = this.dialog.open(TicketDialogComponent, {
           data: {
-            titulo: '¡Pedido Listo!',
-            mensaje: `El pedido ${folioFinal} para ${nombreCliente} está listo para entregar. ¿Deseas avisarle al cliente?`,
-            acciones
-          } as AccionPedidoDialogData,
-          disableClose: true,
-          width: '400px',
-          panelClass: 'custom-modal-panel'
+            pedido: pedidoEnriquecido,
+            esCreacion: true,
+            metodoPagoTexto: etiquetaMetodo,
+          } as TicketDialogData,
+          width: '390px',
         });
 
-        const resultado = await firstValueFrom(dialogRef.afterClosed());
-
-        if (resultado === 'whatsapp') {
-          this.abrirWhatsapp(telefonoCliente, nombreCliente, folioFinal, 'listo', montoTotal);
-        }
+        await firstValueFrom(ticketRef.afterClosed());
         this.router.navigateByUrl('/pedidos');
-
-        // CASO 4: NUEVO PEDIDO SIN ANTICIPO (recibido) -> Sugerir WhatsApp
-      } else if (!this.isEdit() && telefonoCliente) {
-        const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
-          data: {
-            titulo: '¡Pedido Registrado!',
-            mensaje: `Pedido ${folioFinal} creado para ${nombreCliente}. ¿Deseas enviarle confirmación?`,
-            acciones: [
-              { texto: 'Enviar Confirmación WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' }
-            ]
-          } as AccionPedidoDialogData,
-          disableClose: true,
-          width: '400px',
-          panelClass: 'custom-modal-panel'
-        });
-
-        const resultado = await firstValueFrom(dialogRef.afterClosed());
-
-        if (resultado === 'whatsapp') {
-          this.abrirWhatsapp(telefonoCliente, nombreCliente, folioFinal, 'recibido', montoTotal);
-        }
-        this.router.navigateByUrl('/pedidos');
-
-      } else {
-        // CASO 5: OTROS ESTADOS (edición, sin teléfono, etc.)
-        const msj = this.isEdit() ? 'Pedido actualizado' : `Pedido generado ${folioFinal}`;
-        this.snack.open(msj, 'OK', { duration: 3000 });
-        this.router.navigateByUrl('/pedidos');
+        return;
       }
 
-    } catch (e: any) {
-      console.error(e);
-      this.snack.open('Error: ' + (e.message || 'Ocurrió un problema'), 'Cerrar');
+      if (esEntregado && this.estadoOriginal() !== 'entregado') {
+        const msjEntrega =
+          montoCobradoEntrega > 0
+            ? `Pedido entregado y cobro de $${montoCobradoEntrega.toFixed(2)} registrado en caja`
+            : saldoPend > 0
+              ? 'Pedido entregado. Saldo registrado en Deudas'
+              : 'Pedido entregado';
+        this.snack.open(msjEntrega, 'OK', { duration: 3500 });
+        this.router.navigateByUrl('/pedidos');
+        return;
+      }
+
+      if (esListo && this.estadoOriginal() !== 'listo') {
+        if (resultadoPedido.whatsapp_disparado) {
+          this.snack.open(`Pedido ${resultadoPedido.folio} LISTO y cliente notificado por WhatsApp`, 'OK', {
+            duration: 3500,
+          });
+          this.router.navigateByUrl('/pedidos');
+          return;
+        }
+
+        if (telefonoCliente) {
+          const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
+            data: {
+              titulo: 'Pedido Listo',
+              mensaje: `El pedido ${resultadoPedido.folio} para ${nombreCliente} está listo. ¿Deseas avisarle por WhatsApp?`,
+              acciones: [{ texto: 'Avisar por WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' }],
+            } as AccionPedidoDialogData,
+            disableClose: true,
+            width: '400px',
+            panelClass: 'custom-modal-panel',
+          });
+
+          const accion = await firstValueFrom(dialogRef.afterClosed());
+          if (accion === 'whatsapp') {
+            this.pedidoActions.sendWhatsapp({ ...pedidoEnriquecido, estado: 'listo' });
+          }
+        }
+        this.router.navigateByUrl('/pedidos');
+        return;
+      }
+
+      this.snack.open('Pedido actualizado', 'OK', { duration: 2500 });
+      this.router.navigateByUrl('/pedidos');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Ocurrió un problema';
+      this.snack.open('Error: ' + msg, 'Cerrar');
     } finally {
       this.saving.set(false);
     }
   }
 
-  // Helper para estado visual
-  setStatus(estado: string) {
+  setStatus(estado: Pedido['estado']): void {
     this.form.patchValue({ estado });
-  }
-
-  // --- WhatsApp ---
-  private abrirWhatsapp(
-    telefono: string,
-    nombre: string,
-    folio: string,
-    estado: string,
-    monto: number
-  ) {
-    if (!telefono) return;
-    let msg = '';
-    const montoStr = `$${monto.toFixed(2)}`;
-    const baseUrl = globalThis.location.origin;
-    const orgId = localStorage.getItem('sb_org_id') || '';
-    const urlRastreo = orgId ? `${baseUrl}/rastreo/${orgId}/${folio}` : `${baseUrl}/rastreo/${folio}`;
-
-    switch (estado) {
-      case 'recibido':
-        msg = `Hola *${nombre}* 👋\n\nTu pedido *${folio}* ha sido recibido.\n\nPuedes ver los detalles, saldo y fotos aquí:\n${urlRastreo}\n\n¡Gracias por tu confianza! \n- Lavandería Nano Clean`;
-        break;
-      case 'listo':
-        msg = `¡Hola *${nombre}*! 👋\n\nTu pedido *${folio}* ya está *LISTO* por un total de ${montoStr}.\n\nPuedes ver el estado y saldo de tu pedido aquí:\n${urlRastreo}\n\nPuedes pasar a recogerlo en un plazo máximo de 2 semanas o solicitar envío a domicilio.\n\n¡Gracias por tu preferencia! 🙏`;
-        break;
-      case 'entregado':
-        msg = `¡Hola *${nombre}*! 👋\n\nGracias por tu preferencia, tu pedido *${folio}* ha sido entregado.\n\n¡Esperamos verte pronto! 🌟`;
-        break;
-      default:
-        msg = `¡Hola *${nombre}*! 👋\n\nTe escribimos de Nano Clean respecto a tu pedido *${folio}*.\n\nTotal: *${montoStr}*\n${urlRastreo}\n\n¡Gracias por tu preferencia! 🙏`;
-    }
-
-    let tel = telefono.replace(/\D/g, '');
-    if (tel.length === 10) {
-      tel = '52' + tel;
-    }
-    window.open(`https://api.whatsapp.com/send?phone=${tel}&text=${encodeURIComponent(msg)}`, '_blank');
   }
 }

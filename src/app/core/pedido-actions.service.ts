@@ -2,65 +2,67 @@ import { Injectable } from '@angular/core';
 import { Pedido } from './models';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PedidoActionsService {
-
-  // Orden lógico de producción para la barra de rastreo
   public readonly estadosProduccion = [
-    'recibido', 
-    'lavando', 
-    'secando', 
-    'doblando', 
-    'listo', 
-    'entregado'
+    'recibido',
+    'lavando',
+    'secando',
+    'doblando',
+    'listo',
+    'entregado',
   ];
 
-  constructor() { }
-
-  /**
-   * Devuelve la clase de color/css correspondiente a un estado
-   */
   getStatusColor(estado: string): string {
     switch (estado) {
-      case 'recibido': return 'warn';
-      case 'lavando': return 'accent_1';
-      case 'secando': return 'accent_2';
-      case 'doblando': return 'accent_3';
-      case 'listo': return 'primary';
-      case 'entregado': return 'completed';
-      case 'cancelado': return 'canceled';
-      default: return '';
+      case 'recibido':
+        return 'warn';
+      case 'lavando':
+        return 'accent_1';
+      case 'secando':
+        return 'accent_2';
+      case 'doblando':
+        return 'accent_3';
+      case 'listo':
+        return 'primary';
+      case 'entregado':
+        return 'completed';
+      case 'cancelado':
+        return 'canceled';
+      default:
+        return '';
     }
   }
 
-  /**
-   * Genera el mensaje dinámico y abre WhatsApp Web / App
-   */
+  construirUrlRastreo(pedido: Pick<Pedido, 'folio'> & { org_id?: string | null }): string {
+    const baseUrl = window.location.origin;
+    const orgId = pedido.org_id || localStorage.getItem('sb_org_id') || '';
+    return orgId ? `${baseUrl}/rastreo/${orgId}/${pedido.folio}` : `${baseUrl}/rastreo/${pedido.folio}`;
+  }
+
   sendWhatsapp(pedido: Pedido) {
     if (!pedido.cliente_telefono) {
-      console.warn('El pedido no tiene un teléfono asociado.');
+      console.warn('El pedido no tiene un telefono asociado.');
       return;
     }
 
-    const baseUrl = window.location.origin;
-    const orgId = pedido.org_id || localStorage.getItem('sb_org_id') || '';
-    const urlRastreo = orgId ? `${baseUrl}/rastreo/${orgId}/${pedido.folio}` : `${baseUrl}/rastreo/${pedido.folio}`;
-
+    const urlRastreo = this.construirUrlRastreo(pedido);
     const estadoLimpio = pedido.estado.replace('_', ' ');
     const estadoFormato = estadoLimpio.charAt(0).toUpperCase() + estadoLimpio.slice(1);
+    const total = Number(pedido.monto_total || 0);
+    const saldo = Number(pedido.saldo_pendiente || 0);
+    const resumenMonto =
+      total > 0 ? `\nTotal: *$${total.toFixed(2)}* | Saldo pendiente: *$${saldo.toFixed(2)}*` : '';
 
-    const msg = `Hola *${pedido.cliente_nombre}* \uD83D\uDC4B
+    const msg =
+      `Hola *${pedido.cliente_nombre || 'Cliente'}*\n\n` +
+      `Tu pedido *${pedido.folio}* está en estatus: *${estadoFormato}*.${resumenMonto}\n\n` +
+      `Puedes consultar los detalles, saldo y fotos aquí:\n` +
+      `${urlRastreo}\n\n` +
+      `Gracias por tu confianza.\n` +
+      `- Lavandería Nano Clean`;
 
-Tu pedido *${pedido.folio}* está: *${estadoFormato}*.
-
-Puedes ver los detalles, saldo y fotos aquí \uD83D\uDC47:
-${urlRastreo}
-
-¡Gracias por tu confianza! \u2764\uFE0F
-- Lavandería Nano Clean \uD83E\uDD16`;
-
-    // Limpiar teléfono para API
     let telefono = pedido.cliente_telefono.replace(/\D/g, '');
     if (telefono.length === 10) {
       telefono = '52' + telefono;

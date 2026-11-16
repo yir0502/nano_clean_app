@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { firstValueFrom } from 'rxjs';
-import { Categoria, Movimiento, Sucursal, Pedido, PedidoEvidencia, Cliente, PaginatedResponse } from './models';
+import { Categoria, Movimiento, Sucursal, Pedido, PedidoCreatePayload, PedidoUpdatePayload, PedidoEvidencia, Cliente, PaginatedResponse } from './models';
 import { AuthService } from './auth.service';
 import { ENV } from './env';
 
@@ -194,12 +194,20 @@ export class ApiClientService {
     return this.get<Pedido>(`/pedidos/${id}`, p);
   }
 
-  createPedido(payload: Partial<Pedido>): Promise<Pedido> {
+  createPedido(payload: PedidoCreatePayload): Promise<Pedido> {
     return this.post<Pedido>('/pedidos', payload);
   }
 
-  updatePedido(id: string, patch: Partial<Pedido>): Promise<Pedido> {
+  updatePedido(id: string, patch: PedidoUpdatePayload): Promise<Pedido> {
     return this.put<Pedido>(`/pedidos/${id}`, patch);
+  }
+
+  notificarPedidoWhatsapp(id: string): Promise<{ ok: boolean; proveedor: string; motivo?: string }> {
+    return this.post<{ ok: boolean; proveedor: string; motivo?: string }>(`/pedidos/${id}/notificar`, {});
+  }
+
+  getIntegracionesEstado(): Promise<{ whatsapp_automatico: boolean }> {
+    return this.get<{ whatsapp_automatico: boolean }>('/pedidos/integraciones/estado');
   }
 
   // Subir foto de evidencia (Multipart File)

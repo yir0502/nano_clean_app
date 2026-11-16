@@ -316,4 +316,159 @@
       }
     }
   }
-}
+}
+
+
+.header-spacer {
+  flex: 1;
+}
+
+.ticket-header-btn {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+
+.titulo-evidencia {
+  margin-bottom: 8px;
+}
+
+.lealtad-hint {
+  margin-top: 16px;
+  font-size: 13px;
+  color: #7f6e1f;
+  text-align: left;
+  background: #fffcf0;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ffecb3;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+
+  .hint-star {
+    color: #ffc107;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: -1px;
+  }
+}
+
+.descuento-banner {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background-color: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  color: #2e7d32;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  mat-icon {
+    color: #4caf50;
+  }
+
+  span {
+    font-size: 13px;
+    display: block;
+    color: #4e7f50;
+  }
+}
+
+.quick-pos-box {
+  margin-bottom: 14px;
+  padding: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .preset-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .kilo-calc-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .mini-num-input {
+    width: 96px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  .calc-x {
+    font-weight: 700;
+    color: #64748b;
+    font-size: 13px;
+  }
+
+  .apply-kg-btn {
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 8px;
+    border: none;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .preset-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .preset-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 5px 11px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: #e2e8f0;
+      }
+    }
+  }
+}
+
+.metodo-inline-box {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chip-mini-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+}

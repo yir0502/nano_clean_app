@@ -1,53 +1,89 @@
 <div class="page-container">
-  
-  <div class="page-header">
+
+  <div class="page-header header-with-cta">
     <div class="title-group">
       <h2><mat-icon>local_laundry_service</mat-icon> Gestión de Pedidos</h2>
     </div>
+    <a mat-flat-button color="primary" routerLink="/pedidos/nuevo" class="new-order-btn">
+      <mat-icon>add</mat-icon> Nuevo
+    </a>
   </div>
 
-  <mat-form-field appearance="outline" class="search-bar">
-    <mat-label>Buscar por folio...</mat-label>
-    <input matInput [(ngModel)]="q" (keyup.enter)="reload()" placeholder="Ej: ORD-A1B2">
-    <button mat-icon-button matSuffix (click)="reload()">
-      <mat-icon>search</mat-icon>
+  <div class="search-toolbar">
+    <mat-form-field appearance="outline" class="search-bar">
+      <mat-label>Buscar por folio, cliente o teléfono...</mat-label>
+      <input
+        matInput
+        [ngModel]="q()"
+        (ngModelChange)="onSearchInput($event)"
+        (keyup.enter)="reload()"
+        placeholder="Ej: María, 2227... o LAV-A1B2">
+      <button *ngIf="q()" mat-icon-button matSuffix type="button" (click)="limpiarBusqueda()" aria-label="Limpiar búsqueda">
+        <mat-icon>close</mat-icon>
+      </button>
+      <button *ngIf="!q()" mat-icon-button matSuffix type="button" (click)="reload()" aria-label="Buscar">
+        <mat-icon>search</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <button
+      type="button"
+      mat-stroked-button
+      class="qr-scan-btn"
+      matTooltip="Escanear QR de ticket o bolsa (también acepta pistola USB/Bluetooth)"
+      (click)="abrirEscanerQr()">
+      <mat-icon>qr_code_scanner</mat-icon>
+      <span>QR</span>
     </button>
-  </mat-form-field>
+  </div>
 
   <mat-tab-group [selectedIndex]="activeTab()" (selectedIndexChange)="onTabChange($event)" animationDuration="0ms">
-    
+
     <mat-tab label="Activos">
       <ng-template matTabContent>
-        
+
         <div class="empty-state" *ngIf="!loading() && pedidos().length === 0">
           <mat-icon>inbox</mat-icon>
           <p>No hay pedidos pendientes.</p>
         </div>
-        
+
         <div class="orders-list">
           <mat-card *ngFor="let p of pedidos()" class="order-item" (click)="goToDetail(p)">
-            
+
             <div class="order-header">
-              <mat-icon>store</mat-icon> {{ p.sucursal_nombre || 'Sucursal' }}
-              <button (click)="deletePedido(p, $event)" class="delete-button" matTooltip="Eliminar Pedido">
-                <mat-icon>delete</mat-icon>
-              </button>
+              <mat-icon>store</mat-icon>
+              <span>{{ p.sucursal_nombre || 'Sucursal' }}</span>
+
+              <div class="header-right-btns">
+                <button (click)="abrirTicket(p, $event)" class="ticket-button" matTooltip="Ticket y Código QR">
+                  <mat-icon>qr_code_2</mat-icon>
+                </button>
+                <button (click)="deletePedido(p, $event)" class="delete-button" matTooltip="Eliminar Pedido">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             </div>
 
             <div class="order-strip">
               <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
-              
+
               <div class="order-content">
                 <div class="order-main">
                   <span class="customer">{{ p.cliente_nombre }}</span>
                   <span class="folio">{{ p.folio }}</span>
+                  <span class="balance-tag pending" *ngIf="Number(p.saldo_pendiente) > 0">
+                    Por cobrar: ${{ Number(p.saldo_pendiente) | number:'1.2-2' }}
+                  </span>
+                  <span class="balance-tag paid" *ngIf="Number(p.saldo_pendiente) === 0 && Number(p.monto_total) > 0">
+                    Pagado
+                  </span>
                 </div>
-                
+
                 <div class="order-meta">
                   <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
                   <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
                 </div>
-                
+
                 <div class="order-icon">
                   <mat-icon class="arrow">chevron_right</mat-icon>
                 </div>
@@ -66,8 +102,23 @@
                 <span>{{ nextStep.label }}</span>
               </button>
 
-              <button (click)="pedidoActions.sendWhatsapp(p); $event.stopPropagation()" class="whatsapp-button">
-                <mat-icon>share</mat-icon> WhatsApp
+              <button *ngIf="activeTab() === 0 && puedeSaltarAListo(p.estado)"
+                      type="button"
+                      class="fast-ready-btn"
+                      [disabled]="updatingStatusId() === p.id"
+                      matTooltip="Saltar etapas intermedias y marcar Listo"
+                      (click)="marcarListoDirecto(p, $event)">
+                <mat-icon>done_all</mat-icon>
+                <span>Listo</span>
+              </button>
+
+              <button
+                type="button"
+                (click)="notificarWhatsapp(p, $event)"
+                [disabled]="sendingWaId() === p.id"
+                class="whatsapp-button">
+                <mat-icon>chat</mat-icon>
+                <span>WA</span>
               </button>
             </div>
 
@@ -86,34 +137,39 @@
         <div class="orders-list">
           <mat-card *ngFor="let p of pedidos()" class="order-item history-item" (click)="goToDetail(p)">
             <div class="order-header">
-              <mat-icon>store</mat-icon> {{ p.sucursal_nombre || 'Sucursal' }}
-              <button (click)="deletePedido(p, $event)" class="delete-button" matTooltip="Eliminar Pedido">
-                <mat-icon>delete</mat-icon>
-              </button>
+              <mat-icon>store</mat-icon>
+              <span>{{ p.sucursal_nombre || 'Sucursal' }}</span>
+              <div class="header-right-btns">
+                <button (click)="abrirTicket(p, $event)" class="ticket-button" matTooltip="Ticket y Código QR">
+                  <mat-icon>qr_code_2</mat-icon>
+                </button>
+                <button (click)="deletePedido(p, $event)" class="delete-button" matTooltip="Eliminar Pedido">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
             </div>
 
-             <div class="order-strip">
-                <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
-               <div class="order-content">
-                 <div class="order-main">
-                   <span class="customer">{{ p.cliente_nombre }}</span>
-                   <span class="folio crossed">{{ p.folio }}</span>
-                 </div>
-                 <div class="order-meta">
-                    <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
-                   <span class="date">{{ p.fecha_entregado | date:'shortDate' }}</span>
-                 </div>
-                 <div class="order-icon">
-                   <mat-icon class="arrow">chevron_right</mat-icon>
-                 </div>
-               </div>
-             </div>
+            <div class="order-strip">
+              <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
+              <div class="order-content">
+                <div class="order-main">
+                  <span class="customer">{{ p.cliente_nombre }}</span>
+                  <span class="folio crossed">{{ p.folio }}</span>
+                </div>
+                <div class="order-meta">
+                  <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
+                  <span class="date">{{ p.fecha_entregado | date:'shortDate' }}</span>
+                </div>
+                <div class="order-icon">
+                  <mat-icon class="arrow">chevron_right</mat-icon>
+                </div>
+              </div>
+            </div>
           </mat-card>
         </div>
       </ng-template>
     </mat-tab>
 
   </mat-tab-group>
-
 
 </div>
