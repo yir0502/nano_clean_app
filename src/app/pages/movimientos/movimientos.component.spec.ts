@@ -1043,4 +1043,54 @@ describe('MovimientosComponent', () => {
       'Sin movimientos en este rango'
     );
   });
+
+  it('mantiene totales y conteos globales del periodo al filtrar por ingresos o egresos', async () => {
+    await setupComponent({
+      initialResponse: {
+        data: [makeMovimiento({ id: 'm-all-1', tipo: 'ingreso', monto: 200 })],
+        count: 1350,
+        totales: {
+          ingresos: 320000,
+          egresos: 91521,
+          balance: 228479,
+          total_movimientos: 1350,
+          ingresos_count: 1252,
+          egresos_count: 98,
+        },
+      },
+    });
+
+    movimientosApiStub.listarPaginados.calls.reset();
+    movimientosApiStub.listarPaginados.and.resolveTo({
+      data: [makeMovimiento({ id: 'm-eg-1', tipo: 'egreso', monto: 100 })],
+      count: 98,
+      totales: {
+        ingresos: 320000,
+        egresos: 91521,
+        balance: 228479,
+        total_movimientos: 1350,
+        ingresos_count: 1252,
+        egresos_count: 98,
+      },
+    });
+
+    const host = fixture.nativeElement as HTMLElement;
+    const egresoCard = host.querySelector('.kpi-card--egreso') as HTMLButtonElement;
+    egresoCard.click();
+    await flushAsync();
+
+    const balanceCard = host.querySelector('.kpi-card--hero') as HTMLElement;
+    const ingresoCard = host.querySelector('.kpi-card--ingreso') as HTMLElement;
+    const egresoCardAfter = host.querySelector('.kpi-card--egreso') as HTMLElement;
+
+    expect(balanceCard.querySelector('.kpi-value')?.textContent).toContain('228,479');
+    expect(balanceCard.querySelector('.kpi-subtitle')?.textContent).toContain(
+      '1350 movimientos en el periodo'
+    );
+    expect(ingresoCard.querySelector('.kpi-value')?.textContent).toContain('320,000');
+    expect(ingresoCard.querySelector('.kpi-subtitle')?.textContent).toContain('1252 ingresos');
+    expect(egresoCardAfter.querySelector('.kpi-value')?.textContent).toContain('91,521');
+    expect(egresoCardAfter.querySelector('.kpi-subtitle')?.textContent).toContain('98 egresos');
+    expect(host.querySelector('.pg-cnt')?.textContent).toContain('Mostrando 1-20 de 98');
+  });
 });

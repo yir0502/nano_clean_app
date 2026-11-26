@@ -113,6 +113,9 @@ export interface MovimientosTotales {
   ingresos: number;
   egresos: number;
   balance: number;
+  total_movimientos?: number;
+  ingresos_count?: number;
+  egresos_count?: number;
 }
 
 export interface MovimientosPaginadosResponse {

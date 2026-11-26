@@ -181,7 +181,7 @@
         </span>
       </div>
       <div class="kpi-value">{{ totalBalance() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
-      <div class="kpi-subtitle">{{ totalCount() }} movimientos en el periodo</div>
+      <div class="kpi-subtitle">{{ totalMovimientosPeriodo() }} movimientos en el periodo</div>
     </button>
 
     <button
@@ -197,7 +197,7 @@
         </span>
       </div>
       <div class="kpi-value">{{ totalIngresos() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
-      <div class="kpi-subtitle">Filtrar ingresos</div>
+      <div class="kpi-subtitle">{{ ingresosCount() !== null ? ingresosCount() + ' ingresos · Filtrar' : 'Filtrar ingresos' }}</div>
     </button>
 
     <button
@@ -213,7 +213,7 @@
         </span>
       </div>
       <div class="kpi-value">{{ totalEgresos() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
-      <div class="kpi-subtitle">Filtrar egresos</div>
+      <div class="kpi-subtitle">{{ egresosCount() !== null ? egresosCount() + ' egresos · Filtrar' : 'Filtrar egresos' }}</div>
     </button>
   </section>
 
