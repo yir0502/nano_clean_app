@@ -1,9 +1,10 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MetodoPago } from '../../../core/models';
+import { ApiClientService } from '../../../core/api-client.service';
+import { Categoria, MetodoPago } from '../../../core/models';
 
 export interface EntregaDialogData {
   nombreCliente: string;
@@ -15,6 +16,7 @@ export interface EntregaDialogData {
 export interface EntregaDialogResponse {
   accion: 'cobrar' | 'deuda';
   metodoPago?: MetodoPago;
+  categoriaIngresoId?: string | null;
 }
 
 @Component({
@@ -52,6 +54,28 @@ export interface EntregaDialogResponse {
               <mat-icon>{{ m.icon }}</mat-icon>
               <span>{{ m.label }}</span>
             </button>
+          </div>
+
+          <div class="categoria-inline-row" *ngIf="categoriasIngreso().length > 0">
+            <button
+              type="button"
+              class="categoria-pill-btn"
+              (click)="mostrarCategorias.set(!mostrarCategorias())">
+              <mat-icon>sell</mat-icon>
+              <span>Categoría: <strong>{{ categoriaSeleccionadaNombre() }}</strong></span>
+              <span class="cambiar-link">{{ mostrarCategorias() ? 'Ocultar' : 'Cambiar' }}</span>
+            </button>
+
+            <div class="categoria-chips-panel" *ngIf="mostrarCategorias()">
+              <button
+                type="button"
+                *ngFor="let c of categoriasIngreso()"
+                class="categoria-chip"
+                [class.active]="categoriaSeleccionada() === c.id"
+                (click)="seleccionarCategoria(c.id)">
+                {{ c.nombre }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -204,13 +228,81 @@ export interface EntregaDialogResponse {
       justify-content: center;
       gap: 8px;
     }
+
+    .categoria-inline-row {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .categoria-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px dashed #cbd5e1;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .categoria-pill-btn mat-icon {
+      font-size: 15px;
+      width: 15px;
+      height: 15px;
+    }
+
+    .categoria-pill-btn strong {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    .categoria-pill-btn .cambiar-link {
+      color: #0284c7;
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    .categoria-chips-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .categoria-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .categoria-chip.active {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+    }
   `],
 })
-export class EntregaDialogComponent {
+export class EntregaDialogComponent implements OnInit {
   data = inject<EntregaDialogData>(MAT_DIALOG_DATA);
   private dialogRef = inject(MatDialogRef<EntregaDialogComponent, EntregaDialogResponse>);
+  private api = inject(ApiClientService);
 
   metodoSeleccionado = signal<MetodoPago>('efectivo');
+  categoriasIngreso = signal<Categoria[]>([]);
+  categoriaSeleccionada = signal<string | null>(null);
+  mostrarCategorias = signal<boolean>(false);
+  categoriaSeleccionadaNombre = computed(
+    () => this.categoriasIngreso().find((c) => c.id === this.categoriaSeleccionada())?.nombre || 'Automática'
+  );
 
   readonly metodos: { id: MetodoPago; label: string; icon: string }[] = [
     { id: 'efectivo', label: 'Efectivo', icon: 'attach_money' },
@@ -219,10 +311,34 @@ export class EntregaDialogComponent {
     { id: 'mercado_pago', label: 'Mercado Pago', icon: 'qr_code_scanner' },
   ];
 
+  ngOnInit(): void {
+    void this.cargarCategorias();
+  }
+
+  private async cargarCategorias(): Promise<void> {
+    try {
+      const cats = await this.api.listCategorias('ingreso');
+      const activas = cats.filter((c) => c.activo !== false);
+      const lista = activas.length > 0 ? activas : cats;
+      this.categoriasIngreso.set(lista);
+      if (!this.categoriaSeleccionada() && lista.length > 0) {
+        this.categoriaSeleccionada.set(lista.length > 1 ? lista[1].id : lista[0].id);
+      }
+    } catch {
+      // El backend asigna la categoria por defecto si falla la consulta
+    }
+  }
+
+  seleccionarCategoria(id: string): void {
+    this.categoriaSeleccionada.set(id);
+    this.mostrarCategorias.set(false);
+  }
+
   cobrarYEntregar(): void {
     this.dialogRef.close({
       accion: 'cobrar',
       metodoPago: this.metodoSeleccionado(),
+      categoriaIngresoId: this.categoriaSeleccionada() || undefined,
     });
   }
 
