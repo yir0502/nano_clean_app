@@ -21,7 +21,15 @@ import { MatChipsModule } from '@angular/material/chips';
 import { A11yModule } from '@angular/cdk/a11y';
 
 import { ApiClientService } from '../../../core/api-client.service';
-import { Cliente, MetodoPago, Pedido, PedidoCreatePayload, PedidoUpdatePayload, Sucursal } from '../../../core/models';
+import {
+  Categoria,
+  Cliente,
+  MetodoPago,
+  Pedido,
+  PedidoCreatePayload,
+  PedidoUpdatePayload,
+  Sucursal,
+} from '../../../core/models';
 import { TicketPrintService } from '../../../core/ticket-print.service';
 import { PedidoActionsService } from '../../../core/pedido-actions.service';
 import { EntregaDialogComponent, EntregaDialogResponse } from '../dialogs/entrega-dialog.component';
@@ -80,6 +88,12 @@ export class PedidoFormComponent implements OnInit {
   pedidoCargado = signal<Pedido | null>(null);
 
   sucursales = signal<Sucursal[]>([]);
+  categoriasIngreso = signal<Categoria[]>([]);
+  categoriaIngresoId = signal<string | null>(null);
+  mostrarSelectorCategoria = signal<boolean>(false);
+  categoriaIngresoNombre = computed(
+    () => this.categoriasIngreso().find((c) => c.id === this.categoriaIngresoId())?.nombre || 'Automática'
+  );
   clientesFiltrados = signal<Cliente[]>([]);
   fotos = signal<FotoPreview[]>([]);
   selectedCliente = signal<Cliente | null>(null);
@@ -225,7 +239,7 @@ export class PedidoFormComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await this.loadSucursales();
+    await Promise.all([this.loadSucursales(), this.loadCategoriasIngreso()]);
 
     this.form.get('sucursal_id')?.valueChanges.subscribe((val) => {
       if (val) localStorage.setItem('nc_last_sucursal_id', val);
@@ -467,6 +481,26 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
+  async loadCategoriasIngreso(): Promise<void> {
+    try {
+      const cats = await this.api.listCategorias('ingreso');
+      const activas = cats.filter((c) => c.activo !== false);
+      const lista = activas.length > 0 ? activas : cats;
+      this.categoriasIngreso.set(lista);
+
+      if (!this.categoriaIngresoId() && lista.length > 0) {
+        this.categoriaIngresoId.set(lista.length > 1 ? lista[1].id : lista[0].id);
+      }
+    } catch {
+      // El backend aplica categoria por defecto si falla la precarga
+    }
+  }
+
+  seleccionarCategoriaIngreso(id: string): void {
+    this.categoriaIngresoId.set(id);
+    this.mostrarSelectorCategoria.set(false);
+  }
+
   async loadPedido(id: string): Promise<void> {
     this.loading.set(true);
     try {
@@ -582,6 +616,7 @@ export class PedidoFormComponent implements OnInit {
 
     let montoCobradoEntrega = 0;
     let metodoCobroEntrega: MetodoPago | undefined;
+    let categoriaCobroEntrega: string | null | undefined;
 
     if (this.isEdit() && esEntregado && this.estadoOriginal() !== 'entregado' && saldoPend > 0) {
       const dialogRef = this.dialog.open(EntregaDialogComponent, {
@@ -602,6 +637,7 @@ export class PedidoFormComponent implements OnInit {
       if (decision.accion === 'cobrar') {
         montoCobradoEntrega = saldoPend;
         metodoCobroEntrega = decision.metodoPago || 'efectivo';
+        categoriaCobroEntrega = decision.categoriaIngresoId;
       }
     }
 
@@ -639,6 +675,9 @@ export class PedidoFormComponent implements OnInit {
         if (montoCobradoEntrega > 0) {
           updatePayload.monto_cobrado = montoCobradoEntrega;
           updatePayload.metodo_pago = metodoCobroEntrega;
+          if (categoriaCobroEntrega) {
+            updatePayload.categoria_ingreso_id = categoriaCobroEntrega;
+          }
         }
         resultadoPedido = await this.api.updatePedido(this.pedidoId()!, updatePayload);
       } else {
@@ -651,6 +690,7 @@ export class PedidoFormComponent implements OnInit {
           fecha_entrega_estimada: fechaEntregaIso,
           registrar_pago: anticipo > 0,
           metodo_pago: anticipo > 0 ? this.metodoPago() : null,
+          ...(anticipo > 0 && this.categoriaIngresoId() ? { categoria_ingreso_id: this.categoriaIngresoId() } : {}),
         };
         resultadoPedido = await this.api.createPedido(createPayload);
       }

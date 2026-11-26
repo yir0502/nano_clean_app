@@ -245,6 +245,27 @@
                 {{ m.label }}
               </button>
             </div>
+
+            <div class="categoria-inline-row" *ngIf="categoriasIngreso().length > 0">
+              <button
+                type="button"
+                class="categoria-pill-btn"
+                (click)="mostrarSelectorCategoria.set(!mostrarSelectorCategoria())">
+                <mat-icon class="chip-mini-icon">sell</mat-icon>
+                <span>Categoría: <strong>{{ categoriaIngresoNombre() }}</strong></span>
+                <span class="cambiar-link">{{ mostrarSelectorCategoria() ? 'Ocultar' : 'Cambiar' }}</span>
+              </button>
+              <div class="preset-chips categoria-chips-panel" *ngIf="mostrarSelectorCategoria()">
+                <button
+                  type="button"
+                  class="preset-chip"
+                  *ngFor="let c of categoriasIngreso()"
+                  [class.active]="categoriaIngresoId() === c.id"
+                  (click)="seleccionarCategoriaIngreso(c.id)">
+                  {{ c.nombre }}
+                </button>
+              </div>
+            </div>
           </div>
 
           <div class="anticipo-resumen-badge"

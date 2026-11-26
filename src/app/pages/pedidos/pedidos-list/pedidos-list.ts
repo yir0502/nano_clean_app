@@ -79,6 +79,7 @@ export class PedidosListComponent implements OnInit, OnDestroy {
       });
 
     void this.reload();
+    void this.api.listCategorias('ingreso').catch(() => {});
   }
 
   ngOnDestroy(): void {
@@ -309,6 +310,9 @@ export class PedidosListComponent implements OnInit, OnDestroy {
       if (decision.accion === 'cobrar') {
         payload.monto_cobrado = saldoPendiente;
         payload.metodo_pago = decision.metodoPago || 'efectivo';
+        if (decision.categoriaIngresoId) {
+          payload.categoria_ingreso_id = decision.categoriaIngresoId;
+        }
       }
     }
 
