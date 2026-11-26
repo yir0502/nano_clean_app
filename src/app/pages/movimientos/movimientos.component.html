@@ -1,141 +1,451 @@
-<div class="page-container">
+<div class="page-container movimientos-page">
   <div class="page-header">
     <div class="title-group">
       <h2><mat-icon>receipt_long</mat-icon> Movimientos Financieros</h2>
-      <p class="subtitle">Aquí puedes ver todos tus movimientos usa los filtros para un mejor control.</p>
+      <p class="subtitle">Consulta ingresos, egresos y balance financiero por periodo y sucursal.</p>
     </div>
   </div>
-  <div class="movs-grid">
-  <!-- Filtros -->
-  <section class="filters">
-    <div class="row">
-      <mat-button-toggle-group class="tipo-toggle" [value]="tipo()" (change)="onTipoChange($event.value)" exclusive>
-        <mat-button-toggle value="todos">Todos</mat-button-toggle>
-        <mat-button-toggle value="ingreso">Ingresos</mat-button-toggle>
-        <mat-button-toggle value="egreso">Egresos</mat-button-toggle>
-      </mat-button-toggle-group>
 
-      <span class="spacer"></span>
+  <section class="filter-toolbar" aria-label="Filtros de movimientos">
+    <div class="tb-l1">
+      <div class="search-box">
+        <mat-icon class="search-icon" aria-hidden="true">search</mat-icon>
+        <input
+          type="search"
+          class="search-input"
+          [value]="qInput()"
+          (input)="onQInputEvent($event)"
+          (keydown.enter)="onSearchSubmit()"
+          placeholder="Buscar categoría, nota, método..."
+          aria-label="Buscar movimientos"
+        />
+        <button
+          *ngIf="qInput()"
+          type="button"
+          class="search-clear-btn"
+          (click)="limpiarBusqueda()"
+          aria-label="Limpiar búsqueda">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
 
-      <!-- Presets -->
-      <div class="presets">
-        <button mat-stroked-button (click)="setPreset('hoy')">Hoy</button>
-        <button mat-stroked-button (click)="setPreset('7d')">7d</button>
-        <button mat-stroked-button (click)="setPreset('30d')">30d</button>
-        <button mat-stroked-button (click)="setPreset('mes')">Mes</button>
+      <div class="seg-group" role="group" aria-label="Tipo de movimiento">
+        <button
+          *ngFor="let t of tiposFiltro"
+          type="button"
+          class="seg-btn"
+          [class.active]="tipo() === t.id"
+          [attr.aria-pressed]="tipo() === t.id"
+          (click)="onTipoChange(t.id)">
+          {{ t.label }}
+        </button>
+      </div>
+
+      <div class="presets-row">
+        <div class="presets-group" role="group" aria-label="Rango rápido de fechas">
+          <button
+            *ngFor="let p of presets"
+            type="button"
+            class="preset-btn"
+            [class.active]="presetActivo() === p.id"
+            [attr.aria-pressed]="presetActivo() === p.id"
+            (click)="setPreset(p.id)">
+            {{ p.label }}
+          </button>
+          <span *ngIf="presetActivo() === 'personalizado'" class="custom-pill">
+            Personalizado
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="flt-btn"
+          [class.active]="filtrosAvanzadosAbiertos() || filtrosAvanzadosCount() > 0"
+          [attr.aria-expanded]="filtrosAvanzadosAbiertos()"
+          aria-controls="movimientos-filtros-avanzados"
+          (click)="toggleFiltrosAvanzados()">
+          <mat-icon aria-hidden="true">tune</mat-icon>
+          <span>Filtros</span>
+          <span *ngIf="filtrosAvanzadosCount() > 0" class="flt-badge">
+            {{ filtrosAvanzadosCount() }}
+          </span>
+        </button>
       </div>
     </div>
 
-    <!-- Rango -->
-    <div class="row">
-      <mat-form-field class="range-field" appearance="fill">
+    <div id="movimientos-filtros-avanzados" class="tb-l2" *ngIf="filtrosAvanzadosAbiertos()">
+      <mat-form-field class="adv-field" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Rango de fechas</mat-label>
-        <mat-date-range-input [rangePicker]="picker" [comparisonStart]="desde()" [comparisonEnd]="hasta()">
-          <input matStartDate [value]="desde()" (dateChange)="onStartDateChange($event.value)" placeholder="Desde">
-          <input matEndDate [value]="hasta()" (dateChange)="onEndDateChange($event.value)" placeholder="Hasta">
+        <mat-date-range-input [rangePicker]="picker">
+          <input
+            matStartDate
+            [value]="desde()"
+            (dateChange)="onStartDateChange($event.value, picker.opened)"
+            placeholder="Desde"
+            aria-label="Fecha inicial"
+          />
+          <input
+            matEndDate
+            [value]="hasta()"
+            (dateChange)="onEndDateChange($event.value, picker.opened)"
+            placeholder="Hasta"
+            aria-label="Fecha final"
+          />
         </mat-date-range-input>
-        <button mat-icon-button matSuffix (click)="picker.open()" type="button" aria-label="Abrir calendario">
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="picker.open()"
+          aria-label="Abrir calendario">
           <mat-icon>event</mat-icon>
         </button>
-        <mat-date-range-picker #picker [touchUi]="true"></mat-date-range-picker>
+        <mat-date-range-picker
+          #picker
+          [touchUi]="true"
+          (closed)="onDateRangeClosed()">
+        </mat-date-range-picker>
       </mat-form-field>
 
-      <!-- Categoría -->
-      <mat-form-field appearance="fill">
+      <mat-form-field class="adv-field" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Categoría</mat-label>
         <mat-select [value]="categoriaId()" (selectionChange)="onCategoriaChange($event.value)">
           <mat-option value="">Todas</mat-option>
           <mat-option *ngFor="let c of catsFiltradas()" [value]="c.id">{{ c.nombre }}</mat-option>
         </mat-select>
       </mat-form-field>
-      <!-- Sucursal -->
-      <mat-form-field appearance="fill">
+
+      <mat-form-field class="adv-field" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Sucursal</mat-label>
-        <mat-select [value]="sucursalId()" (selectionChange)="sucursalId.set($event.value); reload()">
+        <mat-select [value]="sucursalId()" (selectionChange)="onSucursalChange($event.value)">
           <mat-option value="">Todas</mat-option>
           <mat-option *ngFor="let s of sucursales()" [value]="s.id">{{ s.nombre }}</mat-option>
         </mat-select>
       </mat-form-field>
-      <!-- Método -->
-      <mat-form-field appearance="fill">
+
+      <mat-form-field class="adv-field" appearance="outline" subscriptSizing="dynamic">
         <mat-label>Método de pago</mat-label>
         <mat-select [value]="metodoPago()" (selectionChange)="onMetodoChange($event.value)">
           <mat-option *ngFor="let m of metodos" [value]="m.id">{{ m.label }}</mat-option>
         </mat-select>
       </mat-form-field>
 
-      <!-- Búsqueda -->
-      <mat-form-field appearance="fill" class="full">
-        <mat-label>Buscar</mat-label>
-        <input matInput type="search" (input)="onQInput($any($event.target).value)"
-          placeholder="Categoría, nota, método…">
+      <button
+        type="button"
+        mat-stroked-button
+        class="clr-btn"
+        (click)="limpiarFiltros()">
+        <mat-icon>filter_alt_off</mat-icon>
+        <span>Limpiar filtros</span>
+      </button>
+    </div>
 
-        <button mat-icon-button matSuffix disabled><mat-icon>search</mat-icon></button>
-      </mat-form-field>
+    <div
+      class="chips-bar"
+      *ngIf="!filtrosAvanzadosAbiertos() && filtrosAvanzadosChips().length > 0"
+      aria-label="Filtros avanzados activos">
+      <span class="active-chip" *ngFor="let chip of filtrosAvanzadosChips()">
+        <span class="chip-label">{{ chip.label }}:</span>
+        <span class="chip-value">{{ chip.value }}</span>
+        <button
+          type="button"
+          class="chip-remove-btn"
+          (click)="removerChip(chip.key)"
+          [attr.aria-label]="'Quitar filtro ' + chip.label">
+          <mat-icon>close</mat-icon>
+        </button>
+      </span>
     </div>
   </section>
 
-  <!-- Totales del filtro -->
-  <section class="kpis" *ngIf="!loading()">
-    <mat-card class="kpi">
-      <div class="kpi__label">Ingresos</div>
-      <div class="kpi__value">{{ totalIngresos() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </mat-card>
-    <mat-card class="kpi">
-      <div class="kpi__label">Egresos</div>
-      <div class="kpi__value">{{ totalEgresos() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </mat-card>
-    <mat-card class="kpi kpi--balance" [class.negativo]="totalBalance()<0">
-      <div class="kpi__label">Balance</div>
-      <div class="kpi__value">{{ totalBalance() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </mat-card>
+  <section class="kpis-grid" *ngIf="loading()" aria-label="Cargando totales">
+    <div class="kpi-sk kpi-sk--hero"></div>
+    <div class="kpi-sk"></div>
+    <div class="kpi-sk"></div>
   </section>
 
-  <!-- Lista -->
-  <section class="list">
-    <div class="empty" *ngIf="!loading() && items().length===0">Sin movimientos en este rango.</div>
+  <section class="kpis-grid" *ngIf="!loading()" aria-label="Resumen financiero del periodo">
+    <button
+      type="button"
+      class="kpi-card kpi-card--hero"
+      [class.negativo]="totalBalance() < 0"
+      [class.kpi-active]="tipo() === 'todos'"
+      [attr.aria-pressed]="tipo() === 'todos'"
+      (click)="onKpiClick('todos')">
+      <mat-icon class="kpi-watermark" aria-hidden="true">
+        {{ totalBalance() >= 0 ? 'account_balance_wallet' : 'trending_down' }}
+      </mat-icon>
+      <div class="kpi-top">
+        <span class="kpi-label">Balance</span>
+        <span class="kpi-icon-badge">
+          <mat-icon aria-hidden="true">{{ totalBalance() >= 0 ? 'account_balance' : 'warning_amber' }}</mat-icon>
+        </span>
+      </div>
+      <div class="kpi-value">{{ totalBalance() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
+      <div class="kpi-subtitle">{{ totalCount() }} movimientos en el periodo</div>
+    </button>
 
-    <mat-list *ngIf="items().length">
-      <mat-list-item *ngFor="let m of items()" [class.ingreso]="m.tipo==='ingreso'" [class.egreso]="m.tipo==='egreso'">
-        <mat-icon matListItemIcon [class.ingreso]="m.tipo==='ingreso'" [class.egreso]="m.tipo==='egreso'">
-          {{ iconoTipo(m) }}
-        </mat-icon>
+    <button
+      type="button"
+      class="kpi-card kpi-card--ingreso"
+      [class.kpi-active]="tipo() === 'ingreso'"
+      [attr.aria-pressed]="tipo() === 'ingreso'"
+      (click)="onKpiClick('ingreso')">
+      <div class="kpi-top">
+        <span class="kpi-label">Ingresos</span>
+        <span class="kpi-icon-badge">
+          <mat-icon aria-hidden="true">trending_up</mat-icon>
+        </span>
+      </div>
+      <div class="kpi-value">{{ totalIngresos() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
+      <div class="kpi-subtitle">Filtrar ingresos</div>
+    </button>
 
-        <div matListItemTitle>{{ catNombre(m) }} </div>
+    <button
+      type="button"
+      class="kpi-card kpi-card--egreso"
+      [class.kpi-active]="tipo() === 'egreso'"
+      [attr.aria-pressed]="tipo() === 'egreso'"
+      (click)="onKpiClick('egreso')">
+      <div class="kpi-top">
+        <span class="kpi-label">Egresos</span>
+        <span class="kpi-icon-badge">
+          <mat-icon aria-hidden="true">trending_down</mat-icon>
+        </span>
+      </div>
+      <div class="kpi-value">{{ totalEgresos() | currency:'MXN':'symbol-narrow':'1.0-2' }}</div>
+      <div class="kpi-subtitle">Filtrar egresos</div>
+    </button>
+  </section>
 
-        <div matListItemLine class="muted">
-          {{ m.sucursal_nombre || 'Sin sucursal' }} - {{ m.fecha | date:'dd MMM, y' }}
-        </div>
-        
-        <div matListItemLine class="note" *ngIf="m.nota">{{ m.nota }}</div>
-        
-        <div matListItemLine class="amount" [class.neg]="m.tipo==='egreso'">
-          {{ ((m.tipo==='egreso' ? -1 : 1) * (+m.monto || 0)) | currency:'MXN':'symbol-narrow':'1.0-0' }}
-        </div>
+  <section class="state-card state-card--error" *ngIf="!loading() && error()" role="alert">
+    <mat-icon aria-hidden="true">cloud_off</mat-icon>
+    <div class="state-card__body">
+      <h3>No se pudieron cargar los movimientos</h3>
+      <p>{{ error() }}</p>
+    </div>
+    <button type="button" mat-stroked-button (click)="reload()">
+      <mat-icon>refresh</mat-icon>
+      <span>Reintentar</span>
+    </button>
+  </section>
 
-        <div matListItemMeta class="action-buttons">
+  <section *ngIf="loading()" aria-label="Cargando listado de movimientos">
+    <div class="mob-sk">
+      <div class="mov-sk" *ngFor="let row of skeletonRows"></div>
+    </div>
+    <div class="desk-sk results-surface">
+      <div class="tbl-sk-row" *ngFor="let row of skeletonRows">
+        <span class="sk-line"></span>
+        <span class="sk-line"></span>
+        <span class="sk-line"></span>
+        <span class="sk-line"></span>
+        <span class="sk-line"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="state-card" *ngIf="!loading() && !error() && items().length === 0">
+    <mat-icon aria-hidden="true">receipt_long</mat-icon>
+    <div class="state-card__body">
+      <h3>Sin movimientos en este rango</h3>
+      <p>Ajusta las fechas, el tipo o los filtros de búsqueda para consultar otros registros.</p>
+    </div>
+    <button
+      *ngIf="filtrosAvanzadosCount() > 0 || q() || tipo() !== 'todos'"
+      type="button"
+      mat-stroked-button
+      (click)="limpiarFiltros()">
+      <mat-icon>filter_alt_off</mat-icon>
+      <span>Limpiar filtros</span>
+    </button>
+  </section>
+
+  <section class="results-surface" *ngIf="!loading() && !error() && items().length > 0">
+    <div class="mob-list">
+      <article
+        *ngFor="let m of items(); trackBy: trackByMovimientoId"
+        class="mov-card"
+        [class.egreso]="m.tipo === 'egreso'">
+        <div class="mov-card__body">
+          <div class="mov-card__top">
+            <span class="mov-card__cat">{{ catNombre(m) }}</span>
+            <span class="mov-card__amount" [class.neg]="m.tipo === 'egreso'">
+              {{ m.tipo === 'egreso' ? '-' : '+' }}{{ montoAbs(m) | currency:'MXN':'symbol-narrow':'1.0-2' }}
+            </span>
+          </div>
+
+          <div class="mov-card__meta">
+            <span class="meta-item">
+              <mat-icon aria-hidden="true">store</mat-icon>
+              <span>{{ m.sucursal_nombre || 'Sin sucursal' }}</span>
+            </span>
+            <span class="meta-item">
+              <mat-icon aria-hidden="true">calendar_today</mat-icon>
+              <span>{{ m.fecha | date:'dd MMM, y' }}</span>
+            </span>
+            <span class="method-pill">{{ formatMetodo(m.metodo_pago) }}</span>
+            <a
+              *ngIf="m.pedido_id"
+              class="pedido-chip"
+              [routerLink]="['/pedidos', m.pedido_id]"
+              (click)="$event.stopPropagation()"
+              matTooltip="Ver pedido asociado">
+              <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+              <span>Pedido</span>
+            </a>
+          </div>
+
           <button
-            mat-icon-button
-            color="primary"
-            matTooltip="Editar"
-            [routerLink]="['/movimientos', m.id]"
-            (click)="$event.stopPropagation()">
-            <mat-icon>edit</mat-icon>
+            *ngIf="m.nota"
+            type="button"
+            class="mov-card__note"
+            [class.expanded]="isNotaExpandida(m.id)"
+            [attr.aria-expanded]="isNotaExpandida(m.id)"
+            (click)="toggleNota(m.id, $event)">
+            {{ m.nota }}
           </button>
+        </div>
 
+        <div class="mov-card__actions">
+          <a
+            class="act-btn act-btn--edit"
+            [routerLink]="['/movimientos', m.id]"
+            (click)="$event.stopPropagation()"
+            matTooltip="Editar"
+            aria-label="Editar movimiento">
+            <mat-icon>edit</mat-icon>
+          </a>
           <button
-            mat-icon-button
-            color="warn"
+            type="button"
+            class="act-btn act-btn--del"
+            (click)="onDelete(m, $event)"
             matTooltip="Eliminar"
-            (click)="onDelete(m, $event)">
+            aria-label="Eliminar movimiento">
             <mat-icon>delete</mat-icon>
           </button>
         </div>
+      </article>
+    </div>
 
-      </mat-list-item>
-    </mat-list>
+    <div class="tbl-wrap">
+      <table class="mov-table">
+        <thead>
+          <tr>
+            <th>Categoría / Nota</th>
+            <th>Sucursal</th>
+            <th>Método</th>
+            <th>Fecha</th>
+            <th class="col-right">Monto</th>
+            <th class="col-right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let m of items(); trackBy: trackByMovimientoId">
+            <td>
+              <div class="tbl-cat-row">
+                <span class="tipo-dot" [class.egreso]="m.tipo === 'egreso'"></span>
+                <span class="tbl-cat-name">{{ catNombre(m) }}</span>
+                <a
+                  *ngIf="m.pedido_id"
+                  class="pedido-chip"
+                  [routerLink]="['/pedidos', m.pedido_id]"
+                  matTooltip="Ver pedido asociado">
+                  <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+                  <span>Pedido</span>
+                </a>
+              </div>
+              <p class="tbl-note" *ngIf="m.nota">{{ m.nota }}</p>
+            </td>
+            <td class="col-suc">{{ m.sucursal_nombre || 'Sin sucursal' }}</td>
+            <td>
+              <span class="method-pill">{{ formatMetodo(m.metodo_pago) }}</span>
+            </td>
+            <td class="col-fec">{{ m.fecha | date:'dd MMM, y' }}</td>
+            <td class="col-right">
+              <span class="tbl-amount" [class.neg]="m.tipo === 'egreso'">
+                {{ m.tipo === 'egreso' ? '-' : '+' }}{{ montoAbs(m) | currency:'MXN':'symbol-narrow':'1.0-2' }}
+              </span>
+            </td>
+            <td class="col-right">
+              <div class="tbl-actions">
+                <a
+                  *ngIf="m.pedido_id"
+                  mat-icon-button
+                  class="tbl-act-ped"
+                  [routerLink]="['/pedidos', m.pedido_id]"
+                  matTooltip="Ver pedido"
+                  aria-label="Ver pedido asociado">
+                  <mat-icon>local_laundry_service</mat-icon>
+                </a>
+                <a
+                  mat-icon-button
+                  color="primary"
+                  [routerLink]="['/movimientos', m.id]"
+                  matTooltip="Editar"
+                  aria-label="Editar movimiento">
+                  <mat-icon>edit</mat-icon>
+                </a>
+                <button
+                  type="button"
+                  mat-icon-button
+                  color="warn"
+                  (click)="onDelete(m, $event)"
+                  matTooltip="Eliminar"
+                  aria-label="Eliminar movimiento">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <nav class="pg-bar" aria-label="Paginación de movimientos">
+      <div class="pg-sum">
+        <span class="pg-cnt">
+          Mostrando {{ paginacionMeta().from }}-{{ paginacionMeta().to }} de {{ totalCount() }}
+        </span>
+        <label class="rows-per-page">
+          <span>Filas por página:</span>
+          <select
+            class="rows-select"
+            [value]="pageSize()"
+            (change)="onPageSizeSelect($event)"
+            aria-label="Filas por página">
+            <option *ngFor="let opt of pageSizeOptions" [value]="opt" [selected]="opt === pageSize()">
+              {{ opt }}
+            </option>
+          </select>
+        </label>
+      </div>
+
+      <div class="pg-nav">
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="!paginacionMeta().canPrev"
+          (click)="onPageChange(page() - 1)"
+          aria-label="Página anterior">
+          <mat-icon aria-hidden="true">chevron_left</mat-icon>
+          <span>Anterior</span>
+        </button>
+
+        <span class="page-indicator">
+          Pág. {{ paginacionMeta().displayPage }} de {{ paginacionMeta().totalPages }}
+        </span>
+
+        <button
+          type="button"
+          class="page-btn"
+          [disabled]="!paginacionMeta().canNext"
+          (click)="onPageChange(page() + 1)"
+          aria-label="Página siguiente">
+          <span>Siguiente</span>
+          <mat-icon aria-hidden="true">chevron_right</mat-icon>
+        </button>
+      </div>
+    </nav>
   </section>
-
-
-  </div>
 </div>
