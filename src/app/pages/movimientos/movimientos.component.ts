@@ -124,6 +124,11 @@ export class MovimientosComponent implements OnInit {
   totalIngresos = computed<number>(() => this.totales().ingresos);
   totalEgresos = computed<number>(() => this.totales().egresos);
   totalBalance = computed<number>(() => this.totales().balance);
+  totalMovimientosPeriodo = computed<number>(
+    () => this.totales().total_movimientos ?? this.totalCount()
+  );
+  ingresosCount = computed<number | null>(() => this.totales().ingresos_count ?? null);
+  egresosCount = computed<number | null>(() => this.totales().egresos_count ?? null);
 
   presetActivo = computed<PresetDetectado>(() =>
     detectarPresetActivo(this.desde(), this.hasta())
@@ -263,11 +268,21 @@ export class MovimientosComponent implements OnInit {
 
       this.items.set(safeItems);
       this.totalCount.set(safeCount);
-      this.totales.set({
+      const nextTotales: MovimientosTotales = {
         ingresos: Number(safeTotales.ingresos) || 0,
         egresos: Number(safeTotales.egresos) || 0,
         balance: Number(safeTotales.balance) || 0,
-      });
+        ...(typeof safeTotales.total_movimientos === 'number'
+          ? { total_movimientos: safeTotales.total_movimientos }
+          : {}),
+        ...(typeof safeTotales.ingresos_count === 'number'
+          ? { ingresos_count: safeTotales.ingresos_count }
+          : {}),
+        ...(typeof safeTotales.egresos_count === 'number'
+          ? { egresos_count: safeTotales.egresos_count }
+          : {}),
+      };
+      this.totales.set(nextTotales);
     } catch (e: unknown) {
       if (seq !== this.fetchSeq) {
         return;
