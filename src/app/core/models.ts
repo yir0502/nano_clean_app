@@ -108,3 +108,29 @@ export interface PedidoEvidencia {
   nota?: string;
   created_at?: string;
 }
+
+export interface MovimientosTotales {
+  ingresos: number;
+  egresos: number;
+  balance: number;
+}
+
+export interface MovimientosPaginadosResponse {
+  data: Movimiento[];
+  count: number;
+  totales: MovimientosTotales;
+}
+
+export interface MovimientosQueryParams {
+  desde?: string;
+  hasta?: string;
+  tipo?: 'ingreso' | 'egreso';
+  categoria_id?: string;
+  sucursal_id?: string;
+  metodo_pago?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+  pedido_id?: string;
+  org_id?: string;
+}
