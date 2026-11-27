@@ -412,6 +412,66 @@ describe('MovimientosComponent', () => {
     );
   });
 
+  it('inicializa tipo=ingreso desde queryParams y solicita tipo ingreso al servidor', async () => {
+    await setupComponent({
+      initialQueryParams: { tipo: 'ingreso' },
+    });
+
+    const host = fixture.nativeElement as HTMLElement;
+    const ingresoCard = host.querySelector('.kpi-card--ingreso') as HTMLElement;
+
+    expect(component.tipo()).toBe('ingreso');
+    expect(ingresoCard.classList.contains('kpi-active')).toBeTrue();
+    expect(movimientosApiStub.listarPaginados).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({ tipo: 'ingreso', limit: 20, offset: 0 })
+    );
+  });
+
+  it('inicializa tipo=egreso desde queryParams y solicita tipo egreso al servidor', async () => {
+    await setupComponent({
+      initialQueryParams: { tipo: 'egreso' },
+    });
+
+    const host = fixture.nativeElement as HTMLElement;
+    const egresoCard = host.querySelector('.kpi-card--egreso') as HTMLElement;
+
+    expect(component.tipo()).toBe('egreso');
+    expect(egresoCard.classList.contains('kpi-active')).toBeTrue();
+    expect(movimientosApiStub.listarPaginados).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({ tipo: 'egreso', limit: 20, offset: 0 })
+    );
+  });
+
+  it('mantiene filtro por defecto todos cuando queryParams tipo es invalido', async () => {
+    await setupComponent({
+      initialQueryParams: { tipo: 'invalido' },
+    });
+
+    const host = fixture.nativeElement as HTMLElement;
+    const heroCard = host.querySelector('.kpi-card--hero') as HTMLElement;
+
+    expect(component.tipo()).toBe('todos');
+    expect(heroCard.classList.contains('kpi-active')).toBeTrue();
+    expect(movimientosApiStub.listarPaginados).toHaveBeenCalledTimes(1);
+    const params = movimientosApiStub.listarPaginados.calls.mostRecent().args[0];
+    expect(params.tipo).toBeUndefined();
+    expect(params.limit).toBe(20);
+    expect(params.offset).toBe(0);
+  });
+
+  it('aplica tipo=ingreso combinado con q=jabon desde queryParams sin romper q', async () => {
+    await setupComponent({
+      initialQueryParams: { tipo: 'ingreso', q: 'jabon' },
+    });
+
+    expect(component.tipo()).toBe('ingreso');
+    expect(component.qInput()).toBe('jabon');
+    expect(component.q()).toBe('jabon');
+    expect(movimientosApiStub.listarPaginados).toHaveBeenCalledOnceWith(
+      jasmine.objectContaining({ tipo: 'ingreso', q: 'jabon', limit: 20, offset: 0 })
+    );
+  });
+
   it('2. paginacion Siguiente/Anterior envia offset 20/0 y cambio de pageSize resetea offset a 0', async () => {
     const pageData: MovimientosPaginadosResponse = {
       data: [makeMovimiento({ id: 'mov-p1' })],

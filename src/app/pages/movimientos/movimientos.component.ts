@@ -214,6 +214,11 @@ export class MovimientosComponent implements OnInit {
       this.q.set(initialQ);
     }
 
+    const rawTipo = this.route.snapshot.queryParams['tipo'];
+    if (rawTipo === 'ingreso' || rawTipo === 'egreso') {
+      this.tipo.set(rawTipo);
+    }
+
     this.loading.set(true);
     this.error.set(null);
 

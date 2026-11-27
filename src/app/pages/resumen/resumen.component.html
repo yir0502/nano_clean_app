@@ -1,143 +1,544 @@
-<div class="page-container resumen-grid">
-  <div class="section-header">
-    <h2>Pedidos en Curso</h2>
-    <a routerLink="/pedidos" class="see-all" *ngIf="pedidosActivos().length > 0">Ver todos</a>
-  </div>
-  <section class="active-orders" *ngIf="!loading()">
+<div class="page-container resumen-page">
+  <ng-container *ngIf="loading()">
+    <section class="resumen-skeleton" aria-busy="true" aria-label="Cargando resumen">
+      <div class="sk-header"></div>
+      <div class="orders-grid">
+        <div class="sk-block sk-order"></div>
+        <div class="sk-block sk-order"></div>
+      </div>
 
-    <div class="empty-orders" *ngIf="pedidosActivos().length === 0">
-      <mat-icon>check_circle_outline</mat-icon>
-      <p>¡Todo limpio! No hay pedidos pendientes.</p>
-      <button mat-button color="primary" routerLink="/pedidos/nuevo">Recibir Pedido</button>
+      <div class="sk-header"></div>
+      <div class="kpis-grid">
+        <div class="sk-block sk-kpi sk-kpi--wide"></div>
+        <div class="sk-block sk-kpi"></div>
+        <div class="sk-block sk-kpi"></div>
+        <div class="sk-block sk-kpi sk-kpi--wide"></div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="sk-block sk-chart sk-chart--wide"></div>
+        <div class="sk-block sk-chart"></div>
+        <div class="sk-block sk-chart"></div>
+      </div>
+
+      <div class="sk-header"></div>
+      <div class="recent-list">
+        <div class="sk-block sk-recent"></div>
+        <div class="sk-block sk-recent"></div>
+        <div class="sk-block sk-recent"></div>
+      </div>
+    </section>
+  </ng-container>
+
+  <section
+    class="state-card state-card--error"
+    *ngIf="!loading() && error()"
+    role="alert">
+    <span class="state-card__icon">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+    </span>
+    <div class="state-card__body">
+      <h3>No se pudo cargar el resumen</h3>
+      <p>{{ error() }}</p>
     </div>
+    <button type="button" mat-stroked-button class="retry-btn" (click)="reload()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      <span>Reintentar</span>
+    </button>
+  </section>
 
-    <div class="orders-list" *ngIf="pedidosActivos().length > 0">
-      <mat-card *ngFor="let p of pedidosActivos()" class="order-item" [routerLink]="['/pedidos', p.id]">
-        <div class="order-header">
-          <mat-icon>store</mat-icon> {{ p.sucursal_nombre }}
-          <button (click)="deletePedido(p, $event)" class="delete-button">
-            <mat-icon>delete</mat-icon>
-          </button>
+  <ng-container *ngIf="!loading() && !error()">
+    <section class="resumen-section" aria-labelledby="resumen-orders-title">
+      <div class="page-header">
+        <div class="title-group">
+          <h2 id="resumen-orders-title">
+            <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+            Pedidos en Curso
+          </h2>
         </div>
-        <div class="order-strip">
-          <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
-          <div class="order-content">
-            <div class="order-main">
-              <span class="customer">{{ p.cliente_nombre }}</span>
-              <span class="folio">{{ p.folio }}</span>
-            </div>
-            <div class="order-meta">
-              <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
-              <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
-            </div>
-            <div class="order-icon">
-              <mat-icon class="arrow">chevron_right</mat-icon>
+        <span class="header-pill header-pill--orders">{{ activeOrdersCountLabel() }}</span>
+      </div>
+
+      <div class="empty-orders" *ngIf="activeOrderCards().length === 0">
+        <span class="empty-orders__icon">
+          <mat-icon aria-hidden="true">check_circle_outline</mat-icon>
+        </span>
+        <h3>Todo al día</h3>
+        <p>No hay pedidos activos en proceso en este momento.</p>
+        <a mat-flat-button color="primary" class="empty-cta" routerLink="/pedidos/nuevo">
+          <mat-icon aria-hidden="true">add_circle_outline</mat-icon>
+          <span>Recibir Pedido</span>
+        </a>
+      </div>
+
+      <div class="orders-grid" *ngIf="activeOrderCards().length > 0">
+        <article
+          *ngFor="let card of activeOrderCards(); trackBy: trackByOrderId"
+          class="order-card"
+          [routerLink]="['/pedidos', card.pedido.id]">
+          <div class="order-card__top">
+            <span class="branch-chip">
+              <mat-icon aria-hidden="true">store</mat-icon>
+              <span>{{ card.pedido.sucursal_nombre || 'Sin sucursal' }}</span>
+            </span>
+            <div class="order-card__top-right">
+              <span class="stage-badge" [ngClass]="card.stage.cssClass">
+                {{ card.stage.label }}
+              </span>
+              <span class="order-due">
+                <mat-icon aria-hidden="true">event</mat-icon>
+                {{ card.dueDateLabel }}
+              </span>
             </div>
           </div>
+
+          <div class="order-card__body">
+            <div class="order-card__identity">
+              <h3 class="order-customer">{{ card.pedido.cliente_nombre || 'Cliente general' }}</h3>
+              <div class="order-submeta">
+                <span class="order-folio">{{ card.pedido.folio }}</span>
+                <span *ngIf="card.hasDebt" class="charge-pill charge-pill--due">
+                  Por cobrar {{ card.formattedSaldo }}
+                </span>
+                <span *ngIf="card.isPaid" class="charge-pill charge-pill--paid">
+                  Pagado
+                </span>
+              </div>
+            </div>
+            <mat-icon class="order-chevron" aria-hidden="true">chevron_right</mat-icon>
+          </div>
+
+          <div class="order-progress" [attr.aria-label]="'Etapa actual: ' + card.stage.label">
+            <div class="order-progress__track">
+              <span
+                *ngFor="let step of activeStages"
+                class="order-progress__step"
+                [class.is-done]="step.index < card.stage.index"
+                [class.is-current]="step.index === card.stage.index"
+                [attr.title]="step.label">
+              </span>
+            </div>
+            <div class="order-progress__caption">
+              <span class="order-progress__label">
+                <mat-icon aria-hidden="true">{{ card.stage.icon }}</mat-icon>
+                {{ card.stage.label }}
+              </span>
+              <span class="order-progress__pct">{{ card.stage.percent }}%</span>
+            </div>
+          </div>
+
+          <div class="order-card__footer">
+            <span class="order-card__hint">Ver detalle</span>
+            <button
+              type="button"
+              class="share-pill-btn"
+              (click)="sendWhatsapp(card.pedido, $event)"
+              [attr.aria-label]="'Compartir pedido ' + card.pedido.folio + ' por WhatsApp'">
+              <mat-icon aria-hidden="true">share</mat-icon>
+              <span>Compartir</span>
+            </button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="resumen-section" aria-labelledby="resumen-finance-title">
+      <div class="page-header">
+        <div class="title-group">
+          <h2 id="resumen-finance-title">
+            <mat-icon aria-hidden="true">account_balance_wallet</mat-icon>
+            Resumen Financiero
+          </h2>
         </div>
-        <div class="order-actions">
-          <button (click)="pedidoActions.sendWhatsapp(p); $event.stopPropagation()" class="whatsapp-button">
-            <mat-icon>share</mat-icon> Compartir al cliente
-          </button>
+        <span class="header-pill header-pill--month">{{ currentMonthLabel }}</span>
+      </div>
+
+      <div class="kpis-grid" aria-label="Indicadores financieros del mes">
+        <a
+          class="kpi-card kpi-card--hero"
+          [class.negativo]="balanceMes() < 0"
+          routerLink="/movimientos">
+          <mat-icon class="kpi-watermark" aria-hidden="true">
+            {{ balanceMes() >= 0 ? 'account_balance_wallet' : 'trending_down' }}
+          </mat-icon>
+          <div class="kpi-top">
+            <span class="kpi-label">Balance</span>
+            <span class="kpi-icon-badge">
+              <mat-icon aria-hidden="true">
+                {{ balanceMes() >= 0 ? 'account_balance' : 'warning_amber' }}
+              </mat-icon>
+            </span>
+          </div>
+          <div class="kpi-value">{{ formatMxn(balanceMes()) }}</div>
+          <div class="kpi-subtitle">{{ balanceSubtitle() }}</div>
+        </a>
+
+        <a
+          class="kpi-card kpi-card--ingreso"
+          routerLink="/movimientos"
+          [queryParams]="{ tipo: 'ingreso' }">
+          <div class="kpi-top">
+            <span class="kpi-label">Ingresos mes</span>
+            <span class="kpi-icon-badge">
+              <mat-icon aria-hidden="true">trending_up</mat-icon>
+            </span>
+          </div>
+          <div class="kpi-value">{{ formatMxn(ingresosMes()) }}</div>
+          <div class="kpi-subtitle">Ver ingresos</div>
+        </a>
+
+        <a
+          class="kpi-card kpi-card--egreso"
+          routerLink="/movimientos"
+          [queryParams]="{ tipo: 'egreso' }">
+          <div class="kpi-top">
+            <span class="kpi-label">Egresos mes</span>
+            <span class="kpi-icon-badge">
+              <mat-icon aria-hidden="true">trending_down</mat-icon>
+            </span>
+          </div>
+          <div class="kpi-value">{{ formatMxn(egresosMes()) }}</div>
+          <div class="kpi-subtitle">Ver egresos</div>
+        </a>
+
+        <a class="kpi-card kpi-card--deuda" routerLink="/deudas">
+          <div class="kpi-top">
+            <span class="kpi-label">Cartera Vencida (Al Día)</span>
+            <span class="kpi-icon-badge">
+              <mat-icon aria-hidden="true">warning_amber</mat-icon>
+            </span>
+          </div>
+          <div class="kpi-value">{{ formatMxn(deudaTotal()) }}</div>
+          <div class="kpi-subtitle">{{ deudaSubtitle() }}</div>
+        </a>
+      </div>
+    </section>
+
+    <section class="charts-grid" aria-label="Gráficas financieras y operativas">
+      <article class="chart-card chart-card--wide chart-card--trend">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">show_chart</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Ingresos vs Egresos</h3>
+              <p class="chart-card__subtitle">{{ rangeSubtitle() }}</p>
+            </div>
+          </div>
+          <div class="chart-card__controls">
+            <span
+              class="chart-insight-pill"
+              [ngClass]="'tone--' + chartInsights().balanceRango.tone">
+              {{ chartInsights().balanceRango.text }}
+            </span>
+            <div class="range-pills" role="group" aria-label="Seleccionar rango de tiempo">
+              <button
+                *ngFor="let opt of rangeOptions"
+                type="button"
+                class="range-pill"
+                [class.active]="range() === opt.value"
+                [attr.aria-pressed]="range() === opt.value"
+                (click)="setRange(opt.value)">
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div class="range-status" *ngIf="rangeLoading()" aria-live="polite">
+          <span class="range-status__dot"></span>
+          <span>Actualizando tendencia...</span>
         </div>
-      </mat-card>
-    </div>
-  </section>
-  
-  <h2>Resumen Financiero</h2>
-  <!-- KPIs -->
-  <section class="kpis" *ngIf="!loading(); else skeleton">
-    <article class="kpi">
-      <div class="kpi__label">Ingresos mes</div>
-      <div class="kpi__value">{{ ingresosMes() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </article>
-    <article class="kpi">
-      <div class="kpi__label">Egresos mes</div>
-      <div class="kpi__value">{{ egresosMes() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </article>
-    <article class="kpi kpi--balance">
-      <div class="kpi__label">Balance</div>
-      <div class="kpi__value">{{ balanceMes() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </article>
-    <article class="kpi kpi--warning">
-      <div class="kpi__label" style="color: #ed6c02; font-weight: 500;">Cartera Vencida (Al Día)</div>
-      <div class="kpi__value" style="color: #d32f2f;">{{ deudaTotal() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </article>
-  </section>
 
-  <!-- Charts -->
-  <section class="charts" *ngIf="!loading()">
-    <mat-card class="card card--line">
-      <mat-card-title>
-        Ingresos vs Egresos
-        <span class="spacer"></span>
-      </mat-card-title>
+        <div class="chart-card__body" [class.is-updating]="rangeLoading()">
+          <div class="chart-stage chart-stage--trend" *ngIf="hasLineData(); else emptyTrend">
+            <canvas
+              baseChart
+              [data]="lineData()"
+              [options]="lineOptions"
+              [type]="mainChartType">
+            </canvas>
+          </div>
+          <ng-template #emptyTrend>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">show_chart</mat-icon>
+              <p>Sin movimientos registrados en este rango.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
 
-      <mat-button-toggle-group [value]="range()" (change)="setRange($event.value)" exclusive>
-        <mat-button-toggle value="3m">3m</mat-button-toggle>
-        <mat-button-toggle value="6m">6m</mat-button-toggle>
-        <mat-button-toggle value="12m">12m</mat-button-toggle>
-      </mat-button-toggle-group>
+      <article class="chart-card chart-card--deuda">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">pie_chart</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Gravedad de Cartera Adeudada</h3>
+              <p class="chart-card__subtitle">Clasificación por antigüedad de saldo</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + chartInsights().carteraDeuda.tone">
+            {{ chartInsights().carteraDeuda.text }}
+          </span>
+        </header>
 
-      <div class="chart">
-        <canvas baseChart [data]="lineData()" [options]="lineOptions" [type]="mainChartType()">
-        </canvas>
+        <div class="chart-card__body">
+          <div class="donut-stage">
+            <canvas
+              *ngIf="hasDeudasData(); else emptyDeudasDonut"
+              baseChart
+              [data]="deudasDoughnutData()"
+              [options]="deudasOptions"
+              type="doughnut">
+            </canvas>
+            <ng-template #emptyDeudasDonut>
+              <div class="donut-empty-ring" aria-hidden="true"></div>
+            </ng-template>
+            <div class="donut-center">
+              <span class="donut-center__value">{{ deudaSummary().totalPedidos }}</span>
+              <span class="donut-center__label">
+                {{ deudaSummary().totalPedidos === 1 ? 'Pedido' : 'Pedidos' }}
+              </span>
+            </div>
+          </div>
+
+          <ul class="donut-breakdown">
+            <li class="donut-row" *ngFor="let row of deudaSummary().breakdown">
+              <span class="donut-row__dot" [style.background]="row.color"></span>
+              <span class="donut-row__label">{{ row.label }}</span>
+              <span class="donut-row__count">{{ row.count }}</span>
+              <span class="donut-row__pct">{{ row.percent }}%</span>
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card--clientes">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">groups</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Actividad de Clientes</h3>
+              <p class="chart-card__subtitle">Segmentación por última visita</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + chartInsights().clientesActivos.tone">
+            {{ chartInsights().clientesActivos.text }}
+          </span>
+        </header>
+
+        <div class="chart-card__body">
+          <div class="donut-stage">
+            <canvas
+              *ngIf="hasClientesData(); else emptyClientesDonut"
+              baseChart
+              [data]="clientesDoughnutData()"
+              [options]="clientesOptions"
+              type="doughnut">
+            </canvas>
+            <ng-template #emptyClientesDonut>
+              <div class="donut-empty-ring" aria-hidden="true"></div>
+            </ng-template>
+            <div class="donut-center">
+              <span class="donut-center__value">{{ clientesSummary().total }}</span>
+              <span class="donut-center__label">
+                {{ clientesSummary().total === 1 ? 'Cliente' : 'Clientes' }}
+              </span>
+            </div>
+          </div>
+
+          <ul class="donut-breakdown">
+            <li class="donut-row" *ngFor="let row of clientesSummary().breakdown">
+              <span class="donut-row__dot" [style.background]="row.color"></span>
+              <span class="donut-row__label">{{ row.label }}</span>
+              <span class="donut-row__count">{{ row.count }}</span>
+              <span class="donut-row__pct">{{ row.percent }}%</span>
+            </li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card--wide chart-card--sucursal">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">storefront</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Por sucursal (mes)</h3>
+              <p class="chart-card__subtitle">Ingresos y egresos · {{ currentMonthLabel }}</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + chartInsights().sucursalLider.tone">
+            {{ chartInsights().sucursalLider.text }}
+          </span>
+        </header>
+
+        <div class="chart-card__body">
+          <div class="chart-stage chart-stage--bar" *ngIf="hasSucursalData(); else emptySucursal">
+            <canvas
+              baseChart
+              [data]="sucursalBarData()"
+              [options]="sucursalBarOptions"
+              type="bar">
+            </canvas>
+          </div>
+          <ng-template #emptySucursal>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">storefront</mat-icon>
+              <p>Sin movimientos por sucursal en {{ currentMonthLabel }}.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card--ingresos">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">arrow_circle_up</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Por categoría (Ingresos · mes)</h3>
+              <p class="chart-card__subtitle">Principales fuentes · {{ currentMonthLabel }}</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + chartInsights().topIngresoCategoria.tone">
+            {{ chartInsights().topIngresoCategoria.text }}
+          </span>
+        </header>
+
+        <div class="chart-card__body">
+          <div
+            class="chart-stage chart-stage--hbar"
+            [style.height.px]="ingresoChartHeight()"
+            *ngIf="hasBarIngresoData(); else emptyIngresosCat">
+            <canvas
+              baseChart
+              [data]="barIngresoData()"
+              [options]="barIngresoOptions"
+              type="bar">
+            </canvas>
+          </div>
+          <ng-template #emptyIngresosCat>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">trending_up</mat-icon>
+              <p>Sin ingresos categorizados en {{ currentMonthLabel }}.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card--egresos">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">arrow_circle_down</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Por categoría (Egresos · mes)</h3>
+              <p class="chart-card__subtitle">Principales gastos · {{ currentMonthLabel }}</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + chartInsights().topEgresoCategoria.tone">
+            {{ chartInsights().topEgresoCategoria.text }}
+          </span>
+        </header>
+
+        <div class="chart-card__body">
+          <div
+            class="chart-stage chart-stage--hbar"
+            [style.height.px]="egresoChartHeight()"
+            *ngIf="hasBarEgresoData(); else emptyEgresosCat">
+            <canvas
+              baseChart
+              [data]="barEgresoData()"
+              [options]="barEgresoOptions"
+              type="bar">
+            </canvas>
+          </div>
+          <ng-template #emptyEgresosCat>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">trending_down</mat-icon>
+              <p>Sin egresos categorizados en {{ currentMonthLabel }}.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
+    </section>
+
+    <section class="resumen-section" aria-labelledby="resumen-recent-title">
+      <div class="page-header">
+        <div class="title-group">
+          <h2 id="resumen-recent-title">
+            <mat-icon aria-hidden="true">receipt_long</mat-icon>
+            Últimos Movimientos
+          </h2>
+        </div>
+        <span class="header-pill header-pill--recent">Últimos 5</span>
       </div>
-    </mat-card>
 
-    <mat-card class="card card--doughnut">
-      <mat-card-title>Gravedad de Cartera Adeudada</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="deudasDoughnutData()" [options]="deudasOptions" type="doughnut"></canvas>
+      <div class="empty-recent" *ngIf="recentMovementCards().length === 0">
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+        <p>Aún no hay movimientos registrados.</p>
       </div>
-    </mat-card>
 
-    <mat-card class="card card--doughnut">
-      <mat-card-title>Actividad de Clientes</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="clientesDoughnutData()" [options]="clientesOptions" type="doughnut"></canvas>
+      <div class="recent-list" *ngIf="recentMovementCards().length > 0">
+        <article
+          *ngFor="let row of recentMovementCards(); trackBy: trackByMovementId"
+          class="recent-card"
+          [class.is-egreso]="row.isEgreso"
+          [routerLink]="['/movimientos', row.item.id]">
+          <div class="recent-card__top">
+            <div class="recent-card__cat-wrap">
+              <span class="recent-card__dot" [class.is-egreso]="row.isEgreso"></span>
+              <span class="recent-card__cat">{{ row.item.categoria || 'Sin categoría' }}</span>
+            </div>
+            <span class="recent-card__amount" [class.neg]="row.isEgreso">
+              {{ row.formattedAmount }}
+            </span>
+          </div>
+
+          <div class="recent-card__meta">
+            <span class="meta-item" *ngIf="row.formattedDate">
+              <mat-icon aria-hidden="true">schedule</mat-icon>
+              <span>{{ row.formattedDate }}</span>
+            </span>
+            <span class="branch-pill" *ngIf="row.item.sucursal_nombre">
+              <mat-icon aria-hidden="true">store</mat-icon>
+              <span>{{ row.item.sucursal_nombre }}</span>
+            </span>
+            <span class="method-pill" *ngIf="row.paymentMethodLabel">
+              {{ row.paymentMethodLabel }}
+            </span>
+            <a
+              *ngIf="row.item.pedido_id"
+              class="pedido-chip"
+              [routerLink]="['/pedidos', row.item.pedido_id]"
+              (click)="stopEventPropagation($event)">
+              <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+              <span>{{ row.item.pedido_folio || 'Pedido' }}</span>
+            </a>
+          </div>
+
+          <p class="recent-card__note" *ngIf="row.trimmedNote">{{ row.trimmedNote }}</p>
+        </article>
       </div>
-    </mat-card>
-
-    <mat-card class="card card--bar">
-      <mat-card-title>Por sucursal (mes)</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="sucursalBarData()" [options]="sucursalBarOptions" type="bar">
-        </canvas>
-      </div>
-    </mat-card>
-
-
-    <mat-card class="card card--bar">
-      <mat-card-title>Por categoría (Ingresos · mes)</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="barIngresoData()" [options]="barOptions" type="bar"></canvas>
-      </div>
-    </mat-card>
-
-    <mat-card class="card card--bar">
-      <mat-card-title>Por categoría (Egresos · mes)</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="barEgresoData()" [options]="barOptions" type="bar"></canvas>
-      </div>
-    </mat-card>
-  </section>
-
-
-  <!-- Recientes -->
-  <section class="recientes" *ngIf="!loading()">
-    <h3>Últimos movimientos</h3>
-    <mat-list>
-      <mat-list-item *ngFor="let m of recientes()">
-        <mat-icon matListItemIcon>{{ m.tipo === 'ingreso' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
-        <div matListItemTitle>{{ m.categoria }}</div>
-        <div matListItemLine>{{ m.fecha | date:'dd MMM, HH:mm' }}</div>
-        <div class="amount" [class.neg]="m.monto<0">{{ m.monto | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-      </mat-list-item>
-    </mat-list>
-  </section>
-
-  <ng-template #skeleton>
-    <div class="skeleton"></div>
-  </ng-template>
+    </section>
+  </ng-container>
 </div>

@@ -137,3 +137,24 @@ export interface MovimientosQueryParams {
   pedido_id?: string;
   org_id?: string;
 }
+
+export interface ClientStatsSegmentos {
+  active_0_15: number;
+  risk_16_45: number;
+  lost_45plus: number;
+}
+
+export interface ClientStatsFrecuencias {
+  '7': number;
+  '15': number;
+  '30': number;
+  otros: number;
+}
+
+export interface ClientStatsResponse {
+  total: number;
+  faltan_promo: number;
+  con_whatsapp: number;
+  frecuencias: ClientStatsFrecuencias;
+  segmentos: ClientStatsSegmentos;
+}
