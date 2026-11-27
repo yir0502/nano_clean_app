@@ -101,7 +101,9 @@ describe('AppComponent', () => {
     expect(navTabs).not.toContain('Deudas');
     expect(centerOrb).not.toBeNull();
     expect(centerOrb.querySelector('.orb-water-layer')).not.toBeNull();
+    expect(centerOrb.querySelectorAll('.orb-waves-svg').length).toBe(2);
     expect(centerOrb.querySelector('svg.orb-icon')).not.toBeNull();
+    expect(dock.querySelector('.droplet-bead')).toBeNull();
     expect(app.additionalNavOptions.some((opt) => opt.path === '/deudas')).toBeTrue();
   });
 

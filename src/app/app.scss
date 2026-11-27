@@ -1,5 +1,7 @@
+$font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
 :root {
-  --nav-h: 62px;
+  --nav-h: 64px;
 }
 
 .app-container {
@@ -72,7 +74,7 @@
 
 .page.with-nav {
   padding-top: 60px;
-  padding-bottom: calc(var(--nav-h, 62px) + max(12px, env(safe-area-inset-bottom)));
+  padding-bottom: calc(var(--nav-h, 64px) + max(12px, env(safe-area-inset-bottom)));
   min-height: 100vh;
   box-sizing: border-box;
 }
@@ -84,6 +86,7 @@
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
   box-shadow: 4px 0 20px rgba(15, 23, 42, 0.08);
+  font-family: $font-ui;
 }
 
 .drawer-header {
@@ -115,8 +118,9 @@
   transition: background 0.18s ease, color 0.18s ease;
 
   span {
+    font-family: $font-ui;
     font-weight: 500;
-    font-size: 14px;
+    font-size: 13.5px;
     color: #334155;
   }
 
@@ -165,19 +169,20 @@
   position: relative;
   pointer-events: auto;
   max-width: 452px;
-  height: 50px;
+  height: 54px;
   margin: 0 auto;
   padding: 4px;
   display: grid;
-  grid-template-columns: 1fr 1fr 58px 1.18fr 0.95fr;
+  grid-template-columns: 1fr 1fr 60px 1.2fr 0.95fr;
   align-items: center;
   gap: 2px;
-  border-radius: 16px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid #e2e8f0;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+  font-family: $font-ui;
 
   &.without-center-orb {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -193,25 +198,27 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  height: 42px;
-  padding: 3px 2px;
-  border-radius: 11px;
+  height: 46px;
+  padding: 4px 2px 3px;
+  border-radius: 13px;
   text-decoration: none;
   color: #64748b;
-  transition: color 0.2s ease, transform 0.14s ease;
+  font-family: $font-ui;
+  transition: color 0.22s ease, transform 0.14s ease;
 
   mat-icon {
     font-size: 19px;
     width: 19px;
     height: 19px;
     line-height: 19px;
-    transition: transform 0.22s ease;
+    transition: transform 0.26s cubic-bezier(0.22, 1.25, 0.36, 1);
   }
 
   span {
+    font-family: $font-ui;
     font-size: 10px;
     font-weight: 500;
-    line-height: 1.05;
+    line-height: 1.15;
     white-space: nowrap;
     letter-spacing: -0.01em;
     max-width: 100%;
@@ -239,12 +246,12 @@
     }
 
     &:not(.has-droplet) {
-      background: rgba(25, 106, 255, 0.09);
+      background: rgba(14, 165, 233, 0.13);
     }
   }
 }
 
-/* Indicador minimalista de gota liquida sin degradados ni sombras pesadas */
+/* Selector liquido que se contrae en gota al deslizarse entre pestanas */
 .water-droplet-indicator {
   position: absolute;
   top: 4px;
@@ -254,48 +261,34 @@
   pointer-events: none;
   will-change: transform, width;
   transition:
-    transform 0.38s cubic-bezier(0.25, 1, 0.5, 1),
-    width 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    transform 0.48s cubic-bezier(0.22, 1.1, 0.36, 1),
+    width 0.34s cubic-bezier(0.25, 1, 0.5, 1);
 
   .droplet-body {
     position: absolute;
     inset: 0;
-    border-radius: 11px;
-    background: rgba(25, 106, 255, 0.09);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.13);
   }
 
-  .droplet-bead {
-    position: absolute;
-    top: 2px;
-    left: 50%;
-    width: 5px;
-    height: 5px;
-    transform: translateX(-50%);
-    border-radius: 999px;
-    background: var(--brand-primary, #196aff);
-    opacity: 0.9;
+  &.moving-right-a .droplet-body {
+    animation: dropletMorphRightA 0.5s cubic-bezier(0.22, 1.08, 0.36, 1);
   }
 
-  &.moving-right {
-    .droplet-body {
-      animation: dropletGlideRight 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-    .droplet-bead {
-      animation: beadGlideRight 0.4s ease-out;
-    }
+  &.moving-right-b .droplet-body {
+    animation: dropletMorphRightB 0.5s cubic-bezier(0.22, 1.08, 0.36, 1);
   }
 
-  &.moving-left {
-    .droplet-body {
-      animation: dropletGlideLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-    }
-    .droplet-bead {
-      animation: beadGlideLeft 0.4s ease-out;
-    }
+  &.moving-left-a .droplet-body {
+    animation: dropletMorphLeftA 0.5s cubic-bezier(0.22, 1.08, 0.36, 1);
+  }
+
+  &.moving-left-b .droplet-body {
+    animation: dropletMorphLeftB 0.5s cubic-bezier(0.22, 1.08, 0.36, 1);
   }
 }
 
-/* Estela sutil direccional con dos microgotas planas */
+/* Estela de agua limpia y visible detras de la direccion del movimiento */
 .water-droplet-trail {
   position: absolute;
   top: 8px;
@@ -309,8 +302,8 @@
     top: 50%;
     left: 0;
     right: 0;
-    height: 8px;
-    margin-top: -4px;
+    height: 12px;
+    margin-top: -6px;
     border-radius: 999px;
   }
 
@@ -321,70 +314,95 @@
   }
 
   .trail-drop--1 {
-    width: 5px;
-    height: 5px;
-    margin-top: -2.5px;
-    background: rgba(25, 106, 255, 0.34);
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    background: rgba(25, 106, 255, 0.45);
   }
 
   .trail-drop--2 {
-    width: 3.5px;
-    height: 3.5px;
-    margin-top: -5px;
-    background: rgba(14, 165, 233, 0.3);
+    width: 5.5px;
+    height: 5.5px;
+    margin-top: -7px;
+    background: rgba(14, 165, 233, 0.42);
+  }
+
+  .trail-drop--3 {
+    width: 4px;
+    height: 4px;
+    margin-top: 3px;
+    background: rgba(56, 189, 248, 0.45);
   }
 
   &.dir-right {
     .trail-stream {
       transform-origin: left center;
-      background: linear-gradient(90deg, transparent 0%, rgba(25, 106, 255, 0.16) 100%);
-      animation: wakeSweepRight 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(56, 189, 248, 0.28) 55%,
+        rgba(25, 106, 255, 0.38) 100%
+      );
+      animation: wakeSweepRight 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .trail-drop--1 {
-      left: 52%;
-      animation: microDropRight 0.4s ease-out forwards;
+      left: 56%;
+      animation: microDropRight 0.48s ease-out forwards;
     }
     .trail-drop--2 {
-      left: 28%;
-      animation: microDropRight 0.36s 0.04s ease-out forwards;
+      left: 34%;
+      animation: microDropRight 0.44s 0.04s ease-out forwards;
+    }
+    .trail-drop--3 {
+      left: 16%;
+      animation: microDropRight 0.4s 0.08s ease-out forwards;
     }
   }
 
   &.dir-left {
     .trail-stream {
       transform-origin: right center;
-      background: linear-gradient(270deg, transparent 0%, rgba(25, 106, 255, 0.16) 100%);
-      animation: wakeSweepLeft 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      background: linear-gradient(
+        270deg,
+        transparent 0%,
+        rgba(56, 189, 248, 0.28) 55%,
+        rgba(25, 106, 255, 0.38) 100%
+      );
+      animation: wakeSweepLeft 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .trail-drop--1 {
-      right: 52%;
-      animation: microDropLeft 0.4s ease-out forwards;
+      right: 56%;
+      animation: microDropLeft 0.48s ease-out forwards;
     }
     .trail-drop--2 {
-      right: 28%;
-      animation: microDropLeft 0.36s 0.04s ease-out forwards;
+      right: 34%;
+      animation: microDropLeft 0.44s 0.04s ease-out forwards;
+    }
+    .trail-drop--3 {
+      right: 16%;
+      animation: microDropLeft 0.4s 0.08s ease-out forwards;
     }
   }
 }
 
-/* Boton central circular con olas serenas y simbolo + de alto contraste */
+/* Boton central circular con olas sinusoidales reales y + nitido */
 .center-orb-slot {
   position: relative;
   z-index: 3;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 42px;
+  height: 46px;
 }
 
 .center-water-orb {
   box-sizing: border-box;
   position: relative;
-  width: 50px;
-  height: 50px;
-  margin-top: -11px;
+  width: 52px;
+  height: 52px;
+  margin-top: -12px;
   padding: 0;
   border: 3px solid #ffffff;
   border-radius: 50%;
@@ -393,14 +411,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--brand-primary, #196aff);
+  background: #e0f2fe;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(25, 106, 255, 0.26);
+  box-shadow: 0 4px 12px rgba(25, 106, 255, 0.22);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
     transform: translateY(-1px) scale(1.03);
-    box-shadow: 0 6px 16px rgba(25, 106, 255, 0.32);
+    box-shadow: 0 6px 16px rgba(25, 106, 255, 0.28);
   }
 
   &:active {
@@ -418,37 +436,34 @@
     border-radius: 50%;
     overflow: hidden;
     pointer-events: none;
+  }
 
-    &::before,
-    &::after {
-      content: '';
-      position: absolute;
-      width: 205%;
-      height: 205%;
-      left: -52.5%;
-      pointer-events: none;
-    }
+  .orb-waves-svg {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 200%;
+    height: 100%;
+    display: block;
+    will-change: transform;
+  }
 
-    &::before {
-      bottom: -158%;
-      border-radius: 43% 47% 44% 41%;
-      background: rgba(56, 189, 248, 0.38);
-      animation: orbWaveSloshA 4.8s ease-in-out infinite;
-    }
+  .orb-waves-svg--back {
+    fill: rgba(56, 189, 248, 0.72);
+    animation: waveFlowRight 3.4s linear infinite;
+  }
 
-    &::after {
-      top: -178%;
-      border-radius: 40% 45% 44% 41%;
-      background: rgba(255, 255, 255, 0.2);
-      animation: orbWaveSloshB 6.2s ease-in-out infinite;
-    }
+  .orb-waves-svg--front {
+    fill: var(--brand-primary, #196aff);
+    animation: waveFlowLeft 2.6s linear infinite;
   }
 
   .orb-icon {
     position: relative;
     z-index: 2;
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
+    margin-top: 5px;
     display: block;
     color: #ffffff;
     transition: transform 0.24s cubic-bezier(0.25, 1, 0.5, 1);
@@ -462,7 +477,7 @@
 /* Acciones rapidas minimalistas armonizadas con tarjetas limpias */
 .orb-actions-fan {
   position: absolute;
-  bottom: 56px;
+  bottom: 58px;
   left: 50%;
   transform: translateX(-50%) translateY(10px) scale(0.92);
   display: flex;
@@ -490,8 +505,8 @@
   border: 1px solid #e2e8f0;
   background: #ffffff;
   color: #0f172a;
-  font-family: inherit;
-  font-size: 12.5px;
+  font-family: $font-ui;
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -545,135 +560,179 @@
   }
 }
 
-@keyframes orbWaveSloshA {
-  0%,
-  100% {
-    transform: translateX(-7%) translateY(1px) rotate(-12deg);
-  }
-  50% {
-    transform: translateX(7%) translateY(-2px) rotate(12deg);
-  }
-}
-
-@keyframes orbWaveSloshB {
-  0%,
-  100% {
-    transform: translateX(8%) translateY(-1px) rotate(14deg);
-  }
-  50% {
-    transform: translateX(-8%) translateY(1px) rotate(-14deg);
-  }
-}
-
-@keyframes dropletGlideRight {
+@keyframes waveFlowLeft {
   0% {
-    transform: scaleX(0.96) scaleY(1.03);
+    transform: translateX(0) translateY(0);
   }
-  35% {
-    transform: scaleX(1.14) scaleY(0.88);
-    border-radius: 15px 10px 10px 15px;
+  50% {
+    transform: translateX(-25%) translateY(-1.5px);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes waveFlowRight {
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-25%) translateY(1.5px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes dropletMorphRightA {
+  0% {
+    transform: scaleX(0.92) scaleY(1.04);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.24);
+  }
+  34% {
+    transform: scaleX(1.24) scaleY(0.68);
+    border-radius: 24px 12px 12px 24px;
+    background: rgba(14, 165, 233, 0.28);
+  }
+  72% {
+    transform: scaleX(0.95) scaleY(1.06);
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.17);
   }
   100% {
     transform: scaleX(1) scaleY(1);
-    border-radius: 11px;
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.13);
   }
 }
 
-@keyframes dropletGlideLeft {
+@keyframes dropletMorphRightB {
   0% {
-    transform: scaleX(0.96) scaleY(1.03);
+    transform: scaleX(0.92) scaleY(1.04);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.24);
   }
-  35% {
-    transform: scaleX(1.14) scaleY(0.88);
-    border-radius: 10px 15px 15px 10px;
+  34% {
+    transform: scaleX(1.24) scaleY(0.68);
+    border-radius: 24px 12px 12px 24px;
+    background: rgba(14, 165, 233, 0.28);
+  }
+  72% {
+    transform: scaleX(0.95) scaleY(1.06);
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.17);
   }
   100% {
     transform: scaleX(1) scaleY(1);
-    border-radius: 11px;
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.13);
   }
 }
 
-@keyframes beadGlideRight {
+@keyframes dropletMorphLeftA {
   0% {
-    transform: translateX(-50%) scaleX(1);
+    transform: scaleX(0.92) scaleY(1.04);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.24);
   }
-  38% {
-    transform: translateX(-65%) scaleX(2.4) scaleY(0.82);
+  34% {
+    transform: scaleX(1.24) scaleY(0.68);
+    border-radius: 12px 24px 24px 12px;
+    background: rgba(14, 165, 233, 0.28);
+  }
+  72% {
+    transform: scaleX(0.95) scaleY(1.06);
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.17);
   }
   100% {
-    transform: translateX(-50%) scaleX(1);
+    transform: scaleX(1) scaleY(1);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.13);
   }
 }
 
-@keyframes beadGlideLeft {
+@keyframes dropletMorphLeftB {
   0% {
-    transform: translateX(-50%) scaleX(1);
+    transform: scaleX(0.92) scaleY(1.04);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.24);
   }
-  38% {
-    transform: translateX(-35%) scaleX(2.4) scaleY(0.82);
+  34% {
+    transform: scaleX(1.24) scaleY(0.68);
+    border-radius: 12px 24px 24px 12px;
+    background: rgba(14, 165, 233, 0.28);
+  }
+  72% {
+    transform: scaleX(0.95) scaleY(1.06);
+    border-radius: 14px;
+    background: rgba(14, 165, 233, 0.17);
   }
   100% {
-    transform: translateX(-50%) scaleX(1);
+    transform: scaleX(1) scaleY(1);
+    border-radius: 13px;
+    background: rgba(14, 165, 233, 0.13);
   }
 }
 
 @keyframes wakeSweepRight {
   0% {
-    opacity: 0.9;
-    transform: scaleX(0.3) scaleY(1);
+    opacity: 0.95;
+    transform: scaleX(0.25) scaleY(1.1);
   }
-  45% {
-    opacity: 0.7;
+  42% {
+    opacity: 0.85;
     transform: scaleX(1) scaleY(0.85);
   }
   100% {
     opacity: 0;
-    transform: translateX(24%) scaleX(0.45) scaleY(0.4);
+    transform: translateX(28%) scaleX(0.4) scaleY(0.35);
   }
 }
 
 @keyframes wakeSweepLeft {
   0% {
-    opacity: 0.9;
-    transform: scaleX(0.3) scaleY(1);
+    opacity: 0.95;
+    transform: scaleX(0.25) scaleY(1.1);
   }
-  45% {
-    opacity: 0.7;
+  42% {
+    opacity: 0.85;
     transform: scaleX(1) scaleY(0.85);
   }
   100% {
     opacity: 0;
-    transform: translateX(-24%) scaleX(0.45) scaleY(0.4);
+    transform: translateX(-28%) scaleX(0.4) scaleY(0.35);
   }
 }
 
 @keyframes microDropRight {
   0% {
     opacity: 0;
-    transform: translateX(-10px) scale(0.5);
+    transform: translateX(-14px) scale(0.4);
   }
-  35% {
-    opacity: 0.85;
-    transform: translateX(3px) scale(1);
+  32% {
+    opacity: 0.95;
+    transform: translateX(4px) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translateX(16px) scale(0.25);
+    transform: translateX(22px) scale(0.2);
   }
 }
 
 @keyframes microDropLeft {
   0% {
     opacity: 0;
-    transform: translateX(10px) scale(0.5);
+    transform: translateX(14px) scale(0.4);
   }
-  35% {
-    opacity: 0.85;
-    transform: translateX(-3px) scale(1);
+  32% {
+    opacity: 0.95;
+    transform: translateX(-4px) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translateX(-16px) scale(0.25);
+    transform: translateX(-22px) scale(0.2);
   }
 }
 
@@ -723,13 +782,13 @@
   }
 
   .center-water-orb {
-    width: 52px;
-    height: 52px;
+    width: 54px;
+    height: 54px;
     margin-top: 0;
   }
 
   .orb-actions-fan {
-    bottom: 64px;
+    bottom: 66px;
     left: auto;
     right: 0;
     flex-direction: column;
@@ -747,10 +806,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .center-water-orb .orb-water-layer::before,
-  .center-water-orb .orb-water-layer::after,
+  .center-water-orb .orb-waves-svg--back,
+  .center-water-orb .orb-waves-svg--front,
   .water-droplet-indicator .droplet-body,
-  .water-droplet-indicator .droplet-bead,
   .water-droplet-trail .trail-stream,
   .water-droplet-trail .trail-drop {
     animation: none;

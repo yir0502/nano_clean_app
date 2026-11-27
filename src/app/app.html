@@ -91,19 +91,21 @@
             <span class="trail-stream"></span>
             <span class="trail-drop trail-drop--1"></span>
             <span class="trail-drop trail-drop--2"></span>
+            <span class="trail-drop trail-drop--3"></span>
           </div>
         }
 
         <div
           *ngIf="dropletVisible()"
           class="water-droplet-indicator"
-          [class.moving-right]="dropletMotion() === 'right'"
-          [class.moving-left]="dropletMotion() === 'left'"
+          [class.moving-right-a]="dropletMotion() === 'right' && dropletAnimPhase() === 'a'"
+          [class.moving-right-b]="dropletMotion() === 'right' && dropletAnimPhase() === 'b'"
+          [class.moving-left-a]="dropletMotion() === 'left' && dropletAnimPhase() === 'a'"
+          [class.moving-left-b]="dropletMotion() === 'left' && dropletAnimPhase() === 'b'"
           [style.transform]="'translateX(' + dropletLeft() + 'px)'"
           [style.width.px]="dropletWidth()"
           aria-hidden="true">
           <span class="droplet-body"></span>
-          <span class="droplet-bead"></span>
         </div>
 
         <a
@@ -156,7 +158,14 @@
             [attr.aria-expanded]="orbMenuOpen()"
             (click)="toggleOrbMenu()"
             aria-label="Acciones rápidas de creación">
-            <span class="orb-water-layer" aria-hidden="true"></span>
+            <span class="orb-water-layer" aria-hidden="true">
+              <svg class="orb-waves-svg orb-waves-svg--back" viewBox="0 0 240 60" preserveAspectRatio="none">
+                <path d="M0,18 Q30,8 60,18 T120,18 T180,18 T240,18 L240,60 L0,60 Z" />
+              </svg>
+              <svg class="orb-waves-svg orb-waves-svg--front" viewBox="0 0 240 60" preserveAspectRatio="none">
+                <path d="M0,22 Q30,30 60,22 T120,22 T180,22 T240,22 L240,60 L0,60 Z" />
+              </svg>
+            </span>
             <svg class="orb-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></line>
               <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></line>
