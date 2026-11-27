@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormBuilder, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -80,6 +81,11 @@ export class MovimientoFormComponent implements OnInit {
       this.movimientoId.set(id);
     }
 
+    const initialTipo = this.route.snapshot.queryParams['tipo'];
+    if (!this.isEdit() && (initialTipo === 'egreso' || initialTipo === 'ingreso')) {
+      this.form.controls.tipo.setValue(initialTipo, { emitEvent: false });
+    }
+
     this.loadCategorias(this.form.controls.tipo.value);
     this.form.controls.tipo.valueChanges.subscribe(t => this.loadCategorias(t));
 
@@ -98,6 +104,12 @@ export class MovimientoFormComponent implements OnInit {
 
         if (params['pedido_id']) {
           this.form.controls.tipo.disable();
+        }
+      } else if (!this.isEdit() && (params['tipo'] === 'egreso' || params['tipo'] === 'ingreso')) {
+        const nextTipo = params['tipo'];
+        if (this.form.controls.tipo.value !== nextTipo) {
+          this.form.controls.tipo.setValue(nextTipo, { emitEvent: false });
+          this.loadCategorias(nextTipo);
         }
       }
     });
@@ -153,7 +165,7 @@ export class MovimientoFormComponent implements OnInit {
       const queryPayload = this.route.snapshot.queryParams;
 
       this.form.patchValue({
-        tipo: found.tipo as any,
+        tipo: found.tipo === 'egreso' ? 'egreso' : 'ingreso',
         monto: queryPayload['monto'] ? Number(queryPayload['monto']) : Number(found.monto),
         categoria_id: found.categoria_id || null,
         sucursal_id: found.sucursal_id || null,
@@ -195,15 +207,16 @@ export class MovimientoFormComponent implements OnInit {
 
     try {
       if (this.isEdit() && this.movimientoId()) {
-        await this.api.updateMovimiento(this.movimientoId()!, payload as any);
+        await this.api.updateMovimiento(this.movimientoId()!, payload);
         this.snack.open('Movimiento actualizado', 'OK', { duration: 2000 });
       } else {
         await this.api.createMovimiento(payload);
         this.snack.open('Movimiento creado', 'OK', { duration: 2000 });
       }
       this.router.navigateByUrl('/movimientos');
-    } catch (e: any) {
-      this.snack.open(e?.message || 'No se pudo guardar', 'OK', { duration: 3000 });
+    } catch (e: unknown) {
+      const msg = e instanceof Error && e.message ? e.message : 'No se pudo guardar';
+      this.snack.open(msg, 'OK', { duration: 3000 });
     } finally {
       this.saving.set(false);
     }
@@ -225,14 +238,15 @@ export class MovimientoFormComponent implements OnInit {
       panelClass: 'custom-modal-panel'
     });
 
-    const ok = await dialogRef.afterClosed().toPromise();
+    const ok = await firstValueFrom(dialogRef.afterClosed(), { defaultValue: false });
     if (!ok) return;
     try {
       await this.api.deleteMovimiento(this.movimientoId()!);
       this.snack.open('Movimiento eliminado', 'OK', { duration: 2000 });
       this.router.navigateByUrl('/movimientos');
-    } catch (e: any) {
-      this.snack.open(e?.message || 'No se pudo eliminar', 'OK', { duration: 3000 });
+    } catch (e: unknown) {
+      const msg = e instanceof Error && e.message ? e.message : 'No se pudo eliminar';
+      this.snack.open(msg, 'OK', { duration: 3000 });
     }
   }
 
