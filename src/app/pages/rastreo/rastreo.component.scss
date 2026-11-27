@@ -630,7 +630,7 @@ $success: #22c55e;
         font-size: 15px;
         font-weight: 500;
         color: #333;
-        font-family: monospace; // Monospace ayuda a leer números
+        font-family: var(--font-mono);
         letter-spacing: 0.5px;
 
         &.text-wrap {

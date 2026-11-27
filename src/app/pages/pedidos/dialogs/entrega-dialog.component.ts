@@ -94,7 +94,7 @@ export interface EntregaDialogResponse {
   `,
   styles: [`
     .creative-modal-wrapper {
-      font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+      font-family: var(--font-ui);
     }
 
     .entrega-dialog {

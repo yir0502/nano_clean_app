@@ -147,7 +147,7 @@ export interface LiquidarDialogResult {
       }
       
       .folio {
-        font-family: 'JetBrains Mono', monospace;
+        font-family: var(--font-mono);
         color: var(--brand-primary);
       }
     }
@@ -171,7 +171,8 @@ export interface LiquidarDialogResult {
       
       .saldo-value {
         font-size: 26px;
-        font-weight: 900;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
         color: #b91c1c;
         letter-spacing: -1px;
       }

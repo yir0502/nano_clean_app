@@ -80,7 +80,7 @@ export interface TicketDialogData {
     .ticket-modal {
       padding: 20px;
       max-width: 380px;
-      font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+      font-family: var(--font-ui);
     }
     .header-row {
       display: flex;
@@ -95,6 +95,7 @@ export interface TicketDialogData {
       border: 1px solid #bfdbfe;
       border-radius: 6px;
       padding: 2px 8px;
+      font-family: var(--font-mono);
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.5px;

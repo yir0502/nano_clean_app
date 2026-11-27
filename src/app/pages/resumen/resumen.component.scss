@@ -19,20 +19,20 @@ $cshadow-h: 0 12px 24px -4px rgba($s9, .12), 0 4px 10px -2px rgba($s9, .06);
 
 @mixin ic($z) { font-size: $z; width: $z; height: $z; line-height: $z; }
 
-.page-container.resumen-page { max-width: 1120px; padding-bottom: 96px; font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif; }
+.page-container.resumen-page { max-width: 1120px; padding-bottom: 96px; font-family: var(--font-ui); }
 .resumen-section { margin-bottom: 24px; }
 
 .resumen-skeleton, .state-card, .empty-orders, .empty-recent, .order-card, .order-progress, .kpi-card, .chart-card, .chart-empty, .donut-center, .donut-breakdown, .recent-list, .recent-card { display: flex; flex-direction: column; }
-.header-pill, .state-card__icon, .empty-orders__icon, .branch-chip, .order-card__top-right, .order-due, .charge-pill, .order-progress__label, .share-pill-btn, .kpi-icon-badge, .chart-card__icon, .chart-insight-pill, .range-pills, .meta-item, .branch-pill, .method-pill, .pedido-chip { display: inline-flex; align-items: center; }
+.header-pill, .state-card__icon, .empty-orders__icon, .branch-chip, .order-due, .charge-pill, .order-progress__label, .share-pill-btn, .kpi-icon-badge, .chart-card__icon, .chart-insight-pill, .range-pills, .meta-item, .branch-pill, .method-pill, .pedido-chip { display: inline-flex; align-items: center; }
 .state-card__icon, .empty-orders__icon, .kpi-icon-badge, .chart-card__icon, .chart-empty, .donut-center { justify-content: center; }
 .order-card__top, .order-card__body, .order-progress__caption, .order-card__footer, .kpi-top, .chart-card__header, .recent-card__top { display: flex; align-items: center; justify-content: space-between; }
-.header-pill, .branch-chip, .stage-badge, .charge-pill, .order-progress__step, .share-pill-btn, .chart-insight-pill, .range-pills, .range-pill, .pedido-chip { border-radius: 999px; }
+.header-pill, .branch-chip, .charge-pill, .order-progress__step, .share-pill-btn, .chart-insight-pill, .range-pills, .range-pill, .pedido-chip { border-radius: 999px; }
 .state-card, .empty-orders, .empty-recent, .order-card, .kpi-card, .chart-card, .recent-card { border-radius: 16px; border: $cb; background: #fff; box-shadow: $cshadow; }
 .order-card:hover, .kpi-card:hover, .recent-card:hover { box-shadow: $cshadow-h; }
 .branch-chip span, .order-customer, .donut-row__label, .recent-card__cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .charge-pill, .order-progress__pct, .kpi-value, .chart-insight-pill, .donut-center__value, .donut-row__count, .donut-row__pct, .recent-card__amount { font-variant-numeric: tabular-nums; }
 .order-card:focus-visible, .kpi-card:focus-visible, .range-pill:focus-visible, .recent-card:focus-visible, .pedido-chip:focus-visible { outline: 2px solid $p; outline-offset: 2px; }
-.header-pill, .stage-badge, .charge-pill, .order-progress__pct, .share-pill-btn, .kpi-label, .chart-card__title, .chart-insight-pill, .range-pill, .donut-row__count, .donut-row__pct, .recent-card__cat, .pedido-chip { font-weight: 700; }
+.header-pill, .charge-pill, .order-progress__pct, .share-pill-btn, .kpi-label, .chart-card__title, .chart-insight-pill, .range-pill, .donut-row__count, .donut-row__pct, .recent-card__cat, .pedido-chip { font-weight: 700; }
 .branch-chip, .order-due, .order-folio, .order-progress__label, .order-card__hint, .kpi-subtitle, .range-status, .donut-center__label, .donut-row__label, .branch-pill, .method-pill { font-weight: 600; }
 
 .header-pill {
@@ -68,22 +68,12 @@ $cshadow-h: 0 12px 24px -4px rgba($s9, .12), 0 4px 10px -2px rgba($s9, .06);
 }
 .order-card__top { gap: 8px; flex-wrap: wrap; }
 .branch-chip { gap: 5px; padding: 3px 9px; background: $s1; color: $s7; font-size: 11.5px; max-width: 100%; mat-icon { @include ic(14px); color: $s5; flex-shrink: 0; } }
-.order-card__top-right { gap: 8px; }
-.stage-badge {
-  padding: 3px 8px; font-size: 11px; background: $s1; color: $s7;
-  &.stage--recibido { background: #eff6ff; color: #1d4ed8; }
-  &.stage--lavando { background: #e0f2fe; color: #0369a1; }
-  &.stage--secando { background: #fffbeb; color: #b45309; }
-  &.stage--doblando { background: #f5f3ff; color: #6d28d9; }
-  &.stage--listo, &.stage--entregado { background: #ecfdf5; color: #047857; }
-  &.stage--cancelado { background: #fef2f2; color: #b91c1c; }
-}
 .order-due { gap: 3px; font-size: 11.5px; color: $s5; white-space: nowrap; mat-icon { @include ic(14px); color: #94a3b8; } }
 .order-card__body { gap: 10px; }
 .order-card__identity { min-width: 0; flex: 1; }
 .order-customer { margin: 0 0 5px; font-size: 15px; font-weight: 700; color: $s9; }
 .order-submeta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.order-folio { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: $s5; background: $s0; border: $b; padding: 2px 7px; border-radius: 6px; }
+.order-folio { font-family: var(--font-mono); font-size: 11.5px; color: $s5; background: $s0; border: $b; padding: 2px 7px; border-radius: 6px; }
 .charge-pill {
   padding: 2px 8px; font-size: 11.5px;
   &--due { background: #fff7ed; border: 1px solid #fed7aa; color: #c2410c; }
@@ -95,7 +85,16 @@ $cshadow-h: 0 12px 24px -4px rgba($s9, .12), 0 4px 10px -2px rgba($s9, .06);
 .order-progress__track { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .order-progress__step { height: 5px; background: $bdr; &.is-done { background: #34d399; } &.is-current { background: $p; box-shadow: 0 0 0 2px rgba(25, 106, 255, .16); } }
 .order-progress__caption { font-size: 11.5px; color: $s5; }
-.order-progress__label { gap: 4px; color: $s7; mat-icon { @include ic(14px); color: $p; } }
+.order-progress__label {
+  gap: 5px; color: $s7;
+  mat-icon { @include ic(15px); color: currentColor; }
+  &.stage--recibido { color: #1d4ed8; }
+  &.stage--lavando { color: #0369a1; }
+  &.stage--secando { color: #b45309; }
+  &.stage--doblando { color: #6d28d9; }
+  &.stage--listo, &.stage--entregado { color: #047857; }
+  &.stage--cancelado { color: #b91c1c; }
+}
 .order-card__footer { padding-top: 10px; border-top: 1px solid $bdr; }
 .order-card__hint { font-size: 12px; color: $s5; }
 .share-pill-btn {

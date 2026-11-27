@@ -56,7 +56,7 @@ interface WindowWithBarcodeDetector {
     .scanner-modal {
       padding: 16px;
       max-width: 380px;
-      font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+      font-family: var(--font-ui);
     }
     .scanner-header {
       display: flex;

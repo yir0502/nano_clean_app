@@ -81,15 +81,10 @@
               <mat-icon aria-hidden="true">store</mat-icon>
               <span>{{ card.pedido.sucursal_nombre || 'Sin sucursal' }}</span>
             </span>
-            <div class="order-card__top-right">
-              <span class="stage-badge" [ngClass]="card.stage.cssClass">
-                {{ card.stage.label }}
-              </span>
-              <span class="order-due">
-                <mat-icon aria-hidden="true">event</mat-icon>
-                {{ card.dueDateLabel }}
-              </span>
-            </div>
+            <span class="order-due">
+              <mat-icon aria-hidden="true">event</mat-icon>
+              {{ card.dueDateLabel }}
+            </span>
           </div>
 
           <div class="order-card__body">
@@ -119,7 +114,7 @@
               </span>
             </div>
             <div class="order-progress__caption">
-              <span class="order-progress__label">
+              <span class="order-progress__label" [ngClass]="card.stage.cssClass">
                 <mat-icon aria-hidden="true">{{ card.stage.icon }}</mat-icon>
                 {{ card.stage.label }}
               </span>

@@ -771,7 +771,10 @@ describe('ResumenComponent', () => {
         'Etapa actual: Lavando'
       );
       expect(card1.querySelector('.order-progress__pct')?.textContent?.trim()).toBe('40%');
-      expect(card1.querySelector('.stage-badge')?.classList.contains('stage--lavando')).toBeTrue();
+      expect(card1.querySelector('.stage-badge')).toBeNull();
+      expect(
+        card1.querySelector('.order-progress__label')?.classList.contains('stage--lavando')
+      ).toBeTrue();
       expect(card1.querySelector('.charge-pill--due')?.textContent?.trim()).toBe('Por cobrar $120');
       expect(card1.querySelector('.charge-pill--paid')).toBeNull();
 

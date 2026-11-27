@@ -42,7 +42,7 @@ export interface ConfirmDialogData {
   `,
   styles: [`
     .creative-modal-wrapper {
-      font-family: 'Roboto', 'Helvetica Neue', sans-serif;
+      font-family: var(--font-ui);
     }
 
     .dialog-title {

@@ -46,7 +46,8 @@ import {
 
 ChartJS.register(...registerables);
 
-const FONT_FAMILY = "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+const FONT_FAMILY = "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+ChartJS.defaults.font.family = FONT_FAMILY;
 
 const DARK_TOOLTIP_BASE = {
   backgroundColor: 'rgba(15, 23, 42, 0.94)',
