@@ -61,37 +61,110 @@
         <mat-icon>{{ menuOpen() ? 'menu_open' : 'menu' }}</mat-icon>
       </button>
       <div class="logo-toolbar" role="img" aria-label="Logo principal"></div>
-      <span class="spacer"></span>
-      <div *ngIf="!hideFab()" class="topbar-quick-actions" role="group" aria-label="Acciones rápidas">
-        <button
-          type="button"
-          class="topbar-action-btn topbar-action-btn--pedido"
-          (click)="goToNuevoPedido()"
-          aria-label="Nuevo pedido">
-          <mat-icon aria-hidden="true">add</mat-icon>
-          <span>Pedido</span>
-        </button>
-
-        <button
-          type="button"
-          class="topbar-action-btn topbar-action-btn--egreso"
-          (click)="goToNuevoEgreso()"
-          aria-label="Nuevo egreso">
-          <mat-icon aria-hidden="true">trending_down</mat-icon>
-          <span>Egreso</span>
-        </button>
-      </div>
     </mat-toolbar>
 
     <main class="page" [class.with-nav]="!hideChrome()">
       <router-outlet />
     </main>
 
+    <div
+      *ngIf="!hideChrome() && !hideFab() && orbMenuOpen()"
+      class="orb-backdrop"
+      (click)="closeOrbMenu()">
+    </div>
+
     <div *ngIf="!hideChrome()" class="bottom-dock-shell">
-      <nav class="bottom-nav-dock" role="navigation" aria-label="Navegación inferior">
+      <nav
+        class="bottom-nav-dock"
+        [class.without-center-orb]="hideFab()"
+        role="navigation"
+        aria-label="Navegación inferior">
+
+        @for (burst of trailBursts(); track burst.id) {
+          <div
+            class="water-droplet-trail"
+            [class.dir-right]="burst.dir === 'right'"
+            [class.dir-left]="burst.dir === 'left'"
+            [style.left.px]="burst.left"
+            [style.width.px]="burst.width"
+            aria-hidden="true">
+            <span class="trail-stream"></span>
+            <span class="trail-drop trail-drop--1"></span>
+            <span class="trail-drop trail-drop--2"></span>
+            <span class="trail-drop trail-drop--3"></span>
+          </div>
+        }
+
+        <div
+          *ngIf="dropletVisible()"
+          class="water-droplet-indicator"
+          [class.moving-right]="dropletMotion() === 'right'"
+          [class.moving-left]="dropletMotion() === 'left'"
+          [style.transform]="'translateX(' + dropletLeft() + 'px)'"
+          [style.width.px]="dropletWidth()"
+          aria-hidden="true">
+          <span class="droplet-body"></span>
+          <span class="droplet-bead"></span>
+          <span class="droplet-ripple"></span>
+        </div>
+
         <a
-          *ngFor="let item of bottomNavItems"
+          #navTabEl
+          *ngFor="let item of leftBottomNavItems"
           class="nav-tab"
+          [class.has-droplet]="dropletVisible()"
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.exact === true }">
+          <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
+
+        <div *ngIf="!hideFab()" class="center-orb-slot">
+          <div
+            class="orb-actions-fan"
+            [class.open]="orbMenuOpen()"
+            role="group"
+            aria-label="Acciones rápidas">
+            <button
+              type="button"
+              class="orb-action orb-action--pedido"
+              [attr.tabindex]="orbMenuOpen() ? 0 : -1"
+              (click)="goToNuevoPedido()"
+              aria-label="Nuevo pedido">
+              <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+              <span>Nuevo Pedido</span>
+            </button>
+
+            <button
+              type="button"
+              class="orb-action orb-action--egreso"
+              [attr.tabindex]="orbMenuOpen() ? 0 : -1"
+              (click)="goToNuevoEgreso()"
+              aria-label="Nuevo egreso">
+              <mat-icon aria-hidden="true">trending_down</mat-icon>
+              <span>Nuevo Egreso</span>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="center-water-orb"
+            [class.open]="orbMenuOpen()"
+            [attr.aria-expanded]="orbMenuOpen()"
+            (click)="toggleOrbMenu()"
+            aria-label="Acciones rápidas de creación">
+            <span class="orb-water-layer" aria-hidden="true"></span>
+            <span class="orb-glass-rim" aria-hidden="true"></span>
+            <mat-icon class="orb-icon" aria-hidden="true">add</mat-icon>
+          </button>
+        </div>
+
+        <a
+          #navTabEl
+          *ngFor="let item of rightBottomNavItems"
+          class="nav-tab"
+          [class.has-droplet]="dropletVisible()"
           [routerLink]="item.path"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: item.exact === true }">
