@@ -1,158 +1,653 @@
-<div class="analitica">
-  <div class="page-header">
+<div class="page-container analisis-page">
+  <header class="page-header">
     <div class="title-group">
-      <h2><mat-icon>insights</mat-icon> Análisis por Sucursal</h2>
+      <h2>
+        <mat-icon aria-hidden="true">insights</mat-icon>
+        Análisis por Sucursal
+      </h2>
     </div>
-  </div>
+    <span class="header-pill header-pill--branch" *ngIf="activeSucursalNombre()">
+      <mat-icon aria-hidden="true">store</mat-icon>
+      <span>{{ activeSucursalNombre() }}</span>
+    </span>
+  </header>
 
-  <!-- Controles -->
-  <section class="filters">
-    <mat-form-field appearance="fill" class="suc-field">
-      <mat-label>Sucursal</mat-label>
-      <mat-select [value]="sucursalId()" (selectionChange)="onSucursalChange($event.value)">
-        <mat-option *ngFor="let s of sucursales()" [value]="s.id">{{ s.nombre }}</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <div class="presets">
-      <button mat-stroked-button [class.active]="preset()==='mes'"  (click)="setPreset('mes')">Mes</button>
-      <button mat-stroked-button [class.active]="preset()==='3m'"   (click)="setPreset('3m')">3m</button>
-      <button mat-stroked-button [class.active]="preset()==='6m'"   (click)="setPreset('6m')">6m</button>
-      <button mat-stroked-button [class.active]="preset()==='12m'"  (click)="setPreset('12m')">12m</button>
+  <section
+    class="analisis-skeleton"
+    *ngIf="loading()"
+    aria-busy="true"
+    aria-label="Cargando análisis">
+    <div class="sk-block sk-toolbar"></div>
+    <div class="kpis-grid">
+      <div class="sk-block sk-kpi sk-kpi--hero"></div>
+      <div class="sk-block sk-kpi"></div>
+      <div class="sk-block sk-kpi"></div>
     </div>
-
-    <mat-form-field class="range-field" appearance="fill">
-      <mat-label>Rango</mat-label>
-      <mat-date-range-input [rangePicker]="picker" [comparisonStart]="desde()" [comparisonEnd]="hasta()">
-        <input matStartDate [value]="desde()" (dateChange)="onStartDateChange($event.value)" placeholder="Desde">
-        <input matEndDate   [value]="hasta()" (dateChange)="onEndDateChange($event.value)" placeholder="Hasta">
-      </mat-date-range-input>
-      <button mat-icon-button matSuffix (click)="picker.open()" type="button" aria-label="Abrir calendario">
-        <mat-icon>event</mat-icon>
-      </button>
-      <mat-date-range-picker #picker [touchUi]="true"></mat-date-range-picker>
-    </mat-form-field>
+    <div class="charts-grid">
+      <div class="sk-block sk-chart sk-chart--wide"></div>
+      <div class="sk-block sk-chart"></div>
+      <div class="sk-block sk-chart"></div>
+    </div>
+    <div class="sk-block sk-reparto"></div>
   </section>
 
-  <!-- KPIs (del rango seleccionado) -->
-  <section class="kpis" *ngIf="!loading(); else loadingTpl">
-    <mat-card class="kpi">
-      <div class="kpi__label">Ingresos</div>
-      <div class="kpi__value">{{ totalIngresos() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </mat-card>
-    <mat-card class="kpi">
-      <div class="kpi__label">Egresos</div>
-      <div class="kpi__value">{{ totalEgresos() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </mat-card>
-    <mat-card class="kpi kpi--balance" [class.negativo]="totalBalance()<0">
-      <div class="kpi__label">Balance (rango)</div>
-      <div class="kpi__value">{{ totalBalance() | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-    </mat-card>
+  <section
+    class="state-card state-card--error"
+    *ngIf="!loading() && error()"
+    role="alert">
+    <span class="state-card__icon">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+    </span>
+    <div class="state-card__body">
+      <h3>No se pudo cargar el análisis</h3>
+      <p>{{ error() }}</p>
+    </div>
+    <button type="button" mat-stroked-button class="retry-btn" (click)="reload()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      <span>Reintentar</span>
+    </button>
   </section>
 
-  <!-- Gráficas (rango seleccionado) -->
-  <section class="charts" *ngIf="!loading()">
-    <mat-card class="card card--bar span-2">
-      <mat-card-title>Flujo por {{ preset()==='mes' ? 'semana' : 'mes' }}</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="serieData" [options]="serieOpts" chartType="bar"></canvas>
-      </div>
-    </mat-card>
-
-    <mat-card class="card">
-      <mat-card-title>Ingresos por categoría</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="donaIng" [options]="donaOpts" chartType="doughnut"></canvas>
-      </div>
-    </mat-card>
-
-    <mat-card class="card">
-      <mat-card-title>Egresos por categoría</mat-card-title>
-      <div class="chart">
-        <canvas baseChart [data]="donaEgr" [options]="donaOpts" chartType="doughnut"></canvas>
-      </div>
-    </mat-card>
+  <section
+    class="state-card state-card--empty"
+    *ngIf="!loading() && !error() && sucursales().length === 0">
+    <span class="state-card__icon">
+      <mat-icon aria-hidden="true">store_mall_directory</mat-icon>
+    </span>
+    <div class="state-card__body">
+      <h3>Sin sucursales activas</h3>
+      <p>Agrega o activa una sucursal para consultar el análisis financiero y configurar el reparto de utilidades.</p>
+    </div>
   </section>
 
-  <!-- Reparto de utilidades -->
-  <section class="reparto" *ngIf="!loading()">
-    <mat-card class="card span-2">
-      <mat-card-title>
-        Reparto de utilidades
-        <span class="spacer"></span>
-        <mat-slide-toggle
-          [checked]="useMesActual()"
-          (change)="toggleMesActual($event.checked)">
-          Usar mes actual
-        </mat-slide-toggle>
-      </mat-card-title>
+  <ng-container *ngIf="!loading() && !error() && sucursales().length > 0">
+    <section class="filter-toolbar" aria-label="Filtros de sucursal y periodo">
+      <div class="toolbar-row">
+        <div
+          class="branch-chips"
+          *ngIf="sucursales().length <= 4; else branchSelectTpl"
+          role="group"
+          aria-label="Seleccionar sucursal">
+          <button
+            *ngFor="let s of sucursales(); trackBy: trackBySucursalId"
+            type="button"
+            class="branch-chip-btn"
+            [class.active]="sucursalId() === s.id"
+            [attr.aria-pressed]="sucursalId() === s.id"
+            (click)="onSucursalChange(s.id)">
+            <mat-icon aria-hidden="true">store</mat-icon>
+            <span>{{ s.nombre }}</span>
+          </button>
+        </div>
 
-      <!-- Hint fuente de balance -->
-      <div class="hint">
-        Fuente: <strong>{{ useMesActual() ? 'Balance del mes actual' : 'Balance del rango seleccionado' }}</strong>
-        <ng-container *ngIf="useMesActual()">
-          — Balance mes: <strong>{{ balanceMesActual() | currency:'MXN':'symbol-narrow':'1.0-0' }}</strong>
-          <p>Modifica los porcentajes en base al acuerdo actual de repartición de ganancias.</p>
+        <ng-template #branchSelectTpl>
+          <label class="branch-select-wrap">
+            <mat-icon aria-hidden="true">store</mat-icon>
+            <select
+              class="branch-select"
+              aria-label="Seleccionar sucursal"
+              [value]="sucursalId()"
+              (change)="onSucursalSelectEvent($event)">
+              <option
+                *ngFor="let s of sucursales(); trackBy: trackBySucursalId"
+                [value]="s.id">
+                {{ s.nombre }}
+              </option>
+            </select>
+          </label>
+        </ng-template>
+
+        <div class="presets-group" role="group" aria-label="Rango de fechas">
+          <button
+            *ngFor="let opt of presetOptions"
+            type="button"
+            class="preset-btn"
+            [class.active]="preset() === opt.value"
+            [attr.aria-pressed]="preset() === opt.value"
+            (click)="setPreset(opt.value)">
+            {{ opt.label }}
+          </button>
+          <button
+            type="button"
+            class="preset-btn preset-btn--custom"
+            [class.active]="preset() === 'custom'"
+            [attr.aria-pressed]="preset() === 'custom'"
+            (click)="activateCustomRange()">
+            <mat-icon aria-hidden="true">date_range</mat-icon>
+            <span>Personalizado</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="custom-range" *ngIf="preset() === 'custom' || showCustomRange()">
+        <label class="date-field">
+          <span>Desde</span>
+          <input
+            type="date"
+            aria-label="Fecha inicial"
+            [value]="desde()"
+            (change)="onStartDateInput($event)" />
+        </label>
+        <label class="date-field">
+          <span>Hasta</span>
+          <input
+            type="date"
+            aria-label="Fecha final"
+            [value]="hasta()"
+            (change)="onEndDateInput($event)" />
+        </label>
+        <span class="period-pill" *ngIf="rangePeriodLabel() && !customRangeError()">
+          {{ rangePeriodLabel() }}
+        </span>
+      </div>
+
+      <p class="range-error" role="alert" *ngIf="customRangeError()">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <span>{{ customRangeError() }}</span>
+      </p>
+    </section>
+
+    <section class="kpis-grid" aria-label="Indicadores financieros del rango seleccionado">
+      <article class="kpi-card kpi-card--hero" [class.negativo]="totalBalance() < 0">
+        <mat-icon class="kpi-watermark" aria-hidden="true">
+          {{ totalBalance() >= 0 ? 'account_balance_wallet' : 'trending_down' }}
+        </mat-icon>
+        <div class="kpi-top">
+          <span class="kpi-label">Balance</span>
+          <span class="kpi-icon-badge">
+            <mat-icon aria-hidden="true">
+              {{ totalBalance() >= 0 ? 'account_balance' : 'warning_amber' }}
+            </mat-icon>
+          </span>
+        </div>
+        <div class="kpi-value">{{ formatMxn(totalBalance()) }}</div>
+        <div class="kpi-subtitle">{{ balanceSubtitle() }}</div>
+      </article>
+
+      <article class="kpi-card kpi-card--ingreso">
+        <div class="kpi-top">
+          <span class="kpi-label">Ingresos</span>
+          <span class="kpi-icon-badge">
+            <mat-icon aria-hidden="true">trending_up</mat-icon>
+          </span>
+        </div>
+        <div class="kpi-value">{{ formatMxn(totalIngresos()) }}</div>
+        <div class="kpi-subtitle">{{ rangePeriodLabel() || 'Periodo activo' }}</div>
+      </article>
+
+      <article class="kpi-card kpi-card--egreso">
+        <div class="kpi-top">
+          <span class="kpi-label">Egresos</span>
+          <span class="kpi-icon-badge">
+            <mat-icon aria-hidden="true">trending_down</mat-icon>
+          </span>
+        </div>
+        <div class="kpi-value">{{ formatMxn(totalEgresos()) }}</div>
+        <div class="kpi-subtitle">{{ rangePeriodLabel() || 'Periodo activo' }}</div>
+      </article>
+    </section>
+
+    <section class="charts-grid" aria-label="Gráficas financieras de la sucursal">
+      <article class="chart-card chart-card--wide chart-card--flow">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">show_chart</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">{{ flowTitle() }}</h3>
+              <p class="chart-card__subtitle">{{ flowSubtitle() }}</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + flowInsight().tone">
+            {{ flowInsight().text }}
+          </span>
+        </header>
+
+        <div class="range-status" *ngIf="rangeLoading()" aria-live="polite">
+          <span class="range-status__dot"></span>
+          <span>Actualizando datos...</span>
+        </div>
+
+        <div class="chart-card__body" [class.is-updating]="rangeLoading()">
+          <div class="chart-stage chart-stage--flow" *ngIf="hasFlowData(); else emptyFlow">
+            <canvas
+              baseChart
+              [data]="flowChartData()"
+              [options]="flowChartOptions"
+              [type]="flowChartType">
+            </canvas>
+          </div>
+          <ng-template #emptyFlow>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">show_chart</mat-icon>
+              <p>Sin movimientos registrados en este periodo.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card--ingresos">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">arrow_circle_up</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Ingresos por categoría</h3>
+              <p class="chart-card__subtitle">{{ rangePeriodLabel() || 'Distribución del periodo' }}</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + ingresosDoughnutSummary().insight.tone">
+            {{ ingresosDoughnutSummary().insight.text }}
+          </span>
+        </header>
+
+        <div class="chart-card__body" [class.is-updating]="rangeLoading()">
+          <ng-container *ngIf="hasIngresosDonut(); else emptyIngresos">
+            <div class="donut-stage">
+              <canvas
+                baseChart
+                [data]="ingresosDoughnutData()"
+                [options]="categoryDoughnutOptions"
+                type="doughnut">
+              </canvas>
+              <div class="donut-center">
+                <span class="donut-center__value">{{ formatMxn(ingresosDoughnutSummary().total) }}</span>
+                <span class="donut-center__label">Ingresos</span>
+              </div>
+            </div>
+
+            <ul class="donut-breakdown">
+              <li
+                class="donut-row"
+                *ngFor="let row of ingresosDoughnutSummary().rows; trackBy: trackByCategoryRow">
+                <span class="donut-row__dot" [style.background]="row.color"></span>
+                <span class="donut-row__label">{{ row.nombre }}</span>
+                <span class="donut-row__amount">{{ formatMxn(row.total) }}</span>
+                <span class="donut-row__pct">{{ row.percent }}%</span>
+              </li>
+            </ul>
+          </ng-container>
+          <ng-template #emptyIngresos>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">trending_up</mat-icon>
+              <p>Sin ingresos categorizados en este periodo.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
+
+      <article class="chart-card chart-card--egresos">
+        <header class="chart-card__header">
+          <div class="chart-card__lead">
+            <span class="chart-card__icon">
+              <mat-icon aria-hidden="true">arrow_circle_down</mat-icon>
+            </span>
+            <div class="chart-card__titles">
+              <h3 class="chart-card__title">Egresos por categoría</h3>
+              <p class="chart-card__subtitle">{{ rangePeriodLabel() || 'Distribución del periodo' }}</p>
+            </div>
+          </div>
+          <span
+            class="chart-insight-pill"
+            [ngClass]="'tone--' + egresosDoughnutSummary().insight.tone">
+            {{ egresosDoughnutSummary().insight.text }}
+          </span>
+        </header>
+
+        <div class="chart-card__body" [class.is-updating]="rangeLoading()">
+          <ng-container *ngIf="hasEgresosDonut(); else emptyEgresos">
+            <div class="donut-stage">
+              <canvas
+                baseChart
+                [data]="egresosDoughnutData()"
+                [options]="categoryDoughnutOptions"
+                type="doughnut">
+              </canvas>
+              <div class="donut-center">
+                <span class="donut-center__value">{{ formatMxn(egresosDoughnutSummary().total) }}</span>
+                <span class="donut-center__label">Egresos</span>
+              </div>
+            </div>
+
+            <ul class="donut-breakdown">
+              <li
+                class="donut-row"
+                *ngFor="let row of egresosDoughnutSummary().rows; trackBy: trackByCategoryRow">
+                <span class="donut-row__dot" [style.background]="row.color"></span>
+                <span class="donut-row__label">{{ row.nombre }}</span>
+                <span class="donut-row__amount">{{ formatMxn(row.total) }}</span>
+                <span class="donut-row__pct">{{ row.percent }}%</span>
+              </li>
+            </ul>
+          </ng-container>
+          <ng-template #emptyEgresos>
+            <div class="chart-empty">
+              <mat-icon aria-hidden="true">trending_down</mat-icon>
+              <p>Sin egresos categorizados en este periodo.</p>
+            </div>
+          </ng-template>
+        </div>
+      </article>
+    </section>
+
+    <section class="chart-card chart-card--reparto" aria-labelledby="reparto-title">
+      <header class="chart-card__header">
+        <div class="chart-card__lead">
+          <span class="chart-card__icon">
+            <mat-icon aria-hidden="true">pie_chart</mat-icon>
+          </span>
+          <div class="chart-card__titles">
+            <h3 class="chart-card__title" id="reparto-title">Reparto de Utilidades</h3>
+            <p class="chart-card__subtitle">{{ activeSucursalNombre() }}</p>
+          </div>
+        </div>
+
+        <div class="seg-control" role="group" aria-label="Base de cálculo del reparto">
+          <button
+            type="button"
+            class="seg-opt"
+            [class.active]="repartoSourceMode() === 'mes'"
+            [attr.aria-pressed]="repartoSourceMode() === 'mes'"
+            (click)="setRepartoSourceMode('mes')">
+            Mes actual
+          </button>
+          <button
+            type="button"
+            class="seg-opt"
+            [class.active]="repartoSourceMode() === 'rango'"
+            [attr.aria-pressed]="repartoSourceMode() === 'rango'"
+            (click)="setRepartoSourceMode('rango')">
+            Rango filtrado
+          </button>
+        </div>
+      </header>
+
+      <div class="reparto-meta">
+        <span class="reparto-meta__period">
+          <mat-icon aria-hidden="true">calendar_today</mat-icon>
+          <span>{{ repartoPeriodLabel() || 'Periodo activo' }}</span>
+        </span>
+        <div class="reparto-meta__base">
+          <span class="reparto-meta__label">Utilidad base</span>
+          <strong
+            class="reparto-meta__amount"
+            [class.neg]="repartoBaseBalance() < 0">
+            {{ formatMxn(repartoBaseBalance()) }}
+          </strong>
+        </div>
+      </div>
+
+      <div class="chart-card__body reparto-body">
+        <div class="reparto-loading" *ngIf="repartoLoading()" aria-busy="true">
+          <div class="sk-block sk-reparto-line"></div>
+          <div class="sk-block sk-reparto-grid"></div>
+        </div>
+
+        <div class="reparto-inline-error" *ngIf="!repartoLoading() && repartoLoadError()" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <span>{{ repartoLoadError() }}</span>
+          <button type="button" class="inline-retry-btn" (click)="retryLoadReparto()">
+            Reintentar
+          </button>
+        </div>
+
+        <ng-container *ngIf="!repartoLoading() && !repartoLoadError()">
+          <div
+            class="reparto-zero-notice"
+            *ngIf="!activeDistribution().hasDistributableProfit"
+            role="status">
+            <mat-icon aria-hidden="true">info_outline</mat-icon>
+            <span>Sin utilidad repartible en este periodo</span>
+          </div>
+
+          <div
+            class="reparto-empty"
+            *ngIf="!editingReparto() && isRepartoEmpty()">
+            <span class="reparto-empty__icon">
+              <mat-icon aria-hidden="true">account_balance</mat-icon>
+            </span>
+            <h4>Sin acuerdo configurado</h4>
+            <p>Define el porcentaje de capital del negocio y la participación de cada socio para esta sucursal.</p>
+            <div class="reparto-empty__actions">
+              <button
+                type="button"
+                mat-flat-button
+                color="primary"
+                class="primary-action-btn"
+                (click)="startConfigureReparto()">
+                <mat-icon aria-hidden="true">tune</mat-icon>
+                <span>Configurar acuerdo</span>
+              </button>
+              <button
+                *ngIf="hasLegacyDraftToImport()"
+                type="button"
+                mat-stroked-button
+                class="secondary-action-btn"
+                (click)="importLegacyReparto()">
+                <mat-icon aria-hidden="true">history</mat-icon>
+                <span>Importar acuerdo anterior</span>
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!editingReparto() && !isRepartoEmpty()">
+            <div
+              class="reparto-bar"
+              *ngIf="savedDistribution().segments.length > 0"
+              role="img"
+              aria-label="Distribución porcentual del reparto">
+              <div
+                *ngFor="let seg of savedDistribution().segments; trackBy: trackBySegmentId"
+                class="reparto-bar__seg"
+                [style.width.%]="seg.pct"
+                [style.background]="seg.color"
+                [attr.title]="seg.label + ' (' + seg.pct + '%)'">
+              </div>
+            </div>
+
+            <article class="capital-card" *ngIf="savedDistribution().capitalPct > 0">
+              <div class="capital-card__lead">
+                <span class="capital-card__icon">
+                  <mat-icon aria-hidden="true">savings</mat-icon>
+                </span>
+                <div>
+                  <h4 class="capital-card__title">Capital del negocio</h4>
+                  <p class="capital-card__sub">Reinversión / caja de sucursal</p>
+                </div>
+              </div>
+              <div class="capital-card__values">
+                <span class="pct-pill pct-pill--capital">{{ savedDistribution().capitalPct }}%</span>
+                <strong class="capital-card__amount">{{ formatMxn(savedDistribution().capitalAmount) }}</strong>
+              </div>
+            </article>
+
+            <div class="socios-grid" *ngIf="savedDistribution().socios.length > 0">
+              <article
+                class="socio-card"
+                *ngFor="let socio of savedDistribution().socios; trackBy: trackBySocioId">
+                <div class="socio-card__top">
+                  <span class="socio-avatar" [style.background]="socio.color">
+                    {{ socioInitial(socio.nombre) }}
+                  </span>
+                  <span class="socio-card__name">{{ socio.nombre }}</span>
+                  <span class="pct-pill">{{ socio.pct }}%</span>
+                </div>
+                <div class="socio-card__amount">{{ formatMxn(socio.monto) }}</div>
+              </article>
+            </div>
+
+            <div class="reparto-actions">
+              <button
+                type="button"
+                mat-stroked-button
+                class="secondary-action-btn"
+                (click)="openRepartoEditor()">
+                <mat-icon aria-hidden="true">edit</mat-icon>
+                <span>Editar acuerdo</span>
+              </button>
+              <button
+                type="button"
+                mat-stroked-button
+                class="secondary-action-btn"
+                (click)="copyRepartoSummary()">
+                <mat-icon aria-hidden="true">content_copy</mat-icon>
+                <span>Copiar resumen</span>
+              </button>
+              <button
+                type="button"
+                class="whatsapp-btn"
+                (click)="shareRepartoWhatsapp()">
+                <mat-icon aria-hidden="true">share</mat-icon>
+                <span>WhatsApp</span>
+              </button>
+            </div>
+          </ng-container>
+
+          <div class="reparto-editor" *ngIf="editingReparto()">
+            <div
+              class="reparto-bar"
+              *ngIf="draftDistribution().segments.length > 0"
+              role="img"
+              aria-label="Previsualización de distribución porcentual">
+              <div
+                *ngFor="let seg of draftDistribution().segments; trackBy: trackBySegmentId"
+                class="reparto-bar__seg"
+                [style.width.%]="seg.pct"
+                [style.background]="seg.color"
+                [attr.title]="seg.label + ' (' + seg.pct + '%)'">
+              </div>
+            </div>
+
+            <div class="editor-capital">
+              <div class="editor-capital__info">
+                <span class="capital-card__icon">
+                  <mat-icon aria-hidden="true">savings</mat-icon>
+                </span>
+                <div>
+                  <label class="editor-capital__label" for="reparto-capital-input">
+                    Capital del negocio (%)
+                  </label>
+                  <p class="capital-card__sub">Reinversión / caja de sucursal</p>
+                </div>
+              </div>
+              <div class="editor-capital__controls">
+                <div class="pct-input-wrap">
+                  <input
+                    id="reparto-capital-input"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    [value]="draftCapitalPct()"
+                    (input)="onDraftCapitalInput($event)" />
+                  <span>%</span>
+                </div>
+                <span class="live-amount">{{ formatMxn(draftDistribution().capitalAmount) }}</span>
+              </div>
+            </div>
+
+            <div class="editor-socios">
+              <div
+                class="editor-socio-row"
+                *ngFor="let socio of draftSocios(); let i = index; trackBy: trackBySocioId">
+                <span
+                  class="socio-dot"
+                  [style.background]="draftDistribution().socios[i].color">
+                </span>
+                <input
+                  type="text"
+                  class="socio-name-input"
+                  maxlength="60"
+                  placeholder="Nombre del socio"
+                  [attr.aria-label]="'Nombre del socio ' + (i + 1)"
+                  [value]="socio.nombre"
+                  (input)="onDraftSocioNameInput(socio.id, $event)" />
+                <div class="pct-input-wrap">
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    [attr.aria-label]="'Porcentaje de ' + (socio.nombre || 'socio ' + (i + 1))"
+                    [value]="socio.pct"
+                    (input)="onDraftSocioPctInput(socio.id, $event)" />
+                  <span>%</span>
+                </div>
+                <span class="live-amount">{{ formatMxn(draftDistribution().socios[i].monto) }}</span>
+                <button
+                  type="button"
+                  class="remove-socio-btn"
+                  [attr.aria-label]="'Eliminar a ' + (socio.nombre || 'socio ' + (i + 1))"
+                  (click)="removeDraftSocio(socio.id)">
+                  <mat-icon aria-hidden="true">delete_outline</mat-icon>
+                </button>
+              </div>
+            </div>
+
+            <div class="editor-tools">
+              <button
+                type="button"
+                class="tool-btn"
+                [disabled]="draftSocios().length >= maxSocios"
+                (click)="addDraftSocio()">
+                <mat-icon aria-hidden="true">person_add_alt</mat-icon>
+                <span>+ Agregar socio</span>
+              </button>
+              <button
+                type="button"
+                class="tool-btn"
+                [disabled]="draftSocios().length === 0"
+                (click)="distributeRemainingEqually()">
+                <mat-icon aria-hidden="true">balance</mat-icon>
+                <span>Repartir resto equitativamente</span>
+              </button>
+              <span
+                class="sum-status"
+                [ngClass]="'tone--' + draftSumStatus().tone"
+                aria-live="polite">
+                {{ draftSumStatus().text }}
+              </span>
+            </div>
+
+            <p class="editor-error" role="alert" *ngIf="draftValidationError()">
+              <mat-icon aria-hidden="true">warning_amber</mat-icon>
+              <span>{{ draftValidationError() }}</span>
+            </p>
+
+            <p class="editor-error" role="alert" *ngIf="repartoSaveError()">
+              <mat-icon aria-hidden="true">error_outline</mat-icon>
+              <span>{{ repartoSaveError() }}</span>
+            </p>
+
+            <div class="editor-footer">
+              <button
+                type="button"
+                mat-stroked-button
+                class="secondary-action-btn"
+                [disabled]="savingReparto()"
+                (click)="cancelRepartoEditor()">
+                Cancelar
+              </button>
+              <button
+                type="button"
+                mat-flat-button
+                color="primary"
+                class="primary-action-btn"
+                [disabled]="!canSaveReparto()"
+                (click)="saveReparto()">
+                <mat-icon aria-hidden="true">check</mat-icon>
+                <span>{{ savingReparto() ? 'Guardando...' : 'Guardar acuerdo' }}</span>
+              </button>
+            </div>
+          </div>
         </ng-container>
       </div>
-
-      <form [formGroup]="repartoForm" class="form-reparto">
-        <div class="row">
-          <mat-form-field appearance="fill">
-            <mat-label>Nombre 1</mat-label>
-            <input matInput formControlName="aNombre" placeholder="Socio A">
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>% 1</mat-label>
-            <input matInput type="number" min="0" max="100" formControlName="aPct">
-          </mat-form-field>
-
-          <mat-form-field appearance="fill">
-            <mat-label>Nombre 2</mat-label>
-            <input matInput formControlName="bNombre" placeholder="Socio B">
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>% 2</mat-label>
-            <input matInput type="number" min="0" max="100" formControlName="bPct">
-          </mat-form-field>
-
-          <mat-form-field appearance="fill">
-            <mat-label>Nombre 3</mat-label>
-            <input matInput formControlName="cNombre" placeholder="Socio C">
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>% 3</mat-label>
-            <input matInput type="number" min="0" max="100" formControlName="cPct">
-          </mat-form-field>
-
-          <mat-form-field appearance="fill">
-            <mat-label>Nombre 4</mat-label>
-            <input matInput formControlName="dNombre" placeholder="Socio D">
-          </mat-form-field>
-          <mat-form-field appearance="fill">
-            <mat-label>% 4</mat-label>
-            <input matInput type="number" min="0" max="100" formControlName="dPct">
-          </mat-form-field>
-        </div>
-
-        <div class="actions">
-          <button mat-stroked-button type="button" (click)="equalSplit()">Dividir 1/4</button>
-          <span class="warn" *ngIf="repartoWarning()">{{ repartoWarning() }}</span>
-          <span class="spacer"></span>
-          <button mat-flat-button color="primary" type="button" (click)="saveReparto()">Guardar</button>
-        </div>
-      </form>
-
-      <div class="grid-resultados">
-        <div class="box" *ngFor="let r of repartoResult()">
-          <div class="label">{{ r.nombre }}</div>
-          <div class="value">{{ r.monto | currency:'MXN':'symbol-narrow':'1.0-0' }}</div>
-        </div>
-      </div>
-    </mat-card>
-  </section>
-
-  <ng-template #loadingTpl>
-    <div class="loading"><mat-icon>hourglass_top</mat-icon> Cargando…</div>
-  </ng-template>
+    </section>
+  </ng-container>
 </div>

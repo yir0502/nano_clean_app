@@ -14,6 +14,8 @@ import {
   PedidoEvidencia,
   PedidoUpdatePayload,
   Sucursal,
+  SucursalRepartoConfig,
+  SucursalRepartoPayload,
 } from './models';
 import { AuthService } from './auth.service';
 import { ENV } from './env';
@@ -188,6 +190,20 @@ export class ApiClientService {
   deleteSucursal(id: string): Promise<{ ok: boolean }> {
     this.cacheSucursales.clear();
     return this.deleteGeneric<{ ok: boolean }>(`/sucursales/${id}`);
+  }
+
+  getSucursalReparto(sucursalId: string): Promise<SucursalRepartoConfig> {
+    return this.get<SucursalRepartoConfig>(`/sucursales/${encodeURIComponent(sucursalId)}/reparto`);
+  }
+
+  saveSucursalReparto(
+    sucursalId: string,
+    payload: SucursalRepartoPayload
+  ): Promise<SucursalRepartoConfig> {
+    return this.put<SucursalRepartoConfig>(
+      `/sucursales/${encodeURIComponent(sucursalId)}/reparto`,
+      payload
+    );
   }
 
   listClientes(params?: ClientesQueryParams): Promise<PaginatedResponse<Cliente>> {

@@ -53,6 +53,7 @@ export interface DashboardQueryParams {
   desde?: string;
   hasta?: string;
   org_id?: string;
+  sucursal_id?: string;
   include?: string;
   limit_recientes?: number;
 }

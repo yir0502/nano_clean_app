@@ -158,3 +158,22 @@ export interface ClientStatsResponse {
   frecuencias: ClientStatsFrecuencias;
   segmentos: ClientStatsSegmentos;
 }
+
+export interface RepartoSocioConfig {
+  id: string;
+  nombre: string;
+  pct: number;
+}
+
+export interface SucursalRepartoConfig {
+  sucursal_id: string;
+  capital_pct: number;
+  socios: RepartoSocioConfig[];
+  updated_at: string | null;
+  configurado: boolean;
+}
+
+export interface SucursalRepartoPayload {
+  capital_pct: number;
+  socios: RepartoSocioConfig[];
+}
