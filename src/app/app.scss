@@ -288,101 +288,92 @@ $font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   }
 }
 
-/* Estela de agua limpia y visible detras de la direccion del movimiento */
+/* Estela ondulada organica de agua detras de la direccion del movimiento */
 .water-droplet-trail {
   position: absolute;
-  top: 8px;
-  bottom: 8px;
+  top: 6px;
+  bottom: 6px;
   z-index: 0;
   pointer-events: none;
   overflow: visible;
 
-  .trail-stream {
+  .trail-wave-svg {
     position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 12px;
-    margin-top: -6px;
-    border-radius: 999px;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow: visible;
+  }
+
+  .trail-wave-secondary {
+    opacity: 0.52;
   }
 
   .trail-drop {
     position: absolute;
     top: 50%;
-    border-radius: 50%;
+    border-radius: 50% 50% 50% 16%;
   }
 
   .trail-drop--1 {
-    width: 8px;
-    height: 8px;
-    margin-top: -4px;
-    background: rgba(25, 106, 255, 0.45);
+    width: 7px;
+    height: 7px;
+    margin-top: -9px;
+    background: rgba(25, 106, 255, 0.42);
   }
 
   .trail-drop--2 {
     width: 5.5px;
     height: 5.5px;
-    margin-top: -7px;
+    margin-top: 4px;
     background: rgba(14, 165, 233, 0.42);
   }
 
   .trail-drop--3 {
     width: 4px;
     height: 4px;
-    margin-top: 3px;
-    background: rgba(56, 189, 248, 0.45);
+    margin-top: -5px;
+    background: rgba(56, 189, 248, 0.46);
   }
 
   &.dir-right {
-    .trail-stream {
+    .trail-wave-svg {
       transform-origin: left center;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(56, 189, 248, 0.28) 55%,
-        rgba(25, 106, 255, 0.38) 100%
-      );
-      animation: wakeSweepRight 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: wakeRibbonRight 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .trail-drop--1 {
-      left: 56%;
-      animation: microDropRight 0.48s ease-out forwards;
+      left: 54%;
+      animation: microArcRightUp 0.48s ease-out forwards;
     }
     .trail-drop--2 {
       left: 34%;
-      animation: microDropRight 0.44s 0.04s ease-out forwards;
+      animation: microArcRightDown 0.44s 0.04s ease-out forwards;
     }
     .trail-drop--3 {
       left: 16%;
-      animation: microDropRight 0.4s 0.08s ease-out forwards;
+      animation: microArcRightUp 0.4s 0.08s ease-out forwards;
     }
   }
 
   &.dir-left {
-    .trail-stream {
+    .trail-wave-svg {
       transform-origin: right center;
-      background: linear-gradient(
-        270deg,
-        transparent 0%,
-        rgba(56, 189, 248, 0.28) 55%,
-        rgba(25, 106, 255, 0.38) 100%
-      );
-      animation: wakeSweepLeft 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: wakeRibbonLeft 0.52s cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
 
     .trail-drop--1 {
-      right: 56%;
-      animation: microDropLeft 0.48s ease-out forwards;
+      right: 54%;
+      animation: microArcLeftUp 0.48s ease-out forwards;
     }
     .trail-drop--2 {
       right: 34%;
-      animation: microDropLeft 0.44s 0.04s ease-out forwards;
+      animation: microArcLeftDown 0.44s 0.04s ease-out forwards;
     }
     .trail-drop--3 {
       right: 16%;
-      animation: microDropLeft 0.4s 0.08s ease-out forwards;
+      animation: microArcLeftUp 0.4s 0.08s ease-out forwards;
     }
   }
 }
@@ -676,63 +667,93 @@ $font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   }
 }
 
-@keyframes wakeSweepRight {
+@keyframes wakeRibbonRight {
   0% {
-    opacity: 0.95;
-    transform: scaleX(0.25) scaleY(1.1);
+    opacity: 0.92;
+    transform: scaleX(0.32) scaleY(1.08) translateY(1px);
   }
   42% {
     opacity: 0.85;
-    transform: scaleX(1) scaleY(0.85);
+    transform: scaleX(1.02) scaleY(0.92) translateY(-1.5px);
   }
   100% {
     opacity: 0;
-    transform: translateX(28%) scaleX(0.4) scaleY(0.35);
+    transform: translateX(26%) scaleX(0.45) scaleY(0.45) translateY(1px);
   }
 }
 
-@keyframes wakeSweepLeft {
+@keyframes wakeRibbonLeft {
   0% {
-    opacity: 0.95;
-    transform: scaleX(0.25) scaleY(1.1);
+    opacity: 0.92;
+    transform: scaleX(0.32) scaleY(1.08) translateY(1px);
   }
   42% {
     opacity: 0.85;
-    transform: scaleX(1) scaleY(0.85);
+    transform: scaleX(1.02) scaleY(0.92) translateY(-1.5px);
   }
   100% {
     opacity: 0;
-    transform: translateX(-28%) scaleX(0.4) scaleY(0.35);
+    transform: translateX(-26%) scaleX(0.45) scaleY(0.45) translateY(1px);
   }
 }
 
-@keyframes microDropRight {
+@keyframes microArcRightUp {
   0% {
     opacity: 0;
-    transform: translateX(-14px) scale(0.4);
+    transform: translate(-12px, 3px) rotate(135deg) scale(0.45);
   }
-  32% {
-    opacity: 0.95;
-    transform: translateX(4px) scale(1.05);
+  36% {
+    opacity: 0.92;
+    transform: translate(4px, -4px) rotate(135deg) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translateX(22px) scale(0.2);
+    transform: translate(20px, 1px) rotate(135deg) scale(0.2);
   }
 }
 
-@keyframes microDropLeft {
+@keyframes microArcRightDown {
   0% {
     opacity: 0;
-    transform: translateX(14px) scale(0.4);
+    transform: translate(-10px, -2px) rotate(135deg) scale(0.45);
   }
-  32% {
-    opacity: 0.95;
-    transform: translateX(-4px) scale(1.05);
+  36% {
+    opacity: 0.92;
+    transform: translate(5px, 4px) rotate(135deg) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateX(-22px) scale(0.2);
+    transform: translate(18px, -1px) rotate(135deg) scale(0.2);
+  }
+}
+
+@keyframes microArcLeftUp {
+  0% {
+    opacity: 0;
+    transform: translate(12px, 3px) rotate(-45deg) scale(0.45);
+  }
+  36% {
+    opacity: 0.92;
+    transform: translate(-4px, -4px) rotate(-45deg) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-20px, 1px) rotate(-45deg) scale(0.2);
+  }
+}
+
+@keyframes microArcLeftDown {
+  0% {
+    opacity: 0;
+    transform: translate(10px, -2px) rotate(-45deg) scale(0.45);
+  }
+  36% {
+    opacity: 0.92;
+    transform: translate(-5px, 4px) rotate(-45deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-18px, -1px) rotate(-45deg) scale(0.2);
   }
 }
 
@@ -809,7 +830,7 @@ $font-ui: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
   .center-water-orb .orb-waves-svg--back,
   .center-water-orb .orb-waves-svg--front,
   .water-droplet-indicator .droplet-body,
-  .water-droplet-trail .trail-stream,
+  .water-droplet-trail .trail-wave-svg,
   .water-droplet-trail .trail-drop {
     animation: none;
   }
