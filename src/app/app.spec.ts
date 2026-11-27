@@ -163,7 +163,8 @@ describe('AppComponent', () => {
     expect(app.trailBursts()[0].dir).toBe('right');
 
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('.water-droplet-trail.dir-right')).not.toBeNull();
+    expect(compiled.querySelector('.water-droplet-trail.dir-right .trail-wave-svg')).not.toBeNull();
+    expect(compiled.querySelector('.water-droplet-trail .trail-stream')).toBeNull();
 
     // Mover hacia la izquierda: Movimientos (2) -> Pedidos (1)
     await router.navigateByUrl('/pedidos');
@@ -172,7 +173,7 @@ describe('AppComponent', () => {
     expect(app.dropletMotion()).toBe('left');
     expect(app.trailBursts().length).toBe(1);
     expect(app.trailBursts()[0].dir).toBe('left');
-    expect(compiled.querySelector('.water-droplet-trail.dir-left')).not.toBeNull();
+    expect(compiled.querySelector('.water-droplet-trail.dir-left .trail-wave-svg')).not.toBeNull();
   });
 
   it('abre el sidebar al deslizar de izquierda a derecha, ignora scroll vertical y cierra al deslizar de derecha a izquierda', () => {

@@ -88,7 +88,25 @@
             [style.left.px]="burst.left"
             [style.width.px]="burst.width"
             aria-hidden="true">
-            <span class="trail-stream"></span>
+            <svg class="trail-wave-svg" viewBox="0 0 120 36" preserveAspectRatio="none">
+              <defs>
+                <linearGradient [attr.id]="'wakeGrad-' + burst.id" x1="0%" y1="50%" x2="100%" y2="50%">
+                  <stop offset="0%" stop-color="#38bdf8" stop-opacity="0" />
+                  <stop offset="52%" stop-color="#38bdf8" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#196aff" stop-opacity="0.42" />
+                </linearGradient>
+              </defs>
+              <g [attr.transform]="burst.dir === 'left' ? 'translate(120 0) scale(-1 1)' : null">
+                <path
+                  class="trail-wave-primary"
+                  [attr.fill]="'url(#wakeGrad-' + burst.id + ')'"
+                  d="M2,19 C22,9 44,25 68,14 C88,5 104,13 118,16 C106,24 88,28 66,22 C44,17 24,27 2,19 Z" />
+                <path
+                  class="trail-wave-secondary"
+                  [attr.fill]="'url(#wakeGrad-' + burst.id + ')'"
+                  d="M14,25 C34,19 54,30 78,24 C96,19 108,22 116,20 C104,29 84,31 62,27 C42,24 28,29 14,25 Z" />
+              </g>
+            </svg>
             <span class="trail-drop trail-drop--1"></span>
             <span class="trail-drop trail-drop--2"></span>
             <span class="trail-drop trail-drop--3"></span>
