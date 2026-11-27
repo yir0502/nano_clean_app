@@ -19,7 +19,7 @@ $cshadow-h: 0 12px 24px -4px rgba($s9, .12), 0 4px 10px -2px rgba($s9, .06);
 
 @mixin ic($z) { font-size: $z; width: $z; height: $z; line-height: $z; }
 
-.page-container.resumen-page { max-width: 1120px; padding-bottom: 96px; font-family: var(--font-ui); }
+.page-container.resumen-page { max-width: 1120px; font-family: var(--font-ui); }
 .resumen-section { margin-bottom: 24px; }
 
 .resumen-skeleton, .state-card, .empty-orders, .empty-recent, .order-card, .order-progress, .kpi-card, .chart-card, .chart-empty, .donut-center, .donut-breakdown, .recent-list, .recent-card { display: flex; flex-direction: column; }
@@ -214,7 +214,6 @@ $cshadow-h: 0 12px 24px -4px rgba($s9, .12), 0 4px 10px -2px rgba($s9, .06);
 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(1.25); } }
 
 @media (min-width: 900px) {
-  .page-container.resumen-page { padding-bottom: 36px; }
   .orders-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   .kpis-grid { grid-template-columns: 1.25fr 1fr 1fr 1fr; gap: 14px; }
   .sk-kpi--wide, .kpi-card--hero, .kpi-card--deuda { grid-column: auto; }

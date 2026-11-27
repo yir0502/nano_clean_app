@@ -77,7 +77,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/compo
     .sticky-toolbar p { margin: 0 12px; font-size: 13px;}
     .sticky-toolbar { position: sticky; top: 45px; z-index: 10; background: white; padding: 10px 0 10px 0; border-bottom: 1px solid #e0e0e0; }
 
-    .content-container { padding: 12px; max-width: 800px; padding-bottom: 120px; }
+    .content-container { padding: 12px 12px 16px; max-width: 800px; }
     
     .empty-state {
       text-align: center;
