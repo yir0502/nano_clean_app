@@ -417,8 +417,6 @@
             <div class="reparto-empty__actions">
               <button
                 type="button"
-                mat-flat-button
-                color="primary"
                 class="primary-action-btn"
                 (click)="startConfigureReparto()">
                 <mat-icon aria-hidden="true">tune</mat-icon>
@@ -427,7 +425,6 @@
               <button
                 *ngIf="hasLegacyDraftToImport()"
                 type="button"
-                mat-stroked-button
                 class="secondary-action-btn"
                 (click)="importLegacyReparto()">
                 <mat-icon aria-hidden="true">history</mat-icon>
@@ -485,7 +482,6 @@
             <div class="reparto-actions">
               <button
                 type="button"
-                mat-stroked-button
                 class="secondary-action-btn"
                 (click)="openRepartoEditor()">
                 <mat-icon aria-hidden="true">edit</mat-icon>
@@ -493,8 +489,7 @@
               </button>
               <button
                 type="button"
-                mat-stroked-button
-                class="secondary-action-btn"
+                class="secondary-action-btn reparto-copy-btn"
                 (click)="copyRepartoSummary()">
                 <mat-icon aria-hidden="true">content_copy</mat-icon>
                 <span>Copiar resumen</span>
@@ -628,7 +623,6 @@
             <div class="editor-footer">
               <button
                 type="button"
-                mat-stroked-button
                 class="secondary-action-btn"
                 [disabled]="savingReparto()"
                 (click)="cancelRepartoEditor()">
@@ -636,8 +630,6 @@
               </button>
               <button
                 type="button"
-                mat-flat-button
-                color="primary"
                 class="primary-action-btn"
                 [disabled]="!canSaveReparto()"
                 (click)="saveReparto()">
