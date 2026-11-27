@@ -197,4 +197,18 @@ describe('AppComponent', () => {
     app.onEdgeSwipeEnd(createTouchEvent('touchend', 25, 290));
     expect(app.menuOpen()).toBeFalse();
   });
+
+  it('centra el logo en la barra superior con altura de 50px', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const logo = compiled.querySelector('mat-toolbar .logo-toolbar') as HTMLElement;
+    expect(logo).not.toBeNull();
+
+    const style = window.getComputedStyle(logo);
+    expect(style.height).toBe('50px');
+    expect(style.position).toBe('absolute');
+    expect(style.backgroundPositionX).toBe('50%');
+  });
 });

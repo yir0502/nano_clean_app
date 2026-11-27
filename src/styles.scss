@@ -168,7 +168,7 @@ mat-toolbar.bubbly {
   position: relative;
   overflow: hidden;
   background: linear-gradient(90deg, var(--brand-primary), var(--brand-primary-light));
-  height: 45px;
+  height: 58px;
 }
 
 /* ==========================================================================
@@ -374,12 +374,12 @@ mat-toolbar.bubbly::before {
 }
 
 .logo-toolbar {
-  height: 55px;
-  width: 140px;
+  height: 50px;
+  width: 168px;
   background-image: var(--brand-logo-url);
   background-size: contain;
   background-repeat: no-repeat;
-  background-position: left center;
+  background-position: center;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25));
 }
 
