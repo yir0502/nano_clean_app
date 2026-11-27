@@ -91,7 +91,6 @@
             <span class="trail-stream"></span>
             <span class="trail-drop trail-drop--1"></span>
             <span class="trail-drop trail-drop--2"></span>
-            <span class="trail-drop trail-drop--3"></span>
           </div>
         }
 
@@ -105,7 +104,6 @@
           aria-hidden="true">
           <span class="droplet-body"></span>
           <span class="droplet-bead"></span>
-          <span class="droplet-ripple"></span>
         </div>
 
         <a
@@ -132,7 +130,9 @@
               [attr.tabindex]="orbMenuOpen() ? 0 : -1"
               (click)="goToNuevoPedido()"
               aria-label="Nuevo pedido">
-              <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+              <span class="orb-action__icon" aria-hidden="true">
+                <mat-icon>local_laundry_service</mat-icon>
+              </span>
               <span>Nuevo Pedido</span>
             </button>
 
@@ -142,7 +142,9 @@
               [attr.tabindex]="orbMenuOpen() ? 0 : -1"
               (click)="goToNuevoEgreso()"
               aria-label="Nuevo egreso">
-              <mat-icon aria-hidden="true">trending_down</mat-icon>
+              <span class="orb-action__icon" aria-hidden="true">
+                <mat-icon>trending_down</mat-icon>
+              </span>
               <span>Nuevo Egreso</span>
             </button>
           </div>
@@ -155,8 +157,10 @@
             (click)="toggleOrbMenu()"
             aria-label="Acciones rápidas de creación">
             <span class="orb-water-layer" aria-hidden="true"></span>
-            <span class="orb-glass-rim" aria-hidden="true"></span>
-            <mat-icon class="orb-icon" aria-hidden="true">add</mat-icon>
+            <svg class="orb-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></line>
+              <line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"></line>
+            </svg>
           </button>
         </div>
 

@@ -53,7 +53,7 @@ interface TabGeometry {
   width: number;
 }
 
-const TRAIL_DURATION_MS = 540;
+const TRAIL_DURATION_MS = 460;
 
 @Component({
   selector: 'app-root',

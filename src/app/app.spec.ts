@@ -101,6 +101,7 @@ describe('AppComponent', () => {
     expect(navTabs).not.toContain('Deudas');
     expect(centerOrb).not.toBeNull();
     expect(centerOrb.querySelector('.orb-water-layer')).not.toBeNull();
+    expect(centerOrb.querySelector('svg.orb-icon')).not.toBeNull();
     expect(app.additionalNavOptions.some((opt) => opt.path === '/deudas')).toBeTrue();
   });
 
