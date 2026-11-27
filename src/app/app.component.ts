@@ -53,7 +53,7 @@ interface TabGeometry {
   width: number;
 }
 
-const TRAIL_DURATION_MS = 460;
+const TRAIL_DURATION_MS = 540;
 
 @Component({
   selector: 'app-root',
@@ -98,6 +98,7 @@ export class AppComponent implements AfterViewInit {
   dropletLeft = signal<number>(0);
   dropletWidth = signal<number>(0);
   dropletMotion = signal<'idle' | 'left' | 'right'>('idle');
+  dropletAnimPhase = signal<'a' | 'b'>('a');
   trailBursts = signal<ReadonlyArray<DropletTrailBurst>>([]);
 
   readonly additionalNavOptions: ReadonlyArray<NavOption> = [
@@ -399,6 +400,7 @@ export class AppComponent implements AfterViewInit {
       const trailLeft = Math.max(0, Math.min(wakeStart, wakeEnd));
       const trailWidth = Math.max(28, Math.abs(wakeEnd - wakeStart));
 
+      this.dropletAnimPhase.update((p) => (p === 'a' ? 'b' : 'a'));
       this.dropletMotion.set(dir);
       this.burstCounter += 1;
       this.trailBursts.set([{ id: this.burstCounter, dir, left: trailLeft, width: trailWidth }]);
