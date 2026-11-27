@@ -1,40 +1,68 @@
-<mat-sidenav-container class="app-container" autosize>
-    
-  <mat-sidenav #drawer mode="over" position="start" 
-               [opened]="menuOpen()" 
-               (closedStart)="menuOpen.set(false)"
-               class="bubbly-drawer">
-    
+<mat-sidenav-container
+  class="app-container"
+  autosize
+  (touchstart)="onEdgeSwipeStart($event)"
+  (touchmove)="onEdgeSwipeMove($event)"
+  (touchend)="onEdgeSwipeEnd($event)">
+
+  <mat-sidenav
+    #drawer
+    mode="over"
+    position="start"
+    [opened]="menuOpen()"
+    (closedStart)="menuOpen.set(false)"
+    (touchstart)="onDrawerSwipeStart($event)"
+    (touchmove)="onDrawerSwipeMove($event)"
+    (touchend)="onDrawerSwipeEnd($event)"
+    class="bubbly-drawer">
+
     <div class="drawer-header">
       <div class="logo-drawer" role="img" aria-label="Logo principal"></div>
-      <button mat-icon-button (click)="toggleMenu()">
+      <button mat-icon-button type="button" (click)="toggleMenu()" aria-label="Cerrar menú lateral">
         <mat-icon>close</mat-icon>
       </button>
     </div>
 
     <mat-nav-list class="drawer-list">
-      <a mat-list-item 
-         *ngFor="let option of additionalNavOptions" 
-         (click)="navigateAndCloseMenu(option.path)">
+      <a
+        mat-list-item
+        *ngFor="let option of additionalNavOptions"
+        [routerLink]="option.path"
+        routerLinkActive="active-drawer-link"
+        [routerLinkActiveOptions]="{ exact: option.exact === true }"
+        (click)="menuOpen.set(false)">
         <mat-icon matListItemIcon>{{ option.icon }}</mat-icon>
         <span matListItemTitle>{{ option.label }}</span>
       </a>
       <mat-divider></mat-divider>
       <a mat-list-item *ngIf="auth.isLoggedIn()" (click)="logoutAndClose()">
-         <mat-icon matListItemIcon color="warn">logout</mat-icon>
-         <span matListItemTitle>Salir</span>
+        <mat-icon matListItemIcon color="warn">logout</mat-icon>
+        <span matListItemTitle>Salir</span>
       </a>
     </mat-nav-list>
-  
   </mat-sidenav>
 
-
   <mat-sidenav-content>
-    
+    <div
+      *ngIf="!hideChrome() && !menuOpen()"
+      class="drawer-edge-zone"
+      (touchstart)="onEdgeSwipeStart($event)"
+      (touchmove)="onEdgeSwipeMove($event)"
+      (touchend)="onEdgeSwipeEnd($event)">
+    </div>
+
     <mat-toolbar *ngIf="!hideChrome()" color="primary" class="bubbly">
+      <button
+        type="button"
+        class="topbar-menu-btn"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen()"
+        aria-label="Abrir o cerrar menú de navegación">
+        <mat-icon>{{ menuOpen() ? 'menu_open' : 'menu' }}</mat-icon>
+      </button>
       <div class="logo-toolbar" role="img" aria-label="Logo principal"></div>
       <span class="spacer"></span>
-      <button mat-button class="logout-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">
+      <button mat-button type="button" class="logout-btn" *ngIf="auth.isLoggedIn()" (click)="logout()">
         <mat-icon>logout</mat-icon><span>Salir</span>
       </button>
     </mat-toolbar>
@@ -43,59 +71,42 @@
       <router-outlet />
     </main>
 
-    <nav *ngIf="!hideChrome()" class="mobile-nav" role="navigation" aria-label="Navegación inferior">
-      <a mat-button (click)="toggleMenu()" aria-label="Más opciones de navegación" class="more-options-button" [class.active]="menuOpen()">
-        <mat-icon>menu_open</mat-icon> <i class="indicator"></i>
-      </a>
-      <a mat-button routerLink="/pedidos" routerLinkActive="active">
-        <mat-icon>local_laundry_service</mat-icon><span>Pedidos</span>
-        <i class="indicator"></i>
-      </a>
-      <a mat-button routerLink="/resumen" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
-        <mat-icon>insights</mat-icon><span>Resumen</span>
-        <i class="indicator"></i>
-      </a>
-      <a mat-button routerLink="/movimientos" routerLinkActive="active">
-        <mat-icon>list_alt</mat-icon><span>Movimientos</span>
-        <i class="indicator"></i>
-      </a>
-      <a mat-button routerLink="/deudas" routerLinkActive="active">
-        <mat-icon>request_quote</mat-icon><span>Deudas</span>
-        <i class="indicator"></i>
-      </a>
-    </nav>
+    <div *ngIf="!hideChrome()" class="bottom-dock-shell">
+      <div class="bottom-dock-inner">
+        <nav class="bottom-nav-dock" role="navigation" aria-label="Navegación inferior">
+          <a
+            *ngFor="let item of bottomNavItems"
+            class="nav-tab"
+            [routerLink]="item.path"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: item.exact === true }">
+            <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </a>
+        </nav>
 
-    <div *ngIf="!hideFab()" class="fab-container">
-      <div class="fab-options" [class.open]="fabMenuOpen()">
-        <button mat-mini-fab (click)="navigateAndCloseFab('/administracion/categorias/nuevo')" 
-                aria-label="Agregar categoría" class="fab-option">
-          <span class="label"><mat-icon class="icon-label">category</mat-icon>Categoría</span>
-        </button>
+        <div *ngIf="!hideFab()" class="bottom-quick-actions" role="group" aria-label="Acciones rápidas">
+          <button
+            type="button"
+            class="quick-action-btn quick-action-btn--pedido"
+            (click)="goToNuevoPedido()"
+            aria-label="Nuevo pedido">
+            <mat-icon aria-hidden="true">add_circle</mat-icon>
+            <span>Pedido</span>
+          </button>
 
-        <button mat-mini-fab (click)="navigateAndCloseFab('/clientes')" 
-                aria-label="Clientes" class="fab-option">
-          <span class="label"><mat-icon class="icon-label">group</mat-icon>Clientes</span>
-        </button>
-
-        <button mat-mini-fab (click)="navigateAndCloseFab('/movimientos/nuevo')" 
-                aria-label="Nuevo movimiento" class="fab-option">
-          <span class="label"><mat-icon class="icon-label">payment</mat-icon>Movimiento</span>
-        </button>
-        
-        <button mat-mini-fab (click)="navigateAndCloseFab('/pedidos/nuevo')" 
-                aria-label="Agregar pedido" class="fab-option">
-          <span class="label"><mat-icon class="icon-label">work</mat-icon>Pedido</span>
-        </button>
+          <button
+            type="button"
+            class="quick-action-btn quick-action-btn--egreso"
+            (click)="goToNuevoEgreso()"
+            aria-label="Nuevo egreso">
+            <mat-icon aria-hidden="true">trending_down</mat-icon>
+            <span>Egreso</span>
+          </button>
+        </div>
       </div>
-      
-      <button mat-fab class="fab-main" color="primary" (click)="toggleFabMenu()" aria-label="Opciones rápidas">
-        <mat-icon *ngIf="!fabMenuOpen()">add</mat-icon>
-        <mat-icon *ngIf="fabMenuOpen()">close</mat-icon>
-      </button>
     </div>
-
   </mat-sidenav-content>
 </mat-sidenav-container>
 
-<!-- Loader Global Overlay -->
 <app-loader />
