@@ -52,7 +52,7 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('crea la aplicacion y coloca el boton del sidebar en la esquina superior izquierda', () => {
+  it('coloca el menu en esquina superior izquierda y los botones rapidos en la derecha del topbar dejando Salir en el sidebar', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     fixture.detectChanges();
@@ -60,14 +60,16 @@ describe('AppComponent', () => {
     const compiled = fixture.nativeElement as HTMLElement;
     const toolbar = compiled.querySelector('mat-toolbar') as HTMLElement;
     const topbarMenuBtn = toolbar.querySelector('.topbar-menu-btn') as HTMLButtonElement;
-    const dockNav = compiled.querySelector('.bottom-nav-dock') as HTMLElement;
+    const quickActions = toolbar.querySelector('.topbar-quick-actions') as HTMLElement;
+    const drawerText = compiled.querySelector('.drawer-list')?.textContent || '';
 
     expect(app).toBeTruthy();
     expect(compiled.querySelector('.app-container')).not.toBeNull();
     expect(toolbar).not.toBeNull();
-    expect(topbarMenuBtn).not.toBeNull();
     expect(toolbar.firstElementChild).toBe(topbarMenuBtn);
-    expect(dockNav.querySelector('.more-options-button')).toBeNull();
+    expect(quickActions).not.toBeNull();
+    expect(toolbar.querySelector('.logout-btn')).toBeNull();
+    expect(drawerText).toContain('Salir');
 
     expect(app.menuOpen()).toBeFalse();
     topbarMenuBtn.click();
@@ -75,22 +77,25 @@ describe('AppComponent', () => {
     expect(app.menuOpen()).toBeTrue();
   });
 
-  it('renderiza los 4 accesos en la barra inferior en orden exacto sin Deudas y conserva Deudas en el sidebar', () => {
+  it('deja la barra inferior unicamente con los 4 accesos en orden exacto sin Deudas ni botones de accion rapida', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const navTabs = Array.from(compiled.querySelectorAll('.bottom-nav-dock .nav-tab span')).map(
+    const dockShell = compiled.querySelector('.bottom-dock-shell') as HTMLElement;
+    const navTabs = Array.from(dockShell.querySelectorAll('.bottom-nav-dock .nav-tab span')).map(
       (el) => el.textContent?.trim()
     );
 
     expect(navTabs).toEqual(['Resumen', 'Pedidos', 'Movimientos', 'Análisis']);
     expect(navTabs).not.toContain('Deudas');
+    expect(dockShell.querySelector('.more-options-button')).toBeNull();
+    expect(dockShell.querySelectorAll('button').length).toBe(0);
     expect(app.additionalNavOptions.some((opt) => opt.path === '/deudas')).toBeTrue();
   });
 
-  it('navega con los dos botones separados de accion rapida a nuevo pedido y nuevo egreso', () => {
+  it('navega con los botones del topbar a nuevo pedido y nuevo egreso', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = spyOn(router, 'navigate').and.resolveTo(true);
 
@@ -98,8 +103,8 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
-    const pedidoBtn = compiled.querySelector('.quick-action-btn--pedido') as HTMLButtonElement;
-    const egresoBtn = compiled.querySelector('.quick-action-btn--egreso') as HTMLButtonElement;
+    const pedidoBtn = compiled.querySelector('.topbar-action-btn--pedido') as HTMLButtonElement;
+    const egresoBtn = compiled.querySelector('.topbar-action-btn--egreso') as HTMLButtonElement;
 
     expect(pedidoBtn).not.toBeNull();
     expect(egresoBtn).not.toBeNull();
