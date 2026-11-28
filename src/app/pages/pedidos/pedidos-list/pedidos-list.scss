@@ -51,7 +51,7 @@ button { cursor: pointer; transition: .16s; &:disabled { opacity: .5; cursor: no
 .search-clear-btn { --iz: 15px; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--b2); color: #475569; &:hover { background: var(--b); color: #0f172a; } }
 
 .stage-chips, .order-submeta { display: flex; flex-wrap: wrap; gap: 6px; }
-.presets-row { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.presets-row { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; &::-webkit-scrollbar { display: none; } }
 .stage-chip, .preset-btn {
   display: inline-flex; align-items: center; gap: 5px; height: 30px; padding: 0 9px; border: var(--bd);
   background: #f8fafc; color: #334155; font-size: 12px; font-weight: 600; white-space: nowrap;
