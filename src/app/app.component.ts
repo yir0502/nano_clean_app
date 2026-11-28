@@ -150,10 +150,27 @@ export class AppComponent implements AfterViewInit {
     )
   );
 
+  private readonly bottomNavHiddenSig = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => {
+        let r: ActivatedRoute | null = this.route;
+        while (r?.firstChild) r = r.firstChild;
+        return r?.snapshot.data?.['hideBottomNav'] === true;
+      }),
+      startWith(false)
+    )
+  );
+
   hideChrome = computed(() => this.hideSig());
 
-  hideFab = computed(() => {
+  hideBottomNav = computed(() => {
     if (this.hideChrome()) return true;
+    return this.bottomNavHiddenSig();
+  });
+
+  hideFab = computed(() => {
+    if (this.hideChrome() || this.hideBottomNav()) return true;
     return this.fabSig();
   });
 

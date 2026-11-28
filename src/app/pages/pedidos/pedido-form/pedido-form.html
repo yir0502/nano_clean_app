@@ -353,50 +353,69 @@
                 }
               </div>
 
-              <div class="sub-box gr">
-                <span class="field-lbl">Captura rápida por peso o toque</span>
-                <div class="fl fw g6">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    class="kg-inp mono"
-                    aria-label="Kilogramos"
-                    placeholder="Kg (ej. 4.5)"
-                    [value]="kilosCaptura() ?? ''"
-                    (input)="onKilosInput($event)"
-                    (keydown.enter)="$event.preventDefault(); aplicarCalculoKilos()" />
-                  <span class="kg-x" aria-hidden="true">x</span>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    class="kg-inp mono"
-                    aria-label="Tarifa por kilogramo"
-                    placeholder="$/kg"
-                    [value]="tarifaKg() > 0 ? tarifaKg() : ''"
-                    (input)="onTarifaInput($event)"
-                    (keydown.enter)="$event.preventDefault(); aplicarCalculoKilos()" />
-                  <button
-                    type="button"
-                    class="kg-add-btn"
-                    [disabled]="(kilosCaptura() ?? 0) <= 0"
-                    (click)="aplicarCalculoKilos()">
-                    @if (subtotalKilosPreview() > 0) {
-                      + Agregar ({{ formatMxn(subtotalKilosPreview()) }})
-                    } @else {
-                      + Agregar kg
-                    }
-                  </button>
-                </div>
+              <div class="sub-box pos-box gr" [class.is-open]="posExpanded()">
+                <button
+                  type="button"
+                  class="pos-toggle flb"
+                  [attr.aria-expanded]="posExpanded()"
+                  aria-controls="pf-pos-panel"
+                  (click)="togglePosExpanded()">
+                  <span class="ifl">
+                    <mat-icon aria-hidden="true">bolt</mat-icon>
+                    <span class="field-lbl">Captura rápida por peso o toque</span>
+                  </span>
+                  <span class="pos-toggle__meta ifl">
+                    <span class="mini-lbl">{{ posExpanded() ? 'Ocultar' : 'Abrir' }}</span>
+                    <mat-icon aria-hidden="true">{{ posExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </span>
+                </button>
 
-                <div class="fl fw g6">
-                  @for (prenda of prendasRapidas; track prenda) {
-                    <button type="button" class="chip-btn ifl" (click)="agregarPrendaRapida(prenda)">
-                      + {{ prenda }}
-                    </button>
-                  }
-                </div>
+                @if (posExpanded()) {
+                  <div id="pf-pos-panel" class="pos-panel gr">
+                    <div class="fl fw g6">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        class="kg-inp mono"
+                        aria-label="Kilogramos"
+                        placeholder="Kg (ej. 4.5)"
+                        [value]="kilosCaptura() ?? ''"
+                        (input)="onKilosInput($event)"
+                        (keydown.enter)="$event.preventDefault(); aplicarCalculoKilos()" />
+                      <span class="kg-x" aria-hidden="true">x</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        class="kg-inp mono"
+                        aria-label="Tarifa por kilogramo"
+                        placeholder="$/kg"
+                        [value]="tarifaKg() > 0 ? tarifaKg() : ''"
+                        (input)="onTarifaInput($event)"
+                        (keydown.enter)="$event.preventDefault(); aplicarCalculoKilos()" />
+                      <button
+                        type="button"
+                        class="kg-add-btn"
+                        [disabled]="(kilosCaptura() ?? 0) <= 0"
+                        (click)="aplicarCalculoKilos()">
+                        @if (subtotalKilosPreview() > 0) {
+                          + Agregar ({{ formatMxn(subtotalKilosPreview()) }})
+                        } @else {
+                          + Agregar kg
+                        }
+                      </button>
+                    </div>
+
+                    <div class="fl fw g6">
+                      @for (prenda of prendasRapidas; track prenda) {
+                        <button type="button" class="chip-btn ifl" (click)="agregarPrendaRapida(prenda)">
+                          + {{ prenda }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+                }
               </div>
 
               <div class="gr g6">

@@ -365,9 +365,9 @@ export function getNextStatusAction(estado: string): NextStatusAction | null {
   }
 }
 
-export function canJumpToReady(estado: string): boolean {
-  const normalized = typeof estado === 'string' ? estado.trim().toLowerCase() : '';
-  return normalized === 'recibido' || normalized === 'lavando' || normalized === 'secando';
+// El flujo operativo exige avanzar etapa por etapa sin saltar directo a listo
+export function canJumpToReady(_estado: string): boolean {
+  return false;
 }
 
 export function calculateOrderCardProgress(estado: string): number {

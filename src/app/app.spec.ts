@@ -51,7 +51,16 @@ describe('AppComponent', () => {
         provideRouter([
           { path: 'resumen', component: DummyRouteComponent },
           { path: 'pedidos', component: DummyRouteComponent },
-          { path: 'pedidos/nuevo', component: DummyRouteComponent, data: { hideFab: true } },
+          {
+            path: 'pedidos/nuevo',
+            component: DummyRouteComponent,
+            data: { hideFab: true, hideBottomNav: true },
+          },
+          {
+            path: 'pedidos/:id',
+            component: DummyRouteComponent,
+            data: { hideFab: true, hideBottomNav: true },
+          },
           { path: 'movimientos', component: DummyRouteComponent },
           { path: 'movimientos/nuevo', component: DummyRouteComponent, data: { hideFab: true } },
           { path: 'analisis', component: DummyRouteComponent },
@@ -210,5 +219,39 @@ describe('AppComponent', () => {
     expect(style.height).toBe('50px');
     expect(style.position).toBe('absolute');
     expect(style.backgroundPositionX).toBe('50%');
+  });
+
+  it('oculta con clase animada el menu inferior al crear o editar pedido y lo restaura al salir', async () => {
+    const router = TestBed.inject(Router);
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    const dockShell = compiled.querySelector('.bottom-dock-shell') as HTMLElement;
+    const pageMain = compiled.querySelector('main.page') as HTMLElement;
+
+    await router.navigateByUrl('/pedidos');
+    fixture.detectChanges();
+    expect(app.hideBottomNav()).toBeFalse();
+    expect(dockShell.classList.contains('is-hidden')).toBeFalse();
+    expect(pageMain.classList.contains('no-bottom-nav')).toBeFalse();
+
+    await router.navigateByUrl('/pedidos/nuevo');
+    fixture.detectChanges();
+    expect(app.hideBottomNav()).toBeTrue();
+    expect(dockShell.classList.contains('is-hidden')).toBeTrue();
+    expect(dockShell.getAttribute('aria-hidden')).toBe('true');
+    expect(pageMain.classList.contains('no-bottom-nav')).toBeTrue();
+
+    await router.navigateByUrl('/pedidos/ped-42');
+    fixture.detectChanges();
+    expect(app.hideBottomNav()).toBeTrue();
+    expect(dockShell.classList.contains('is-hidden')).toBeTrue();
+
+    await router.navigateByUrl('/pedidos');
+    fixture.detectChanges();
+    expect(app.hideBottomNav()).toBeFalse();
+    expect(dockShell.classList.contains('is-hidden')).toBeFalse();
   });
 });

@@ -156,6 +156,7 @@ export class PedidosListComponent implements OnInit, OnDestroy {
   ];
 
   readonly vista = signal<PedidosVista>('activos');
+  readonly filtersExpanded = signal<boolean>(false);
   readonly loading = signal<boolean>(true);
   readonly error = signal<string | null>(null);
   readonly pedidos = signal<Pedido[]>([]);
@@ -200,21 +201,30 @@ export class PedidosListComponent implements OnInit, OnDestroy {
     return count === 1 ? '1 pedido con saldo' : `${count} pedidos con saldo`;
   });
 
-  readonly hasActiveFilters = computed<boolean>(() => {
-    if (this.q().trim() !== '' || this.sucursalId() !== '' || this.estadoFiltro() !== '') {
-      return true;
+  readonly activeFiltersCount = computed<number>(() => {
+    let count = 0;
+    if (this.q().trim() !== '') {
+      count += 1;
+    }
+    if (this.sucursalId() !== '') {
+      count += 1;
+    }
+    if (this.estadoFiltro() !== '') {
+      count += 1;
     }
     if (this.esActivos() && this.soloPorCobrar()) {
-      return true;
+      count += 1;
     }
     if (
       this.esHistorial() &&
       (this.historialPreset() !== 'todo' || this.desde() !== '' || this.hasta() !== '')
     ) {
-      return true;
+      count += 1;
     }
-    return false;
+    return count;
   });
+
+  readonly hasActiveFilters = computed<boolean>(() => this.activeFiltersCount() > 0);
 
   readonly paginationMeta = computed<PaginationMeta>(() => {
     const total = this.totalCount();
@@ -306,6 +316,10 @@ export class PedidosListComponent implements OnInit, OnDestroy {
     if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
       this.scanBuffer += event.key;
     }
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded.update((prev) => !prev);
   }
 
   setVista(next: PedidosVista): void {
@@ -765,11 +779,6 @@ export class PedidosListComponent implements OnInit, OnDestroy {
       return;
     }
     await this.aplicarTransicionEstado(pedido, nextAction.next);
-  }
-
-  async marcarListoDirecto(pedido: Pedido, event: MouseEvent): Promise<void> {
-    event.stopPropagation();
-    await this.aplicarTransicionEstado(pedido, 'listo');
   }
 
   getStageCount(stageKey: PedidoActiveStageKey): number {

@@ -168,8 +168,8 @@ describe('pedidos.helpers', () => {
     expect(getOrderUrgencyInfo('2026-02-31', ref)).toBeNull();
 
     const transitions: ReadonlyArray<[string, PedidoEstadoFilter | null, boolean, number]> = [
-      ['recibido', 'lavando', true, 20], ['lavando', 'secando', true, 40],
-      ['en_proceso', 'listo', false, 50], ['secando', 'doblando', true, 60],
+      ['recibido', 'lavando', false, 20], ['lavando', 'secando', false, 40],
+      ['en_proceso', 'listo', false, 50], ['secando', 'doblando', false, 60],
       ['doblando', 'listo', false, 80], ['listo', 'entregado', false, 100],
       ['entregado', null, false, 100], ['cancelado', null, false, 0],
     ];
@@ -214,6 +214,13 @@ describe('PedidosListComponent', () => {
   async function clickAndFlush(el: HTMLElement): Promise<void> {
     el.click();
     await flush();
+  }
+
+  function openFilters(): void {
+    if (!component.filtersExpanded()) {
+      queryReq<HTMLButtonElement>(getHost(), 'button.filters-toggle-btn').click();
+      fixture?.detectChanges();
+    }
   }
 
   async function changeVal(el: HTMLInputElement | HTMLSelectElement, val: string): Promise<void> {
@@ -283,11 +290,15 @@ describe('PedidosListComponent', () => {
         activo: true, q: undefined, sucursal_id: undefined, estado: undefined, limit: 100, offset: 0,
       });
       const host = getHost();
+      expect(host.querySelector('.new-order-btn')).toBeNull();
+      expect(component.filtersExpanded()).toBeFalse();
+      expect(host.querySelector('.filter-toolbar')).toBeNull();
       expect(queryReq(host, '.kpi-card--proceso .kpi-val').textContent?.trim()).toBe('5');
       expect(queryReq(host, '.kpi-card--proceso .kpi-sub').textContent?.trim()).toBe('7 activos en total');
       expect(queryReq(host, '.kpi-card--listos .kpi-val').textContent?.trim()).toBe('2');
       expect(queryReq(host, '.kpi-card--cobrar .kpi-val').textContent?.trim()).toBe('$1,450');
       expect(queryReq(host, '.kpi-card--cobrar .kpi-sub').textContent?.trim()).toBe('3 pedidos con saldo');
+      openFilters();
       expect(Array.from(host.querySelectorAll('.stage-chip .chip-cnt')).map((el) => el.textContent?.trim())).toEqual([
         '7', '1', '2', '1', '1', '2',
       ]);
@@ -300,6 +311,7 @@ describe('PedidosListComponent', () => {
 
       await clickAndFlush(listosBtn);
       expect(component.estadoFiltro()).toBe('listo');
+      expect(queryReq(host, '.filters-toggle-btn .flt-badge').textContent?.trim()).toBe('1');
       await clickAndFlush(listosBtn);
       expect(component.estadoFiltro()).toBe('');
 
@@ -311,12 +323,14 @@ describe('PedidosListComponent', () => {
       await clickAndFlush(queryReq<HTMLButtonElement>(host, '.kpi-card--proceso'));
       expect([component.estadoFiltro(), component.soloPorCobrar(), lastParams()?.solo_por_cobrar]).toEqual(['', false, undefined]);
 
+      openFilters();
       await clickAndFlush(findBtn(host, '.stage-chip', 'Lavando'));
       expect([component.estadoFiltro(), lastParams()?.estado]).toEqual(['lavando', 'lavando']);
     });
 
     it('selector de sucursal renderiza chips con Todas para <= 4 sucursales y select para > 4', async () => {
       await setup({ sucursales: makeSucursales(3) });
+      openFilters();
       const chips = Array.from(getHost().querySelectorAll<HTMLButtonElement>('.branch-chip-btn'));
       expect(chips.map((b) => b.textContent?.trim())).toEqual(['Todas', 'Centro', 'Norte', 'Sur']);
       expect(getHost().querySelector('select.branch-select')).toBeNull();
@@ -328,6 +342,7 @@ describe('PedidosListComponent', () => {
       TestBed.resetTestingModule();
 
       await setup({ sucursales: makeSucursales(5) });
+      openFilters();
       expect(getHost().querySelectorAll('.branch-chip-btn').length).toBe(0);
       const selectEl = queryReq<HTMLSelectElement>(getHost(), 'select.branch-select');
       expect(selectEl.options.length).toBe(6);
@@ -428,6 +443,7 @@ describe('PedidosListComponent', () => {
           makePedido({ id: 'h-2', estado: 'cancelado', monto_total: 280, saldo_pendiente: 120 }),
         ])
       );
+      openFilters();
       await clickAndFlush(findBtn(host, '.tb-top .seg-btn', 'Historial'));
 
       expect(component.historialPreset()).toBe('todo');
@@ -448,6 +464,7 @@ describe('PedidosListComponent', () => {
 
       const items = Array.from({ length: 20 }, (_, i) => makePedido({ id: `h-${i}`, estado: 'entregado' }));
       apiStub.listPedidosPaginados.and.resolveTo(makePage(items, 45));
+      openFilters();
       await clickAndFlush(findBtn(host, '.tb-top .seg-btn', 'Historial'));
 
       const pg = queryReq<HTMLElement>(host, 'nav.pg-bar');
@@ -473,6 +490,7 @@ describe('PedidosListComponent', () => {
     it('presets Hoy/7d/Mes/Personalizado, valida desde > hasta sin llamar API y filtra estado', async () => {
       await setup();
       const host = getHost();
+      openFilters();
       await clickAndFlush(findBtn(host, '.tb-top .seg-btn', 'Historial'));
 
       for (const p of [
@@ -517,6 +535,7 @@ describe('PedidosListComponent', () => {
       spyOn(performance, 'now').and.callFake(() => (nowMs += 10));
 
       apiStub.listPedidosPaginados.calls.reset();
+      openFilters();
       const input = queryReq<HTMLInputElement>(getHost(), 'input.search-input');
       const textarea = document.createElement('textarea');
       const select = document.createElement('select');
@@ -566,6 +585,7 @@ describe('PedidosListComponent', () => {
       apiStub.listPedidosPaginados.calls.reset();
       apiStub.listPedidosPaginados.and.returnValues(Promise.resolve(makePage([], 0)), Promise.resolve(makePage([pHist], 1)));
 
+      openFilters();
       await clickAndFlush(queryReq<HTMLButtonElement>(getHost(), 'button.qr-btn'));
       expect(dialogStub.open).toHaveBeenCalledOnceWith(QrScannerDialogComponent, { width: '390px' });
       expect([
@@ -578,7 +598,7 @@ describe('PedidosListComponent', () => {
   });
 
   describe('Acciones de mostrador 1 toque', () => {
-    it('avanzarEstado y marcarListoDirecto llaman updatePedido y actualizan resumen', async () => {
+    it('avanzarEstado respeta el ciclo secuencial sin salto directo a listo y actualiza resumen', async () => {
       await setup({
         response: makePage(
           [makePedido({ id: 'ped-1', estado: 'recibido' }), makePedido({ id: 'ped-2', estado: 'doblando' })],
@@ -587,16 +607,18 @@ describe('PedidosListComponent', () => {
         ),
       });
       const cards = Array.from(getHost().querySelectorAll<HTMLElement>('.order-card'));
+      expect(cards[0].querySelector('.act-ready')).toBeNull();
       expect(cards[1].querySelector('.act-ready')).toBeNull();
 
       await clickAndFlush(queryReq<HTMLButtonElement>(cards[0], '.act-cta'));
       expect(apiStub.updatePedido).toHaveBeenCalledWith('ped-1', { estado: 'lavando' });
       expect(component.pedidos()[0]?.estado).toBe('lavando');
+      expect(cards[0].querySelector('.act-ready')).toBeNull();
 
       apiStub.updatePedido.calls.reset();
-      await clickAndFlush(queryReq<HTMLButtonElement>(cards[0], '.act-ready'));
-      expect(apiStub.updatePedido).toHaveBeenCalledOnceWith('ped-1', { estado: 'listo' });
-      expect([component.pedidos()[0]?.estado, component.resumen().listos]).toEqual(['listo', 1]);
+      await clickAndFlush(queryReq<HTMLButtonElement>(cards[1], '.act-cta'));
+      expect(apiStub.updatePedido).toHaveBeenCalledOnceWith('ped-2', { estado: 'listo' });
+      expect([component.pedidos()[1]?.estado, component.resumen().listos]).toEqual(['listo', 1]);
     });
 
     it('entregar con saldo > 0 abre EntregaDialog: cancelar (X), cobrar y dejar en deuda', async () => {

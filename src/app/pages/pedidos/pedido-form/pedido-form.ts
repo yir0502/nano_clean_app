@@ -189,6 +189,7 @@ export class PedidoFormComponent implements OnInit, OnDestroy {
   metodoPago = signal<MetodoPago>('efectivo');
   kilosCaptura = signal<number | null>(null);
   tarifaKg = signal<number>(this.readStoredTarifaKg());
+  posExpanded = signal<boolean>(false);
 
   estadoActual = signal<Pedido['estado']>('recibido');
   sucursalSeleccionada = signal<string>('');
@@ -518,6 +519,10 @@ export class PedidoFormComponent implements OnInit, OnDestroy {
     if (normalized && normalized !== this.form.controls.fecha_entrega_estimada.value) {
       this.form.patchValue({ fecha_entrega_estimada: normalized });
     }
+  }
+
+  togglePosExpanded(): void {
+    this.posExpanded.update((prev) => !prev);
   }
 
   setFechaOffset(dias: number): void {

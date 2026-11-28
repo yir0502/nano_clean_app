@@ -63,7 +63,7 @@
       <div class="logo-toolbar" role="img" aria-label="Logo principal"></div>
     </mat-toolbar>
 
-    <main class="page" [class.with-nav]="!hideChrome()">
+    <main class="page" [class.with-nav]="!hideChrome()" [class.no-bottom-nav]="hideBottomNav()">
       <router-outlet />
     </main>
 
@@ -73,7 +73,12 @@
       (click)="closeOrbMenu()">
     </div>
 
-    <div *ngIf="!hideChrome()" class="bottom-dock-shell">
+    <div
+      *ngIf="!hideChrome()"
+      class="bottom-dock-shell"
+      [class.is-hidden]="hideBottomNav()"
+      [attr.aria-hidden]="hideBottomNav() ? 'true' : null"
+      [attr.inert]="hideBottomNav() ? '' : null">
       <nav
         class="bottom-nav-dock"
         [class.without-center-orb]="hideFab()"

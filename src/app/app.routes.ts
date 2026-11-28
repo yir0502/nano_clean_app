@@ -81,13 +81,13 @@ export const routes: Routes = [
   { 
     path: 'pedidos/nuevo',
     canMatch: [authGuard],
-    data: { hideFab: true },
+    data: { hideFab: true, hideBottomNav: true },
     loadComponent: () => import('./pages/pedidos/pedido-form/pedido-form').then(m => m.PedidoFormComponent)
   },
   { 
     path: 'pedidos/:id',
     canMatch: [authGuard],
-    data: { hideFab: true },
+    data: { hideFab: true, hideBottomNav: true },
     loadComponent: () => import('./pages/pedidos/pedido-form/pedido-form').then(m => m.PedidoFormComponent)
   },
 

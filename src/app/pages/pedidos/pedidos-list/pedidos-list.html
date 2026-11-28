@@ -6,13 +6,27 @@
         Pedidos
       </h2>
     </div>
-    <a class="new-order-btn" routerLink="/pedidos/nuevo">
-      <mat-icon aria-hidden="true">add</mat-icon>
-      <span>Nuevo</span>
-    </a>
+    <button
+      type="button"
+      class="filters-toggle-btn"
+      [class.active]="filtersExpanded() || activeFiltersCount() > 0"
+      [attr.aria-expanded]="filtersExpanded()"
+      aria-controls="pedidos-filter-toolbar"
+      (click)="toggleFilters()">
+      <mat-icon aria-hidden="true">tune</mat-icon>
+      <span>Filtros</span>
+      <span *ngIf="activeFiltersCount() > 0" class="flt-badge">{{ activeFiltersCount() }}</span>
+      <mat-icon class="flt-chev" aria-hidden="true">
+        {{ filtersExpanded() ? 'expand_less' : 'expand_more' }}
+      </mat-icon>
+    </button>
   </header>
 
-  <section class="filter-toolbar" aria-label="Filtros de pedidos">
+  <section
+    *ngIf="filtersExpanded()"
+    id="pedidos-filter-toolbar"
+    class="filter-toolbar"
+    aria-label="Filtros de pedidos">
     <div class="tb-top">
       <div class="seg-group" role="group" aria-label="Vista de pedidos">
         <button
@@ -429,17 +443,6 @@
             {{ processingId() === card.pedido.id ? 'hourglass_top' : nextStep.icon }}
           </mat-icon>
           <span>{{ processingId() === card.pedido.id ? 'Guardando...' : nextStep.label }}</span>
-        </button>
-
-        <button
-          *ngIf="card.canJumpReady"
-          type="button"
-          class="act-ready"
-          [disabled]="processingId() === card.pedido.id"
-          matTooltip="Saltar etapas intermedias y marcar listo"
-          (click)="marcarListoDirecto(card.pedido, $event)">
-          <mat-icon aria-hidden="true">done_all</mat-icon>
-          <span>Listo</span>
         </button>
 
         <button

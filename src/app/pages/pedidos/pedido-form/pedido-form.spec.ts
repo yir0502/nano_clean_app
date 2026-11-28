@@ -266,9 +266,18 @@ describe('PedidoFormComponent', () => {
   });
 
   describe('Calculadora POS, anticipos, metodo y categoria colapsable', () => {
-    it('captura kilos/tarifa persistiendo nc_tarifa_kg, aplica calculo y agrega prendas rapidas', async () => {
+    it('captura rapida inicia colapsada, se despliega y persiste nc_tarifa_kg aplicando kilos y prendas', async () => {
       await setupComponent();
       const host = getHost();
+      const posToggle = queryRequired<HTMLButtonElement>(host, 'button.pos-toggle');
+      expect(component.posExpanded()).toBeFalse();
+      expect(posToggle.getAttribute('aria-expanded')).toBe('false');
+      expect(host.querySelector('#pf-pos-panel')).toBeNull();
+
+      tap(posToggle);
+      expect(component.posExpanded()).toBeTrue();
+      expect(posToggle.getAttribute('aria-expanded')).toBe('true');
+
       const kgInput = queryRequired<HTMLInputElement>(host, 'input[aria-label="Kilogramos"]');
       const tarifaInput = queryRequired<HTMLInputElement>(host, 'input[aria-label="Tarifa por kilogramo"]');
       const addKgBtn = queryRequired<HTMLButtonElement>(host, '.kg-add-btn');
