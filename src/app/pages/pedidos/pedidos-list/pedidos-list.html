@@ -430,13 +430,7 @@
             [attr.title]="step.label">
           </span>
         </div>
-        <div class="order-progress__caption">
-          <span class="order-progress__label" [ngClass]="card.stage.cssClass">
-            <mat-icon aria-hidden="true">{{ card.stage.icon }}</mat-icon>
-            <span>{{ card.stage.label }}</span>
-          </span>
-          <span class="order-progress__pct">{{ card.stage.percent }}%</span>
-        </div>
+        <span class="order-progress__pct">{{ card.stage.percent }}%</span>
       </div>
 
       <div class="order-actions" *ngIf="esActivos()">

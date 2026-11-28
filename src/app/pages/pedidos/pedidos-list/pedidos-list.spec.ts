@@ -307,7 +307,7 @@ describe('PedidosListComponent', () => {
       expect(steps[0].classList.contains('is-done')).toBeTrue();
       expect(steps[1].classList.contains('is-current')).toBeTrue();
       expect(steps[2].classList.contains('is-done') || steps[2].classList.contains('is-current')).toBeFalse();
-      expect(queryReq(host, '.order-progress__label').textContent).toContain('Lavando');
+      expect(host.querySelector('.order-progress__label')).toBeNull();
       expect(queryReq(host, '.order-progress__pct').textContent?.trim()).toBe('40%');
     });
 
