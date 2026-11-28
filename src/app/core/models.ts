@@ -109,6 +109,52 @@ export interface PedidoEvidencia {
   created_at?: string;
 }
 
+export type PedidoEstadoFilter =
+  | 'recibido'
+  | 'lavando'
+  | 'secando'
+  | 'doblando'
+  | 'listo'
+  | 'entregado'
+  | 'cancelado';
+
+export interface PedidosPorEstadoCount {
+  recibido: number;
+  lavando: number;
+  secando: number;
+  doblando: number;
+  listo: number;
+  entregado: number;
+  cancelado: number;
+}
+
+export interface PedidosResumen {
+  total: number;
+  en_proceso: number;
+  listos: number;
+  por_cobrar_count: number;
+  por_cobrar_monto: number;
+  por_estado: PedidosPorEstadoCount;
+}
+
+export interface PedidosPaginadosResponse {
+  data: Pedido[];
+  count: number;
+  resumen: PedidosResumen;
+}
+
+export interface PedidosPaginadosQueryParams {
+  activo?: boolean;
+  q?: string;
+  sucursal_id?: string;
+  estado?: PedidoEstadoFilter;
+  solo_por_cobrar?: boolean;
+  desde?: string;
+  hasta?: string;
+  limit?: number;
+  offset?: number;
+}
+
 export interface MovimientosTotales {
   ingresos: number;
   egresos: number;

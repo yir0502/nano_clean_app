@@ -1,175 +1,505 @@
-<div class="page-container">
-
-  <div class="page-header header-with-cta">
+<div class="page-container pedidos-page">
+  <header class="page-header">
     <div class="title-group">
-      <h2><mat-icon>local_laundry_service</mat-icon> Gestión de Pedidos</h2>
+      <h2>
+        <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+        Pedidos
+      </h2>
     </div>
-    <a mat-flat-button color="primary" routerLink="/pedidos/nuevo" class="new-order-btn">
-      <mat-icon>add</mat-icon> Nuevo
+    <a class="new-order-btn" routerLink="/pedidos/nuevo">
+      <mat-icon aria-hidden="true">add</mat-icon>
+      <span>Nuevo</span>
     </a>
-  </div>
+  </header>
 
-  <div class="search-toolbar">
-    <mat-form-field appearance="outline" class="search-bar">
-      <mat-label>Buscar por folio, cliente o teléfono...</mat-label>
-      <input
-        matInput
-        [ngModel]="q()"
-        (ngModelChange)="onSearchInput($event)"
-        (keyup.enter)="reload()"
-        placeholder="Ej: María, 2227... o LAV-A1B2">
-      <button *ngIf="q()" mat-icon-button matSuffix type="button" (click)="limpiarBusqueda()" aria-label="Limpiar búsqueda">
-        <mat-icon>close</mat-icon>
+  <section class="filter-toolbar" aria-label="Filtros de pedidos">
+    <div class="tb-top">
+      <div class="seg-group" role="group" aria-label="Vista de pedidos">
+        <button
+          type="button"
+          class="seg-btn"
+          [class.active]="esActivos()"
+          [attr.aria-pressed]="esActivos()"
+          (click)="setVista('activos')">
+          Activos
+        </button>
+        <button
+          type="button"
+          class="seg-btn"
+          [class.active]="esHistorial()"
+          [attr.aria-pressed]="esHistorial()"
+          (click)="setVista('historial')">
+          Historial
+        </button>
+      </div>
+
+      <div class="search-row">
+        <div class="search-box">
+          <mat-icon class="search-icon" aria-hidden="true">search</mat-icon>
+          <input
+            type="search"
+            class="search-input"
+            [value]="qInput()"
+            (input)="onSearchInputEvent($event)"
+            (keydown.enter)="onSearchSubmit()"
+            placeholder="Buscar folio, cliente o teléfono..."
+            aria-label="Buscar pedidos"
+          />
+          <button
+            *ngIf="qInput()"
+            type="button"
+            class="search-clear-btn"
+            (click)="limpiarBusqueda()"
+            aria-label="Limpiar búsqueda">
+            <mat-icon aria-hidden="true">close</mat-icon>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          class="qr-btn"
+          matTooltip="Escanear QR de ticket o bolsa (también acepta pistola USB/Bluetooth)"
+          aria-label="Escanear código QR"
+          (click)="abrirEscanerQr()">
+          <mat-icon aria-hidden="true">qr_code_scanner</mat-icon>
+          <span>QR</span>
+        </button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="sucursales().length > 1">
+      <div
+        *ngIf="sucursales().length <= 4; else branchSelectTpl"
+        class="branch-chips"
+        role="group"
+        aria-label="Filtrar por sucursal">
+        <button
+          type="button"
+          class="branch-chip-btn"
+          [class.active]="sucursalId() === ''"
+          [attr.aria-pressed]="sucursalId() === ''"
+          (click)="onSucursalChange('')">
+          Todas
+        </button>
+        <button
+          *ngFor="let s of sucursales(); trackBy: trackBySucursalId"
+          type="button"
+          class="branch-chip-btn"
+          [class.active]="sucursalId() === s.id"
+          [attr.aria-pressed]="sucursalId() === s.id"
+          (click)="onSucursalChange(s.id)">
+          {{ s.nombre }}
+        </button>
+      </div>
+
+      <ng-template #branchSelectTpl>
+        <label class="branch-select-wrap">
+          <mat-icon aria-hidden="true">store</mat-icon>
+          <select
+            class="branch-select"
+            aria-label="Filtrar por sucursal"
+            [value]="sucursalId()"
+            (change)="onSucursalSelectEvent($event)">
+            <option value="">Todas las sucursales</option>
+            <option
+              *ngFor="let s of sucursales(); trackBy: trackBySucursalId"
+              [value]="s.id"
+              [selected]="s.id === sucursalId()">
+              {{ s.nombre }}
+            </option>
+          </select>
+        </label>
+      </ng-template>
+    </ng-container>
+
+    <div class="stage-chips" *ngIf="esActivos()" role="group" aria-label="Filtrar por etapa">
+      <button
+        type="button"
+        class="stage-chip"
+        [class.active]="estadoFiltro() === ''"
+        [attr.aria-pressed]="estadoFiltro() === ''"
+        (click)="onEstadoChange('')">
+        <span>Todas</span>
+        <span class="chip-cnt">{{ resumen().total }}</span>
       </button>
-      <button *ngIf="!q()" mat-icon-button matSuffix type="button" (click)="reload()" aria-label="Buscar">
-        <mat-icon>search</mat-icon>
+      <button
+        *ngFor="let st of activeStages; trackBy: trackByStageKey"
+        type="button"
+        class="stage-chip"
+        [ngClass]="st.cssClass"
+        [class.active]="estadoFiltro() === st.key"
+        [attr.aria-pressed]="estadoFiltro() === st.key"
+        (click)="onEstadoChange(st.key)">
+        <span>{{ st.label }}</span>
+        <span class="chip-cnt">{{ getStageCount(st.key) }}</span>
       </button>
-    </mat-form-field>
+    </div>
+
+    <div class="hist-filters" *ngIf="esHistorial()">
+      <div class="presets-row" role="group" aria-label="Rango rápido de fechas">
+        <button
+          *ngFor="let p of historialPresets"
+          type="button"
+          class="preset-btn"
+          [class.active]="historialPreset() === p.value"
+          [attr.aria-pressed]="historialPreset() === p.value"
+          (click)="setHistorialPreset(p.value)">
+          {{ p.label }}
+        </button>
+      </div>
+
+      <div class="seg-group seg-group--3" role="group" aria-label="Estado en historial">
+        <button
+          *ngFor="let opt of historialEstados"
+          type="button"
+          class="seg-btn"
+          [class.active]="estadoFiltro() === opt.value"
+          [attr.aria-pressed]="estadoFiltro() === opt.value"
+          (click)="onEstadoChange(opt.value)">
+          {{ opt.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="custom-range" *ngIf="esHistorial() && historialPreset() === 'custom'">
+      <label class="date-field">
+        <span>Desde</span>
+        <input
+          type="date"
+          aria-label="Fecha inicial"
+          [value]="desde()"
+          (change)="onDesdeInputEvent($event)"
+        />
+      </label>
+      <label class="date-field">
+        <span>Hasta</span>
+        <input
+          type="date"
+          aria-label="Fecha final"
+          [value]="hasta()"
+          (change)="onHastaInputEvent($event)"
+        />
+      </label>
+    </div>
+
+    <p class="range-error" role="alert" *ngIf="esHistorial() && dateRangeError() as rangeErr">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <span>{{ rangeErr }}</span>
+    </p>
+  </section>
+
+  <section
+    class="kpis-grid"
+    *ngIf="esActivos() && loading()"
+    aria-busy="true"
+    aria-label="Cargando indicadores">
+    <div class="sk-block sk-kpi"></div>
+    <div class="sk-block sk-kpi"></div>
+    <div class="sk-block sk-kpi sk-kpi--wide"></div>
+  </section>
+
+  <section
+    class="kpis-grid"
+    *ngIf="esActivos() && !loading() && !error()"
+    aria-label="Resumen de pedidos activos">
+    <button
+      type="button"
+      class="kpi-card kpi-card--proceso"
+      [class.active]="isEnProcesoActive()"
+      [attr.aria-pressed]="isEnProcesoActive()"
+      (click)="onKpiEnProcesoClick()">
+      <div class="kpi-top">
+        <span class="kpi-label">En proceso</span>
+        <span class="kpi-icon">
+          <mat-icon aria-hidden="true">local_laundry_service</mat-icon>
+        </span>
+      </div>
+      <div class="kpi-val">{{ resumen().en_proceso }}</div>
+      <div class="kpi-sub">{{ enProcesoSubtitle() }}</div>
+    </button>
 
     <button
       type="button"
-      mat-stroked-button
-      class="qr-scan-btn"
-      matTooltip="Escanear QR de ticket o bolsa (también acepta pistola USB/Bluetooth)"
-      (click)="abrirEscanerQr()">
-      <mat-icon>qr_code_scanner</mat-icon>
-      <span>QR</span>
+      class="kpi-card kpi-card--listos"
+      [class.active]="estadoFiltro() === 'listo'"
+      [attr.aria-pressed]="estadoFiltro() === 'listo'"
+      (click)="toggleListosKpi()">
+      <div class="kpi-top">
+        <span class="kpi-label">Listos</span>
+        <span class="kpi-icon">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+        </span>
+      </div>
+      <div class="kpi-val">{{ resumen().listos }}</div>
+      <div class="kpi-sub">Listos para entrega</div>
     </button>
-  </div>
 
-  <mat-tab-group [selectedIndex]="activeTab()" (selectedIndexChange)="onTabChange($event)" animationDuration="0ms">
+    <button
+      type="button"
+      class="kpi-card kpi-card--cobrar"
+      [class.active]="soloPorCobrar()"
+      [attr.aria-pressed]="soloPorCobrar()"
+      (click)="toggleSoloPorCobrar()">
+      <div class="kpi-top">
+        <span class="kpi-label">Por cobrar</span>
+        <span class="kpi-icon">
+          <mat-icon aria-hidden="true">payments</mat-icon>
+        </span>
+      </div>
+      <div class="kpi-val">{{ formatCurrency(resumen().por_cobrar_monto) }}</div>
+      <div class="kpi-sub">{{ porCobrarSubtitle() }}</div>
+    </button>
+  </section>
 
-    <mat-tab label="Activos">
-      <ng-template matTabContent>
+  <section
+    class="orders-grid"
+    *ngIf="loading()"
+    aria-busy="true"
+    aria-label="Cargando pedidos">
+    <div
+      class="sk-block sk-card"
+      *ngFor="let item of skeletonItems; trackBy: trackByIndex">
+    </div>
+  </section>
 
-        <div class="empty-state" *ngIf="!loading() && pedidos().length === 0">
-          <mat-icon>inbox</mat-icon>
-          <p>No hay pedidos pendientes.</p>
+  <section
+    class="state-card state-card--error"
+    *ngIf="!loading() && error() as errorMsg"
+    role="alert">
+    <span class="state-icon">
+      <mat-icon aria-hidden="true">cloud_off</mat-icon>
+    </span>
+    <h3>No se pudieron cargar los pedidos</h3>
+    <p>{{ errorMsg }}</p>
+    <button type="button" class="state-btn" (click)="reload()">
+      <mat-icon aria-hidden="true">refresh</mat-icon>
+      <span>Reintentar</span>
+    </button>
+  </section>
+
+  <section
+    class="state-card"
+    *ngIf="!loading() && !error() && orderCards().length === 0">
+    <span class="state-icon">
+      <mat-icon aria-hidden="true">{{ hasActiveFilters() ? 'filter_alt_off' : (esActivos() ? 'inbox' : 'history') }}</mat-icon>
+    </span>
+    <h3>
+      {{
+        hasActiveFilters()
+          ? 'Sin resultados con estos filtros'
+          : (esActivos() ? 'No hay pedidos activos' : 'Sin historial de pedidos')
+      }}
+    </h3>
+    <p>
+      {{
+        hasActiveFilters()
+          ? 'Ajusta la búsqueda, la sucursal o las fechas para ver otros pedidos.'
+          : (esActivos()
+            ? 'Crea un nuevo pedido para comenzar a gestionar su proceso.'
+            : 'Los pedidos entregados o cancelados aparecerán aquí.')
+      }}
+    </p>
+    <button
+      *ngIf="hasActiveFilters()"
+      type="button"
+      class="state-btn"
+      (click)="limpiarFiltros()">
+      <mat-icon aria-hidden="true">filter_alt_off</mat-icon>
+      <span>Limpiar filtros</span>
+    </button>
+    <a
+      *ngIf="!hasActiveFilters() && esActivos()"
+      class="state-btn state-btn--primary"
+      routerLink="/pedidos/nuevo">
+      <mat-icon aria-hidden="true">add</mat-icon>
+      <span>Nuevo pedido</span>
+    </a>
+  </section>
+
+  <section
+    class="orders-grid"
+    *ngIf="!loading() && !error() && orderCards().length > 0"
+    [attr.aria-label]="esActivos() ? 'Listado de pedidos activos' : 'Historial de pedidos'">
+    <article
+      *ngFor="let card of orderCards(); trackBy: trackByOrderCard"
+      class="order-card"
+      [class.is-history]="esHistorial()">
+      <header class="order-card__top">
+        <span class="branch-pill">
+          <mat-icon aria-hidden="true">store</mat-icon>
+          <span>{{ card.pedido.sucursal_nombre || 'Sin sucursal' }}</span>
+        </span>
+
+        <span
+          *ngIf="esActivos() && card.urgency as urg"
+          class="urgency-pill"
+          [ngClass]="'urg--' + urg.tone">
+          <mat-icon aria-hidden="true">schedule</mat-icon>
+          <span>{{ urg.label }}</span>
+        </span>
+
+        <span *ngIf="esHistorial() && card.effectiveDateLabel" class="date-chip">
+          <mat-icon aria-hidden="true">event</mat-icon>
+          <span>{{ card.effectiveDateLabel }}</span>
+        </span>
+
+        <div class="card-icon-actions">
+          <button
+            type="button"
+            class="icon-btn"
+            matTooltip="Ticket y código QR"
+            [attr.aria-label]="'Abrir ticket QR del pedido ' + card.pedido.folio"
+            (click)="abrirTicket(card.pedido, $event)">
+            <mat-icon aria-hidden="true">qr_code_2</mat-icon>
+          </button>
+          <button
+            type="button"
+            class="icon-btn icon-btn--del"
+            matTooltip="Eliminar pedido"
+            [disabled]="processingId() === card.pedido.id"
+            [attr.aria-label]="'Eliminar pedido ' + card.pedido.folio"
+            (click)="deletePedido(card.pedido, $event)">
+            <mat-icon aria-hidden="true">delete_outline</mat-icon>
+          </button>
+        </div>
+      </header>
+
+      <a class="order-card__body" [routerLink]="['/pedidos', card.pedido.id]">
+        <div class="order-head">
+          <h3 class="order-customer">{{ card.pedido.cliente_nombre || 'Cliente mostrador' }}</h3>
+          <span class="status-badge" [ngClass]="card.stage.cssClass">
+            <mat-icon aria-hidden="true">{{ card.stage.icon }}</mat-icon>
+            <span>{{ card.stage.label }}</span>
+          </span>
         </div>
 
-        <div class="orders-list">
-          <mat-card *ngFor="let p of pedidos()" class="order-item" (click)="goToDetail(p)">
+        <div class="order-submeta">
+          <span class="order-folio">{{ card.pedido.folio }}</span>
 
-            <div class="order-header">
-              <mat-icon>store</mat-icon>
-              <span>{{ p.sucursal_nombre || 'Sucursal' }}</span>
+          <ng-container *ngIf="esActivos()">
+            <span *ngIf="card.hasDebt" class="charge-pill charge-pill--due">
+              Por cobrar {{ card.formattedSaldo }}
+            </span>
+            <span *ngIf="card.isPaid" class="charge-pill charge-pill--paid">
+              Pagado
+            </span>
+          </ng-container>
 
-              <div class="header-right-btns">
-                <button (click)="abrirTicket(p, $event)" class="ticket-button" matTooltip="Ticket y Código QR">
-                  <mat-icon>qr_code_2</mat-icon>
-                </button>
-                <button (click)="deletePedido(p, $event)" class="delete-button" matTooltip="Eliminar Pedido">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </div>
-
-            <div class="order-strip">
-              <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
-
-              <div class="order-content">
-                <div class="order-main">
-                  <span class="customer">{{ p.cliente_nombre }}</span>
-                  <span class="folio">{{ p.folio }}</span>
-                  <span class="balance-tag pending" *ngIf="Number(p.saldo_pendiente) > 0">
-                    Por cobrar: ${{ Number(p.saldo_pendiente) | number:'1.2-2' }}
-                  </span>
-                  <span class="balance-tag paid" *ngIf="Number(p.saldo_pendiente) === 0 && Number(p.monto_total) > 0">
-                    Pagado
-                  </span>
-                </div>
-
-                <div class="order-meta">
-                  <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
-                  <span class="date">{{ p.fecha_entrega_estimada | date:'dd MMM' }}</span>
-                </div>
-
-                <div class="order-icon">
-                  <mat-icon class="arrow">chevron_right</mat-icon>
-                </div>
-              </div>
-            </div>
-
-            <div class="order-actions">
-              <button *ngIf="activeTab() === 0 && getNextStatusInfo(p.estado) as nextStep"
-                      type="button"
-                      class="advance-status-btn"
-                      [ngClass]="nextStep.colorClass"
-                      [disabled]="updatingStatusId() === p.id"
-                      (click)="avanzarEstado(p, $event)">
-                <mat-spinner *ngIf="updatingStatusId() === p.id" diameter="16" class="btn-spinner"></mat-spinner>
-                <mat-icon *ngIf="updatingStatusId() !== p.id">{{ nextStep.icon }}</mat-icon>
-                <span>{{ nextStep.label }}</span>
-              </button>
-
-              <button *ngIf="activeTab() === 0 && puedeSaltarAListo(p.estado)"
-                      type="button"
-                      class="fast-ready-btn"
-                      [disabled]="updatingStatusId() === p.id"
-                      matTooltip="Saltar etapas intermedias y marcar Listo"
-                      (click)="marcarListoDirecto(p, $event)">
-                <mat-icon>done_all</mat-icon>
-                <span>Listo</span>
-              </button>
-
-              <button
-                type="button"
-                (click)="notificarWhatsapp(p, $event)"
-                [disabled]="sendingWaId() === p.id"
-                class="whatsapp-button">
-                <mat-icon>chat</mat-icon>
-                <span>WA</span>
-              </button>
-            </div>
-
-          </mat-card>
-        </div>
-      </ng-template>
-    </mat-tab>
-
-    <mat-tab label="Historial">
-      <ng-template matTabContent>
-        <div class="empty-state" *ngIf="!loading() && pedidos().length === 0">
-          <mat-icon>history</mat-icon>
-          <p>No hay historial reciente.</p>
+          <ng-container *ngIf="esHistorial()">
+            <span class="total-pill">Total {{ card.formattedTotal }}</span>
+            <span
+              class="charge-pill"
+              [class.charge-pill--due]="card.hasDebt"
+              [class.charge-pill--paid]="!card.hasDebt">
+              {{ card.hasDebt ? ('Pendiente ' + card.formattedSaldo) : 'Pagado' }}
+            </span>
+          </ng-container>
         </div>
 
-        <div class="orders-list">
-          <mat-card *ngFor="let p of pedidos()" class="order-item history-item" (click)="goToDetail(p)">
-            <div class="order-header">
-              <mat-icon>store</mat-icon>
-              <span>{{ p.sucursal_nombre || 'Sucursal' }}</span>
-              <div class="header-right-btns">
-                <button (click)="abrirTicket(p, $event)" class="ticket-button" matTooltip="Ticket y Código QR">
-                  <mat-icon>qr_code_2</mat-icon>
-                </button>
-                <button (click)="deletePedido(p, $event)" class="delete-button" matTooltip="Eliminar Pedido">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </div>
+        <p class="order-desc" *ngIf="card.descripcionBreve">{{ card.descripcionBreve }}</p>
+      </a>
 
-            <div class="order-strip">
-              <div class="status-strip" [ngClass]="pedidoActions.getStatusColor(p.estado)"></div>
-              <div class="order-content">
-                <div class="order-main">
-                  <span class="customer">{{ p.cliente_nombre }}</span>
-                  <span class="folio crossed">{{ p.folio }}</span>
-                </div>
-                <div class="order-meta">
-                  <span class="status-badge" [ngClass]="pedidoActions.getStatusColor(p.estado)">{{ p.estado | titlecase }}</span>
-                  <span class="date">{{ p.fecha_entregado | date:'shortDate' }}</span>
-                </div>
-                <div class="order-icon">
-                  <mat-icon class="arrow">chevron_right</mat-icon>
-                </div>
-              </div>
-            </div>
-          </mat-card>
+      <div
+        class="order-progress"
+        *ngIf="esActivos()"
+        role="progressbar"
+        [attr.aria-valuenow]="card.progress"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        [attr.aria-label]="'Avance: ' + card.stage.label + ' (' + card.progress + '%)'">
+        <div class="progress-track">
+          <div
+            class="progress-fill"
+            [ngClass]="card.stage.cssClass"
+            [style.width.%]="card.progress">
+          </div>
         </div>
-      </ng-template>
-    </mat-tab>
+        <span class="progress-pct">{{ card.progress }}%</span>
+      </div>
 
-  </mat-tab-group>
+      <div class="order-actions" *ngIf="esActivos()">
+        <button
+          *ngIf="card.nextAction as nextStep"
+          type="button"
+          class="act-cta"
+          [ngClass]="nextStep.colorClass"
+          [disabled]="processingId() === card.pedido.id"
+          (click)="avanzarEstado(card.pedido, $event)">
+          <mat-icon aria-hidden="true">
+            {{ processingId() === card.pedido.id ? 'hourglass_top' : nextStep.icon }}
+          </mat-icon>
+          <span>{{ processingId() === card.pedido.id ? 'Guardando...' : nextStep.label }}</span>
+        </button>
 
+        <button
+          *ngIf="card.canJumpReady"
+          type="button"
+          class="act-ready"
+          [disabled]="processingId() === card.pedido.id"
+          matTooltip="Saltar etapas intermedias y marcar listo"
+          (click)="marcarListoDirecto(card.pedido, $event)">
+          <mat-icon aria-hidden="true">done_all</mat-icon>
+          <span>Listo</span>
+        </button>
+
+        <button
+          type="button"
+          class="act-wa"
+          [disabled]="sendingWaId() === card.pedido.id || processingId() === card.pedido.id"
+          matTooltip="Notificar por WhatsApp"
+          [attr.aria-label]="'Notificar por WhatsApp del pedido ' + card.pedido.folio"
+          (click)="notificarWhatsapp(card.pedido, $event)">
+          <mat-icon aria-hidden="true">chat</mat-icon>
+          <span>WA</span>
+        </button>
+      </div>
+    </article>
+  </section>
+
+  <nav
+    class="pg-bar"
+    *ngIf="esHistorial() && !loading() && !error() && totalCount() > 0"
+    aria-label="Paginación de historial">
+    <div class="pg-sum">
+      <span class="pg-cnt">
+        {{ paginationMeta().from }}-{{ paginationMeta().to }} de {{ paginationMeta().total }}
+      </span>
+      <label class="pg-limit">
+        <span>Por página</span>
+        <select
+          class="pg-select"
+          aria-label="Pedidos por página"
+          [value]="limit()"
+          (change)="onLimitSelectEvent($event)">
+          <option
+            *ngFor="let opt of limitOptions"
+            [value]="opt"
+            [selected]="opt === limit()">
+            {{ opt }}
+          </option>
+        </select>
+      </label>
+    </div>
+
+    <div class="pg-nav">
+      <button
+        type="button"
+        class="pg-btn"
+        [disabled]="!paginationMeta().canPrev"
+        (click)="prevPage()"
+        aria-label="Página anterior">
+        <mat-icon aria-hidden="true">chevron_left</mat-icon>
+        <span>Anterior</span>
+      </button>
+      <button
+        type="button"
+        class="pg-btn"
+        [disabled]="!paginationMeta().canNext"
+        (click)="nextPage()"
+        aria-label="Página siguiente">
+        <span>Siguiente</span>
+        <mat-icon aria-hidden="true">chevron_right</mat-icon>
+      </button>
+    </div>
+  </nav>
 </div>

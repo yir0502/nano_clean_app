@@ -12,6 +12,8 @@ import {
   Pedido,
   PedidoCreatePayload,
   PedidoEvidencia,
+  PedidosPaginadosQueryParams,
+  PedidosPaginadosResponse,
   PedidoUpdatePayload,
   Sucursal,
   SucursalRepartoConfig,
@@ -243,6 +245,56 @@ export class ApiClientService {
   }): Promise<Pedido[]> {
     const p: Record<string, unknown> = { org_id: this.auth.orgId, ...params };
     return this.get<Pedido[]>('/pedidos', p);
+  }
+
+  listPedidosPaginados(params?: PedidosPaginadosQueryParams): Promise<PedidosPaginadosResponse> {
+    const query: Record<string, unknown> = {
+      org_id: this.auth.orgId,
+      paginated: '1',
+    };
+
+    if (typeof params?.activo === 'boolean') {
+      query['activo'] = params.activo ? 'true' : 'false';
+    }
+
+    if (params?.solo_por_cobrar === true) {
+      query['solo_por_cobrar'] = 'true';
+    }
+
+    const q = params?.q?.trim();
+    if (q) {
+      query['q'] = q;
+    }
+
+    const sucursalId = params?.sucursal_id?.trim();
+    if (sucursalId) {
+      query['sucursal_id'] = sucursalId;
+    }
+
+    const estado = params?.estado?.trim();
+    if (estado) {
+      query['estado'] = estado;
+    }
+
+    const desde = params?.desde?.trim();
+    if (desde) {
+      query['desde'] = desde;
+    }
+
+    const hasta = params?.hasta?.trim();
+    if (hasta) {
+      query['hasta'] = hasta;
+    }
+
+    if (typeof params?.limit === 'number' && Number.isFinite(params.limit)) {
+      query['limit'] = String(params.limit);
+    }
+
+    if (typeof params?.offset === 'number' && Number.isFinite(params.offset)) {
+      query['offset'] = String(params.offset);
+    }
+
+    return this.get<PedidosPaginadosResponse>('/pedidos', query);
   }
 
   getPedido(id: string): Promise<Pedido> {

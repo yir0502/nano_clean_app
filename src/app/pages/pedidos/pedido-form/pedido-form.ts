@@ -1,24 +1,31 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule, Location } from '@angular/common';
-import { FormBuilder, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
-import { of, firstValueFrom } from 'rxjs';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  HostListener,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Location } from '@angular/common';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { firstValueFrom, from, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatAutocompleteModule, MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatSelectModule } from '@angular/material/select';
-import { MatAutocompleteModule } from '@angular/material/autocomplete';
-import { MatChipsModule } from '@angular/material/chips';
-import { A11yModule } from '@angular/cdk/a11y';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { ApiClientService } from '../../../core/api-client.service';
 import {
@@ -30,56 +37,133 @@ import {
   PedidoUpdatePayload,
   Sucursal,
 } from '../../../core/models';
-import { TicketPrintService } from '../../../core/ticket-print.service';
 import { PedidoActionsService } from '../../../core/pedido-actions.service';
-import { EntregaDialogComponent, EntregaDialogResponse } from '../dialogs/entrega-dialog.component';
-import { AccionPedidoDialogComponent, AccionPedidoDialogData } from '../dialogs/accion-pedido-dialog.component';
+import { TicketPrintService } from '../../../core/ticket-print.service';
+import {
+  ConfirmDialogComponent,
+  ConfirmDialogData,
+} from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import {
+  AccionPedidoDialogComponent,
+  AccionPedidoDialogData,
+} from '../dialogs/accion-pedido-dialog.component';
+import {
+  EntregaDialogComponent,
+  EntregaDialogData,
+  EntregaDialogResponse,
+} from '../dialogs/entrega-dialog.component';
 import { TicketDialogComponent, TicketDialogData } from '../dialogs/ticket-dialog.component';
-import { ConfirmDialogComponent, ConfirmDialogData } from '../../../shared/components/confirm-dialog/confirm-dialog.component';
+import {
+  PedidoStageMeta,
+  formatCurrencyMXN,
+  formatLocalDateFromInput,
+  getPedidoStageMeta,
+  parseLocalDateInput,
+} from '../pedidos.helpers';
 
-interface FotoPreview {
+export interface FotoPreview {
   file?: File;
   url: string;
   id?: string;
 }
 
+export interface MetodoPagoOption {
+  id: MetodoPago;
+  label: string;
+  icon: string;
+}
+
+export interface FechaPresetOption {
+  dias: number;
+  label: string;
+}
+
 const STORAGE_TARIFA_KG = 'nc_tarifa_kg';
+const STORAGE_LAST_SUCURSAL = 'nc_last_sucursal_id';
+const MAX_IMAGE_DIM = 1280;
+const LOYALTY_CYCLE_SIZE = 4;
+const LOYALTY_WALLET_CAP = 50;
+
+function validateLocalDateControl(control: AbstractControl): ValidationErrors | null {
+  const raw: unknown = control.value;
+  if (typeof raw !== 'string' || !raw.trim()) {
+    return null;
+  }
+  return parseLocalDateInput(raw) ? null : { invalidDate: true };
+}
+
+function isClienteRecord(value: unknown): value is Cliente {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  return 'id' in value && 'nombre' in value && 'telefono' in value;
+}
 
 @Component({
   selector: 'app-pedido-form',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
-    FormsModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
     MatIconModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatSnackBarModule,
-    MatProgressSpinnerModule,
-    MatSelectModule,
     MatAutocompleteModule,
-    MatChipsModule,
-    A11yModule,
+    MatSnackBarModule,
     MatDialogModule,
   ],
   templateUrl: './pedido-form.html',
   styleUrls: ['./pedido-form.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PedidoFormComponent implements OnInit {
-  private fb = inject(FormBuilder);
-  private api = inject(ApiClientService);
-  private router = inject(Router);
-  private route = inject(ActivatedRoute);
-  private snack = inject(MatSnackBar);
-  private dialog = inject(MatDialog);
-  private ticketService = inject(TicketPrintService);
-  private pedidoActions = inject(PedidoActionsService);
-  public location = inject(Location);
+export class PedidoFormComponent implements OnInit, OnDestroy {
+  private readonly fb = inject(FormBuilder);
+  private readonly api = inject(ApiClientService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly ticketService = inject(TicketPrintService);
+  private readonly pedidoActions = inject(PedidoActionsService);
+  private readonly destroyRef = inject(DestroyRef);
+  public readonly location = inject(Location);
+
+  readonly ESTADOS: readonly Pedido['estado'][] = [
+    'recibido',
+    'lavando',
+    'secando',
+    'doblando',
+    'listo',
+    'entregado',
+    'cancelado',
+  ];
+
+  readonly statusSteps: readonly PedidoStageMeta[] = this.ESTADOS.map((estado) =>
+    getPedidoStageMeta(estado)
+  );
+
+  readonly prendasRapidas: readonly string[] = [
+    'Lavado y secado',
+    'Edredón Mat.',
+    'Edredón King',
+    'Cobertor',
+    'Sábanas',
+    'Tenis',
+    'Planchado',
+  ];
+
+  readonly metodosPago: readonly MetodoPagoOption[] = [
+    { id: 'efectivo', label: 'Efectivo', icon: 'attach_money' },
+    { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt' },
+    { id: 'tarjeta', label: 'Tarjeta', icon: 'credit_card' },
+    { id: 'mercado_pago', label: 'Mercado Pago', icon: 'qr_code_scanner' },
+  ];
+
+  readonly fechaPresets: readonly FechaPresetOption[] = [
+    { dias: 0, label: 'Hoy' },
+    { dias: 1, label: 'Mañana' },
+    { dias: 2, label: 'En 2 días' },
+    { dias: 3, label: 'En 3 días' },
+  ];
+
+  readonly cicloSlots: readonly number[] = [0, 1, 2, 3];
 
   loading = signal<boolean>(false);
   saving = signal<boolean>(false);
@@ -91,86 +175,140 @@ export class PedidoFormComponent implements OnInit {
   categoriasIngreso = signal<Categoria[]>([]);
   categoriaIngresoId = signal<string | null>(null);
   mostrarSelectorCategoria = signal<boolean>(false);
-  categoriaIngresoNombre = computed(
-    () => this.categoriasIngreso().find((c) => c.id === this.categoriaIngresoId())?.nombre || 'Automática'
-  );
   clientesFiltrados = signal<Cliente[]>([]);
   fotos = signal<FotoPreview[]>([]);
+  deletingFotoIndex = signal<number | null>(null);
   selectedCliente = signal<Cliente | null>(null);
   currentFolio = signal<string>('');
+  togglingPromo = signal<boolean>(false);
 
   montoPagadoInicial = signal<number>(0);
   descuentoInicial = signal<number>(0);
-  estadoOriginal = signal<string>('recibido');
+  estadoOriginal = signal<Pedido['estado']>('recibido');
 
   metodoPago = signal<MetodoPago>('efectivo');
   kilosCaptura = signal<number | null>(null);
-  tarifaKg = signal<number>(Number(localStorage.getItem(STORAGE_TARIFA_KG) || 0));
+  tarifaKg = signal<number>(this.readStoredTarifaKg());
 
-  readonly ESTADOS: Pedido['estado'][] = [
-    'recibido',
-    'lavando',
-    'secando',
-    'doblando',
-    'listo',
-    'entregado',
-    'cancelado',
-  ];
+  estadoActual = signal<Pedido['estado']>('recibido');
+  sucursalSeleccionada = signal<string>('');
+  montoTotal = signal<number>(0);
+  saldoPendiente = signal<number>(0);
+  fechaEntrega = signal<string>(formatLocalDateFromInput(new Date()));
+  formInvalid = signal<boolean>(true);
+  submitAttempted = signal<boolean>(false);
 
-  readonly prendasRapidas: string[] = [
-    'Lavado y secado',
-    'Edredón Mat.',
-    'Edredón King',
-    'Cobertor',
-    'Sábanas',
-    'Tenis',
-    'Planchado',
-  ];
+  lightboxIndex = signal<number | null>(null);
 
-  readonly metodosPago: { id: MetodoPago; label: string; icon: string }[] = [
-    { id: 'efectivo', label: 'Efectivo', icon: 'attach_money' },
-    { id: 'transferencia', label: 'Transferencia', icon: 'sync_alt' },
-    { id: 'tarjeta', label: 'Tarjeta', icon: 'credit_card' },
-    { id: 'mercado_pago', label: 'Mercado Pago', icon: 'qr_code_scanner' },
-  ];
+  titulo = computed(() => (this.isEdit() ? 'Editar pedido' : 'Nuevo pedido'));
+  usaSegmentadoSucursal = computed(
+    () => this.sucursales().length > 0 && this.sucursales().length <= 4
+  );
+  categoriaIngresoNombre = computed(
+    () =>
+      this.categoriasIngreso().find((c) => c.id === this.categoriaIngresoId())?.nombre ||
+      'Automática'
+  );
+  saldoMaximoPendiente = computed(() => Math.max(0, this.montoTotal() - this.descuentoInicial()));
+  anticipoCalculado = computed(() =>
+    Math.max(0, this.montoTotal() - this.descuentoInicial() - this.saldoPendiente())
+  );
+  subtotalKilosPreview = computed(() => {
+    const kg = this.kilosCaptura() ?? 0;
+    const tarifa = this.tarifaKg();
+    return kg > 0 && tarifa > 0 ? Math.round(kg * tarifa * 100) / 100 : 0;
+  });
 
-  form = this.fb.group({
+  serviciosEnCiclo = computed(
+    () => (this.selectedCliente()?.contador_servicios ?? 0) % LOYALTY_CYCLE_SIZE
+  );
+  proximaGanancia = computed(() => {
+    const monedero = this.selectedCliente()?.monedero ?? 0;
+    if (monedero >= LOYALTY_WALLET_CAP) {
+      return 0;
+    }
+    return this.serviciosEnCiclo() === 3 ? 20 : 10;
+  });
+  promoProgressPercent = computed(() => (this.serviciosEnCiclo() / LOYALTY_CYCLE_SIZE) * 100);
+  loyaltyMessage = computed(() => {
+    const monedero = this.selectedCliente()?.monedero ?? 0;
+    if (monedero >= LOYALTY_WALLET_CAP) {
+      return 'Límite de monedero ($50.00 MXN) alcanzado. Sugiere al cliente canjear su saldo.';
+    }
+    const count = this.serviciosEnCiclo();
+    const faltan = LOYALTY_CYCLE_SIZE - count;
+    if (count === 3) {
+      return 'El próximo servicio otorgará un bono especial de $20.00 MXN al cliente.';
+    }
+    return `Falta(n) ${faltan} servicio(s) para el bono especial de $20.00 MXN.`;
+  });
+
+  lightboxFoto = computed<FotoPreview | null>(() => {
+    const idx = this.lightboxIndex();
+    const list = this.fotos();
+    if (idx === null || idx < 0 || idx >= list.length) {
+      return null;
+    }
+    return list[idx];
+  });
+  lightboxCounter = computed<string>(() => {
+    const idx = this.lightboxIndex();
+    const total = this.fotos().length;
+    if (idx === null || total === 0) {
+      return '';
+    }
+    return `${idx + 1} / ${total}`;
+  });
+  canNavigateLightbox = computed<boolean>(() => this.fotos().length > 1);
+  canSave = computed<boolean>(() => !this.formInvalid() && !this.saving() && !this.loading());
+
+  form = this.fb.nonNullable.group({
     cliente_nombre: ['', Validators.required],
     cliente_telefono: ['', [Validators.required, Validators.minLength(10)]],
     cliente_id: [''],
     sucursal_id: ['', Validators.required],
     descripcion: [''],
-    monto_total: [0],
-    saldo_pendiente: [0],
-    fecha_entrega_estimada: [new Date(), Validators.required],
-    estado: ['recibido' as Pedido['estado']],
+    monto_total: [0, Validators.min(0)],
+    saldo_pendiente: [0, Validators.min(0)],
+    fecha_entrega_estimada: [
+      formatLocalDateFromInput(new Date()),
+      [Validators.required, validateLocalDateControl],
+    ],
+    estado: this.fb.nonNullable.control<Pedido['estado']>('recibido'),
     evidencia_nota: [''],
   });
 
-  titulo = computed(() => (this.isEdit() ? 'Editar Pedido' : 'Nuevo Pedido'));
-
   constructor() {
-    this.form
-      .get('cliente_nombre')
-      ?.valueChanges.pipe(
+    this.form.controls.cliente_nombre.valueChanges
+      .pipe(
         debounceTime(300),
         distinctUntilChanged(),
-        switchMap((val) => {
-          if (!val || typeof val !== 'string') return of({ data: [] as Cliente[], count: 0 });
-          return this.api.listClientes({ q: val, limit: 5 });
-        })
+        switchMap((rawVal: unknown) => {
+          if (this.selectedCliente() || typeof rawVal !== 'string' || !rawVal.trim()) {
+            return of<{ data: Cliente[]; count: number }>({ data: [], count: 0 });
+          }
+          return from(this.api.listClientes({ q: rawVal.trim(), limit: 5 })).pipe(
+            catchError(() => of<{ data: Cliente[]; count: number }>({ data: [], count: 0 }))
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((res) => this.clientesFiltrados.set(res.data));
 
-    this.form
-      .get('cliente_telefono')
-      ?.valueChanges.pipe(
+    this.form.controls.cliente_telefono.valueChanges
+      .pipe(
         debounceTime(450),
         distinctUntilChanged(),
         switchMap((val) => {
-          if (!val || val.length < 10) return of({ data: [] as Cliente[], count: 0 });
-          return this.api.listClientes({ q: val, limit: 1 });
-        })
+          const clean = typeof val === 'string' ? val.trim() : '';
+          if (this.selectedCliente() || clean.length < 10) {
+            return of<{ data: Cliente[]; count: number }>({ data: [], count: 0 });
+          }
+          return from(this.api.listClientes({ q: clean, limit: 1 })).pipe(
+            catchError(() => of<{ data: Cliente[]; count: number }>({ data: [], count: 0 }))
+          );
+        }),
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((res) => {
         if (res.data.length > 0 && !this.selectedCliente()) {
@@ -179,134 +317,224 @@ export class PedidoFormComponent implements OnInit {
         }
       });
 
-    this.form
-      .get('monto_total')
-      ?.valueChanges.pipe(distinctUntilChanged())
+    this.form.controls.monto_total.valueChanges
+      .pipe(distinctUntilChanged(), takeUntilDestroyed(this.destroyRef))
       .subscribe((val) => {
         const total = Number(val) || 0;
+        this.montoTotal.set(total);
         if (!this.isEdit()) {
-          this.form.get('saldo_pendiente')?.setValue(total, { emitEvent: false });
+          this.form.controls.saldo_pendiente.setValue(total, { emitEvent: false });
+          this.saldoPendiente.set(total);
         } else {
           const pagado = this.montoPagadoInicial();
           const desc = this.descuentoInicial();
           const nuevoPendiente = Math.max(0, total - desc - pagado);
-          this.form.get('saldo_pendiente')?.setValue(nuevoPendiente, { emitEvent: false });
+          this.form.controls.saldo_pendiente.setValue(nuevoPendiente, { emitEvent: false });
+          this.saldoPendiente.set(nuevoPendiente);
         }
       });
+
+    this.form.controls.saldo_pendiente.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((val) => this.saldoPendiente.set(Number(val) || 0));
+
+    this.form.controls.fecha_entrega_estimada.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((val) => this.fechaEntrega.set(formatLocalDateFromInput(val)));
+
+    this.form.controls.estado.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((val) => this.estadoActual.set(val));
+
+    this.form.controls.sucursal_id.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((val) => {
+        const clean = val || '';
+        this.sucursalSeleccionada.set(clean);
+        if (clean) {
+          this.writeStorage(STORAGE_LAST_SUCURSAL, clean);
+        }
+      });
+
+    this.form.statusChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.formInvalid.set(this.form.invalid));
   }
 
-  get serviciosEnCiclo(): number {
-    return (this.selectedCliente()?.contador_servicios ?? 0) % 4;
-  }
-
-  get proximaGanancia(): number {
-    const monedero = this.selectedCliente()?.monedero ?? 0;
-    if (monedero >= 50) return 0;
-    return this.serviciosEnCiclo === 3 ? 20 : 10;
-  }
-
-  get promoProgressPercent(): number {
-    return (this.serviciosEnCiclo / 4) * 100;
-  }
-
-  getLoyaltyMessage(): string {
-    const monedero = this.selectedCliente()?.monedero ?? 0;
-    if (monedero >= 50) {
-      return 'Límite de monedero ($50.00 MXN) alcanzado. Sugiere al cliente canjear su saldo.';
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(event: KeyboardEvent): void {
+    if (this.lightboxIndex() === null) {
+      return;
     }
-    const count = this.serviciosEnCiclo;
-    const faltan = 4 - count;
-    if (count === 3) {
-      return 'El próximo servicio otorgará un bono especial de $20.00 MXN al cliente.';
-    }
-    return `Falta(n) ${faltan} servicio(s) para el bono especial de $20.00 MXN.`;
-  }
-
-  async toggleAptitudPromo(nuevoValor: boolean): Promise<void> {
-    const c = this.selectedCliente();
-    if (!c?.id) return;
-    try {
-      const updated = await this.api.updateCliente(c.id, { apto_promociones: nuevoValor });
-      this.selectedCliente.set({ ...c, ...updated });
-      this.snack.open(
-        nuevoValor ? 'Cliente inscrito en el programa de lealtad' : 'Cliente excluido del programa de lealtad',
-        'OK',
-        { duration: 3000 }
-      );
-    } catch {
-      this.snack.open('Error al actualizar el estado de lealtad', 'Cerrar');
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.closeLightbox();
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      this.prevLightbox();
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      this.nextLightbox();
     }
   }
 
   async ngOnInit(): Promise<void> {
     await Promise.all([this.loadSucursales(), this.loadCategoriasIngreso()]);
 
-    this.form.get('sucursal_id')?.valueChanges.subscribe((val) => {
-      if (val) localStorage.setItem('nc_last_sucursal_id', val);
-    });
-
     const id = this.route.snapshot.paramMap.get('id');
     if (id && id !== 'nuevo') {
       this.isEdit.set(true);
       this.pedidoId.set(id);
       await this.loadPedido(id);
-    } else {
-      const lastSucursal = localStorage.getItem('nc_last_sucursal_id');
-      const matched = this.sucursales().find((s) => s.id === lastSucursal);
-      const defaultSucursalId = matched ? matched.id : this.sucursales().length ? this.sucursales()[0].id : '';
-      if (defaultSucursalId) {
-        this.form.patchValue({ sucursal_id: defaultSucursalId });
+      return;
+    }
+
+    const lastSucursal = this.readStorage(STORAGE_LAST_SUCURSAL);
+    const matched = this.sucursales().find((s) => s.id === lastSucursal);
+    const defaultSucursalId = matched
+      ? matched.id
+      : this.sucursales().length > 0
+        ? this.sucursales()[0].id
+        : '';
+    if (defaultSucursalId) {
+      this.form.patchValue({ sucursal_id: defaultSucursalId });
+    }
+    this.setFechaOffset(1);
+    this.formInvalid.set(this.form.invalid);
+  }
+
+  ngOnDestroy(): void {
+    for (const foto of this.fotos()) {
+      if (foto.url.startsWith('blob:')) {
+        URL.revokeObjectURL(foto.url);
       }
-      this.setFechaOffset(1);
     }
   }
 
+  formatMxn(valor: number): string {
+    return formatCurrencyMXN(valor, { decimals: 2 });
+  }
+
+  getLoyaltyMessage(): string {
+    return this.loyaltyMessage();
+  }
+
+  async toggleAptitudPromo(nuevoValor: boolean): Promise<void> {
+    const cliente = this.selectedCliente();
+    if (!cliente?.id || this.togglingPromo()) {
+      return;
+    }
+    this.togglingPromo.set(true);
+    try {
+      const updated = await this.api.updateCliente(cliente.id, { apto_promociones: nuevoValor });
+      this.selectedCliente.set({ ...cliente, ...updated });
+      this.snack.open(
+        nuevoValor
+          ? 'Cliente inscrito en el programa de lealtad'
+          : 'Cliente excluido del programa de lealtad',
+        'OK',
+        { duration: 3000 }
+      );
+    } catch {
+      this.snack.open('Error al actualizar el estado de lealtad', 'Cerrar');
+    } finally {
+      this.togglingPromo.set(false);
+    }
+  }
+
+  selectSucursal(sucursalId: string): void {
+    this.form.patchValue({ sucursal_id: sucursalId });
+    this.form.controls.sucursal_id.markAsTouched();
+  }
+
   agregarPrendaRapida(prenda: string): void {
-    const actual = (this.form.get('descripcion')?.value || '').trim();
+    const actual = (this.form.controls.descripcion.value || '').trim();
     const nuevoTexto = actual ? `${actual}, ${prenda}` : prenda;
     this.form.patchValue({ descripcion: nuevoTexto });
+  }
+
+  onKilosInput(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.validity.badInput) {
+      return;
+    }
+    const raw = target.value.trim();
+    if (!raw) {
+      this.kilosCaptura.set(null);
+      return;
+    }
+    const parsed = Number(raw);
+    this.kilosCaptura.set(Number.isFinite(parsed) && parsed > 0 ? parsed : null);
+  }
+
+  onTarifaInput(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement) || target.validity.badInput) {
+      return;
+    }
+    this.actualizarTarifaKg(target.value);
   }
 
   actualizarTarifaKg(valor: string | number): void {
     const num = Math.max(0, Number(valor) || 0);
     this.tarifaKg.set(num);
     if (num > 0) {
-      localStorage.setItem(STORAGE_TARIFA_KG, String(num));
+      this.writeStorage(STORAGE_TARIFA_KG, String(num));
     }
   }
 
   aplicarCalculoKilos(): void {
     const kg = Number(this.kilosCaptura()) || 0;
-    if (kg <= 0) return;
+    if (kg <= 0) {
+      return;
+    }
 
     const tarifa = this.tarifaKg();
     const etiquetaKg = `${kg} kg lavado y secado`;
-    const descActual = (this.form.get('descripcion')?.value || '').trim();
+    const descActual = (this.form.controls.descripcion.value || '').trim();
     const nuevaDesc = descActual ? `${descActual}, ${etiquetaKg}` : etiquetaKg;
     this.form.patchValue({ descripcion: nuevaDesc });
 
     if (tarifa > 0) {
       const subtotalKg = Math.round(kg * tarifa * 100) / 100;
-      const totalActual = Number(this.form.get('monto_total')?.value) || 0;
+      const totalActual = Number(this.form.controls.monto_total.value) || 0;
       this.form.patchValue({ monto_total: Math.round((totalActual + subtotalKg) * 100) / 100 });
     }
 
     this.kilosCaptura.set(null);
   }
 
+  onFechaEntregaChange(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) {
+      return;
+    }
+    const raw = target.value.trim();
+    if (!raw) {
+      this.form.patchValue({ fecha_entrega_estimada: '' });
+      return;
+    }
+    const normalized = formatLocalDateFromInput(raw);
+    if (normalized && normalized !== this.form.controls.fecha_entrega_estimada.value) {
+      this.form.patchValue({ fecha_entrega_estimada: normalized });
+    }
+  }
+
   setFechaOffset(dias: number): void {
-    const d = new Date();
-    d.setDate(d.getDate() + dias);
-    d.setHours(12, 0, 0, 0);
-    this.form.patchValue({ fecha_entrega_estimada: d });
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dias);
+    const localIso = formatLocalDateFromInput(target);
+    this.form.patchValue({ fecha_entrega_estimada: localIso });
+    this.fechaEntrega.set(localIso);
   }
 
   isFechaOffsetActivo(dias: number): boolean {
-    const val = this.form.get('fecha_entrega_estimada')?.value;
-    if (!val) return false;
-    const current = new Date(val);
-    const target = new Date();
-    target.setDate(target.getDate() + dias);
+    const current = parseLocalDateInput(this.fechaEntrega());
+    if (!current) {
+      return false;
+    }
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dias);
     return (
       current.getFullYear() === target.getFullYear() &&
       current.getMonth() === target.getMonth() &&
@@ -314,59 +542,59 @@ export class PedidoFormComponent implements OnInit {
     );
   }
 
-  get saldoMaximoPendiente(): number {
-    const total = Number(this.form.get('monto_total')?.value) || 0;
-    const desc = this.descuentoInicial();
-    return Math.max(0, total - desc);
-  }
-
-  get anticipoCalculado(): number {
-    const total = Number(this.form.get('monto_total')?.value) || 0;
-    const saldo = Number(this.form.get('saldo_pendiente')?.value) || 0;
-    const desc = this.descuentoInicial();
-    return Math.max(0, total - desc - saldo);
-  }
-
   aplicarPresetAnticipo(tipo: 'cero' | 'total' | 'mitad'): void {
-    const maxPendiente = this.saldoMaximoPendiente;
+    const maxPendiente = this.saldoMaximoPendiente();
     if (tipo === 'cero') {
       this.form.patchValue({ saldo_pendiente: 0 });
     } else if (tipo === 'total') {
       this.form.patchValue({ saldo_pendiente: maxPendiente });
-    } else if (tipo === 'mitad') {
+    } else {
       this.form.patchValue({ saldo_pendiente: Math.round(maxPendiente / 2) });
     }
   }
 
   displayCliente(cliente: Cliente | string | null): string {
-    if (typeof cliente === 'string') return cliente;
+    if (typeof cliente === 'string') {
+      return cliente;
+    }
     return cliente && cliente.nombre ? cliente.nombre : '';
   }
 
-  selectCliente(c: Cliente): void {
-    this.selectedCliente.set(c);
+  onClienteOptionSelected(event: MatAutocompleteSelectedEvent): void {
+    const value: unknown = event.option.value;
+    if (isClienteRecord(value)) {
+      this.selectCliente(value);
+    }
+  }
+
+  selectCliente(cliente: Cliente): void {
+    this.selectedCliente.set(cliente);
     this.form.patchValue({
-      cliente_nombre: c.nombre,
-      cliente_telefono: c.telefono,
-      cliente_id: c.id,
+      cliente_nombre: cliente.nombre,
+      cliente_telefono: cliente.telefono,
+      cliente_id: cliente.id,
     });
     this.form.controls.cliente_nombre.disable();
     this.form.controls.cliente_telefono.disable();
+    this.formInvalid.set(this.form.invalid);
   }
 
   clearCliente(): void {
     this.selectedCliente.set(null);
+    this.clientesFiltrados.set([]);
     this.form.patchValue({ cliente_nombre: '', cliente_telefono: '', cliente_id: '' });
     this.form.controls.cliente_nombre.enable();
     this.form.controls.cliente_telefono.enable();
+    this.formInvalid.set(this.form.invalid);
   }
 
   async onFileSelected(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const files = input.files;
-    if (!files || files.length === 0) return;
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement) || !input.files || input.files.length === 0) {
+      return;
+    }
 
-    const listaArchivos = Array.from(files);
+    const listaArchivos = Array.from(input.files);
     input.value = '';
 
     for (const rawFile of listaArchivos) {
@@ -376,69 +604,14 @@ export class PedidoFormComponent implements OnInit {
     }
   }
 
-  private comprimirImagenCliente(file: File): Promise<File> {
-    return new Promise((resolve) => {
-      if (!file.type.startsWith('image/')) {
-        resolve(file);
-        return;
-      }
-
-      const img = new Image();
-      const objUrl = URL.createObjectURL(file);
-
-      img.onload = () => {
-        URL.revokeObjectURL(objUrl);
-        const maxDim = 1280;
-        let width = img.naturalWidth;
-        let height = img.naturalHeight;
-
-        if (width > maxDim || height > maxDim) {
-          if (width >= height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          resolve(file);
-          return;
-        }
-
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              resolve(file);
-              return;
-            }
-            const cleanName = file.name.replace(/\.[^.]+$/, '') + '.webp';
-            resolve(new File([blob], cleanName, { type: 'image/webp' }));
-          },
-          'image/webp',
-          0.8
-        );
-      };
-
-      img.onerror = () => {
-        URL.revokeObjectURL(objUrl);
-        resolve(file);
-      };
-
-      img.src = objUrl;
-    });
-  }
-
   async removeFoto(index: number): Promise<void> {
     const foto = this.fotos()[index];
+    if (!foto) {
+      return;
+    }
 
-    if (foto.id && this.pedidoId()) {
+    const currentPedidoId = this.pedidoId();
+    if (foto.id && currentPedidoId) {
       const dialogData: ConfirmDialogData = {
         title: 'Eliminar evidencia',
         message: '¿Estás seguro de eliminar esta evidencia permanentemente?',
@@ -446,30 +619,71 @@ export class PedidoFormComponent implements OnInit {
         color: 'warn',
       };
 
-      const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-        data: dialogData,
-        width: '360px',
-        panelClass: 'custom-modal-panel',
-      });
+      const dialogRef = this.dialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean | undefined>(
+        ConfirmDialogComponent,
+        {
+          data: dialogData,
+          width: '360px',
+          panelClass: 'custom-modal-panel',
+        }
+      );
 
       const confirmacion = await firstValueFrom(dialogRef.afterClosed());
-      if (!confirmacion) return;
+      if (!confirmacion) {
+        return;
+      }
 
-      this.loading.set(true);
+      this.deletingFotoIndex.set(index);
       try {
-        await this.api.deleteEvidencia(this.pedidoId()!, foto.id);
+        await this.api.deleteEvidencia(currentPedidoId, foto.id);
         this.snack.open('Evidencia eliminada', 'OK', { duration: 2000 });
         this.fotos.update((prev) => prev.filter((_, i) => i !== index));
+        this.reconcileLightboxAfterRemoval(index);
       } catch {
         this.snack.open('Error al eliminar evidencia', 'Cerrar');
       } finally {
-        this.loading.set(false);
+        this.deletingFotoIndex.set(null);
       }
-    } else {
-      if (foto.url.startsWith('blob:')) {
-        URL.revokeObjectURL(foto.url);
-      }
-      this.fotos.update((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+
+    if (foto.url.startsWith('blob:')) {
+      URL.revokeObjectURL(foto.url);
+    }
+    this.fotos.update((prev) => prev.filter((_, i) => i !== index));
+    this.reconcileLightboxAfterRemoval(index);
+  }
+
+  openLightbox(index: number): void {
+    if (index < 0 || index >= this.fotos().length) {
+      return;
+    }
+    this.lightboxIndex.set(index);
+  }
+
+  closeLightbox(): void {
+    this.lightboxIndex.set(null);
+  }
+
+  prevLightbox(): void {
+    const total = this.fotos().length;
+    if (this.lightboxIndex() === null || total <= 1) {
+      return;
+    }
+    this.lightboxIndex.update((i) => (i === null ? null : (i - 1 + total) % total));
+  }
+
+  nextLightbox(): void {
+    const total = this.fotos().length;
+    if (this.lightboxIndex() === null || total <= 1) {
+      return;
+    }
+    this.lightboxIndex.update((i) => (i === null ? null : (i + 1) % total));
+  }
+
+  onLightboxBackdropClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closeLightbox();
     }
   }
 
@@ -504,70 +718,66 @@ export class PedidoFormComponent implements OnInit {
   async loadPedido(id: string): Promise<void> {
     this.loading.set(true);
     try {
-      const p = await this.api.getPedido(id);
-      if (!p) throw new Error('Pedido no encontrado');
+      const pedido = await this.api.getPedido(id);
+      if (!pedido) {
+        throw new Error('Pedido no encontrado');
+      }
 
-      this.pedidoCargado.set(p);
-      this.currentFolio.set(p.folio || '');
-      this.estadoOriginal.set(p.estado);
+      this.pedidoCargado.set(pedido);
+      this.currentFolio.set(pedido.folio || '');
+      this.estadoOriginal.set(pedido.estado);
 
-      const totalVal = Number(p.monto_total) || 0;
-      const pendienteVal = Number(p.saldo_pendiente) || 0;
-      const descuentoVal = Number(p.descuento_aplicado) || 0;
+      const totalVal = Number(pedido.monto_total) || 0;
+      const pendienteVal = Number(pedido.saldo_pendiente) || 0;
+      const descuentoVal = Number(pedido.descuento_aplicado) || 0;
       this.montoPagadoInicial.set(Math.max(0, totalVal - descuentoVal - pendienteVal));
       this.descuentoInicial.set(descuentoVal);
 
       const evidencias = await this.api.listEvidencias(id);
+      const fechaLocal =
+        formatLocalDateFromInput(pedido.fecha_entrega_estimada) ||
+        formatLocalDateFromInput(new Date());
 
       this.form.patchValue(
         {
-          cliente_nombre: p.cliente_nombre,
-          cliente_telefono: p.cliente_telefono,
-          cliente_id: p.cliente_id,
-          sucursal_id: p.sucursal_id,
-          descripcion: p.descripcion,
-          monto_total: Number(p.monto_total),
-          saldo_pendiente: Number(p.saldo_pendiente),
-          fecha_entrega_estimada: p.fecha_entrega_estimada ? new Date(p.fecha_entrega_estimada + 'T00:00:00') : new Date(),
-          estado: p.estado,
+          cliente_nombre: pedido.cliente_nombre || '',
+          cliente_telefono: pedido.cliente_telefono || '',
+          cliente_id: pedido.cliente_id || '',
+          sucursal_id: pedido.sucursal_id || '',
+          descripcion: pedido.descripcion || '',
+          monto_total: totalVal,
+          saldo_pendiente: pendienteVal,
+          fecha_entrega_estimada: fechaLocal,
+          estado: pedido.estado,
         },
         { emitEvent: false }
       );
 
-      if (p.cliente_id) {
+      if (pedido.cliente_id) {
+        const fallbackCliente: Cliente = {
+          id: pedido.cliente_id,
+          nombre: pedido.cliente_nombre || '',
+          telefono: pedido.cliente_telefono || '',
+          permite_whatsapp: true,
+          frecuencia_recordatorio: 0,
+          monedero: 0,
+        };
         try {
-          const clienteReal = await this.api.getCliente(p.cliente_id);
-          if (clienteReal) {
-            this.selectedCliente.set(clienteReal);
-          } else {
-            this.selectedCliente.set({
-              id: p.cliente_id,
-              nombre: p.cliente_nombre || '',
-              telefono: p.cliente_telefono || '',
-              permite_whatsapp: true,
-              frecuencia_recordatorio: 0,
-              monedero: 0,
-            });
-          }
+          const clienteReal = await this.api.getCliente(pedido.cliente_id);
+          this.selectedCliente.set(clienteReal ?? fallbackCliente);
         } catch {
-          this.selectedCliente.set({
-            id: p.cliente_id,
-            nombre: p.cliente_nombre || '',
-            telefono: p.cliente_telefono || '',
-            permite_whatsapp: true,
-            frecuencia_recordatorio: 0,
-            monedero: 0,
-          });
+          this.selectedCliente.set(fallbackCliente);
         }
 
-        this.form.controls.cliente_nombre.disable();
-        this.form.controls.cliente_telefono.disable();
+        this.form.controls.cliente_nombre.disable({ emitEvent: false });
+        this.form.controls.cliente_telefono.disable({ emitEvent: false });
       }
 
+      this.syncFormSignals();
       this.fotos.set(
-        evidencias.map((e) => ({
-          url: e.url,
-          id: e.id,
+        evidencias.map((ev) => ({
+          url: ev.url,
+          id: ev.id,
         }))
       );
     } catch {
@@ -580,9 +790,12 @@ export class PedidoFormComponent implements OnInit {
 
   abrirModalTicketActual(): void {
     const base = this.pedidoCargado();
-    if (!base) return;
+    if (!base) {
+      return;
+    }
     const v = this.form.getRawValue();
-    const sucursalNombre = this.sucursales().find((s) => s.id === v.sucursal_id)?.nombre || base.sucursal_nombre;
+    const sucursalNombre =
+      this.sucursales().find((s) => s.id === v.sucursal_id)?.nombre || base.sucursal_nombre;
     const pedidoVista: Pedido = {
       ...base,
       cliente_nombre: v.cliente_nombre || base.cliente_nombre,
@@ -590,11 +803,13 @@ export class PedidoFormComponent implements OnInit {
       descripcion: v.descripcion || base.descripcion,
       monto_total: Number(v.monto_total || 0),
       saldo_pendiente: Number(v.saldo_pendiente || 0),
+      fecha_entrega_estimada:
+        formatLocalDateFromInput(v.fecha_entrega_estimada) || base.fecha_entrega_estimada,
       sucursal_nombre: sucursalNombre,
     };
 
-    this.dialog.open(TicketDialogComponent, {
-      data: { pedido: pedidoVista, esCreacion: false } as TicketDialogData,
+    this.dialog.open<TicketDialogComponent, TicketDialogData>(TicketDialogComponent, {
+      data: { pedido: pedidoVista, esCreacion: false },
       width: '390px',
     });
   }
@@ -602,6 +817,11 @@ export class PedidoFormComponent implements OnInit {
   async save(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.formInvalid.set(true);
+      this.submitAttempted.set(true);
+      return;
+    }
+    if (this.saving()) {
       return;
     }
 
@@ -619,7 +839,11 @@ export class PedidoFormComponent implements OnInit {
     let categoriaCobroEntrega: string | null | undefined;
 
     if (this.isEdit() && esEntregado && this.estadoOriginal() !== 'entregado' && saldoPend > 0) {
-      const dialogRef = this.dialog.open(EntregaDialogComponent, {
+      const dialogRef = this.dialog.open<
+        EntregaDialogComponent,
+        EntregaDialogData,
+        EntregaDialogResponse | undefined
+      >(EntregaDialogComponent, {
         data: {
           nombreCliente,
           folio: this.currentFolio(),
@@ -632,7 +856,9 @@ export class PedidoFormComponent implements OnInit {
       });
 
       const decision = await firstValueFrom(dialogRef.afterClosed());
-      if (!decision) return;
+      if (!decision) {
+        return;
+      }
 
       if (decision.accion === 'cobrar') {
         montoCobradoEntrega = saldoPend;
@@ -656,14 +882,14 @@ export class PedidoFormComponent implements OnInit {
         clientId = nuevoCliente.id;
       }
 
-      const fechaEntregaIso = v.fecha_entrega_estimada
-        ? new Date(v.fecha_entrega_estimada).toISOString().split('T')[0]
-        : undefined;
-
-      const sucursalNombre = this.sucursales().find((s) => s.id === v.sucursal_id)?.nombre || 'Mostrador';
+      // Envia fecha local YYYY-MM-DD sin pasar por toISOString para evitar desfase UTC
+      const fechaEntregaIso = formatLocalDateFromInput(v.fecha_entrega_estimada) || undefined;
+      const sucursalNombre =
+        this.sucursales().find((s) => s.id === v.sucursal_id)?.nombre || 'Mostrador';
       let resultadoPedido: Pedido;
 
-      if (this.isEdit() && this.pedidoId()) {
+      const currentPedidoId = this.pedidoId();
+      if (this.isEdit() && currentPedidoId) {
         const updatePayload: PedidoUpdatePayload = {
           descripcion: v.descripcion || '',
           sucursal_id: v.sucursal_id,
@@ -679,7 +905,7 @@ export class PedidoFormComponent implements OnInit {
             updatePayload.categoria_ingreso_id = categoriaCobroEntrega;
           }
         }
-        resultadoPedido = await this.api.updatePedido(this.pedidoId()!, updatePayload);
+        resultadoPedido = await this.api.updatePedido(currentPedidoId, updatePayload);
       } else {
         const createPayload: PedidoCreatePayload = {
           cliente_id: clientId,
@@ -690,16 +916,20 @@ export class PedidoFormComponent implements OnInit {
           fecha_entrega_estimada: fechaEntregaIso,
           registrar_pago: anticipo > 0,
           metodo_pago: anticipo > 0 ? this.metodoPago() : null,
-          ...(anticipo > 0 && this.categoriaIngresoId() ? { categoria_ingreso_id: this.categoriaIngresoId() } : {}),
+          ...(anticipo > 0 && this.categoriaIngresoId()
+            ? { categoria_ingreso_id: this.categoriaIngresoId() }
+            : {}),
         };
         resultadoPedido = await this.api.createPedido(createPayload);
       }
 
       const pedidoIdFinal = resultadoPedido.id;
-      const nuevasFotos = this.fotos().filter((f) => f.file);
+      const nuevasFotos = this.fotos().filter(
+        (foto): foto is FotoPreview & { file: File } => Boolean(foto.file)
+      );
       if (pedidoIdFinal && nuevasFotos.length > 0) {
-        const uploads = nuevasFotos.map((f) =>
-          this.api.uploadEvidencia(pedidoIdFinal, f.file!, 'ingreso', v.evidencia_nota || '')
+        const uploads = nuevasFotos.map((foto) =>
+          this.api.uploadEvidencia(pedidoIdFinal, foto.file, 'ingreso', v.evidencia_nota || '')
         );
         await Promise.all(uploads);
       }
@@ -723,17 +953,20 @@ export class PedidoFormComponent implements OnInit {
           });
         }
 
-        const ticketRef = this.dialog.open(TicketDialogComponent, {
-          data: {
-            pedido: pedidoEnriquecido,
-            esCreacion: true,
-            metodoPagoTexto: etiquetaMetodo,
-          } as TicketDialogData,
-          width: '390px',
-        });
+        const ticketRef = this.dialog.open<TicketDialogComponent, TicketDialogData>(
+          TicketDialogComponent,
+          {
+            data: {
+              pedido: pedidoEnriquecido,
+              esCreacion: true,
+              metodoPagoTexto: etiquetaMetodo,
+            },
+            width: '390px',
+          }
+        );
 
         await firstValueFrom(ticketRef.afterClosed());
-        this.router.navigateByUrl('/pedidos');
+        await this.router.navigateByUrl('/pedidos');
         return;
       }
 
@@ -745,26 +978,39 @@ export class PedidoFormComponent implements OnInit {
               ? 'Pedido entregado. Saldo registrado en Deudas'
               : 'Pedido entregado';
         this.snack.open(msjEntrega, 'OK', { duration: 3500 });
-        this.router.navigateByUrl('/pedidos');
+        await this.router.navigateByUrl('/pedidos');
         return;
       }
 
       if (esListo && this.estadoOriginal() !== 'listo') {
         if (resultadoPedido.whatsapp_disparado) {
-          this.snack.open(`Pedido ${resultadoPedido.folio} LISTO y cliente notificado por WhatsApp`, 'OK', {
-            duration: 3500,
-          });
-          this.router.navigateByUrl('/pedidos');
+          this.snack.open(
+            `Pedido ${resultadoPedido.folio} LISTO y cliente notificado por WhatsApp`,
+            'OK',
+            { duration: 3500 }
+          );
+          await this.router.navigateByUrl('/pedidos');
           return;
         }
 
         if (telefonoCliente) {
-          const dialogRef = this.dialog.open(AccionPedidoDialogComponent, {
+          const dialogRef = this.dialog.open<
+            AccionPedidoDialogComponent,
+            AccionPedidoDialogData,
+            string | undefined
+          >(AccionPedidoDialogComponent, {
             data: {
-              titulo: 'Pedido Listo',
+              titulo: 'Pedido listo',
               mensaje: `El pedido ${resultadoPedido.folio} para ${nombreCliente} está listo. ¿Deseas avisarle por WhatsApp?`,
-              acciones: [{ texto: 'Avisar por WhatsApp', icono: 'chat', valor: 'whatsapp', color: 'whatsapp' }],
-            } as AccionPedidoDialogData,
+              acciones: [
+                {
+                  texto: 'Avisar por WhatsApp',
+                  icono: 'chat',
+                  valor: 'whatsapp',
+                  color: 'whatsapp',
+                },
+              ],
+            },
             disableClose: true,
             width: '400px',
             panelClass: 'custom-modal-panel',
@@ -775,12 +1021,12 @@ export class PedidoFormComponent implements OnInit {
             this.pedidoActions.sendWhatsapp({ ...pedidoEnriquecido, estado: 'listo' });
           }
         }
-        this.router.navigateByUrl('/pedidos');
+        await this.router.navigateByUrl('/pedidos');
         return;
       }
 
       this.snack.open('Pedido actualizado', 'OK', { duration: 2500 });
-      this.router.navigateByUrl('/pedidos');
+      await this.router.navigateByUrl('/pedidos');
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Ocurrió un problema';
       this.snack.open('Error: ' + msg, 'Cerrar');
@@ -791,5 +1037,113 @@ export class PedidoFormComponent implements OnInit {
 
   setStatus(estado: Pedido['estado']): void {
     this.form.patchValue({ estado });
+  }
+
+  cancelar(): void {
+    this.location.back();
+  }
+
+  private syncFormSignals(): void {
+    const v = this.form.getRawValue();
+    this.montoTotal.set(Number(v.monto_total) || 0);
+    this.saldoPendiente.set(Number(v.saldo_pendiente) || 0);
+    this.fechaEntrega.set(formatLocalDateFromInput(v.fecha_entrega_estimada));
+    this.estadoActual.set(v.estado || 'recibido');
+    this.sucursalSeleccionada.set(v.sucursal_id || '');
+    this.formInvalid.set(this.form.invalid);
+  }
+
+  private reconcileLightboxAfterRemoval(removedIndex: number): void {
+    const current = this.lightboxIndex();
+    if (current === null) {
+      return;
+    }
+    const remaining = this.fotos().length;
+    if (remaining === 0) {
+      this.lightboxIndex.set(null);
+    } else if (current >= remaining) {
+      this.lightboxIndex.set(remaining - 1);
+    } else if (removedIndex < current) {
+      this.lightboxIndex.set(current - 1);
+    }
+  }
+
+  private readStorage(key: string): string | null {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private writeStorage(key: string, value: string): void {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Ignora restricciones de almacenamiento privado del navegador
+    }
+  }
+
+  private readStoredTarifaKg(): number {
+    const parsed = Number(this.readStorage(STORAGE_TARIFA_KG) || 0);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+
+  private comprimirImagenCliente(file: File): Promise<File> {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) {
+        resolve(file);
+        return;
+      }
+
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objUrl);
+        let width = img.naturalWidth;
+        let height = img.naturalHeight;
+
+        if (width > MAX_IMAGE_DIM || height > MAX_IMAGE_DIM) {
+          if (width >= height) {
+            height = Math.round((height * MAX_IMAGE_DIM) / width);
+            width = MAX_IMAGE_DIM;
+          } else {
+            width = Math.round((width * MAX_IMAGE_DIM) / height);
+            height = MAX_IMAGE_DIM;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            const cleanName = file.name.replace(/\.[^.]+$/, '') + '.webp';
+            resolve(new File([blob], cleanName, { type: 'image/webp' }));
+          },
+          'image/webp',
+          0.8
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objUrl);
+        resolve(file);
+      };
+
+      img.src = objUrl;
+    });
   }
 }

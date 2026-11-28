@@ -1,354 +1,655 @@
-<div class="container">
-
-  <div class="header">
-    <button mat-icon-button type="button" (click)="location.back()">
-      <mat-icon>arrow_back</mat-icon>
+<div class="page-container pf-page">
+  <header class="pf-header fl">
+    <button type="button" class="btn icon-btn cc" (click)="cancelar()" aria-label="Volver">
+      <mat-icon aria-hidden="true">arrow_back</mat-icon>
     </button>
-    <div class="title-col">
-      <h2>{{ titulo() }}</h2>
-      <span class="subtitle" *ngIf="isEdit()">Folio {{ currentFolio() }}</span>
+
+    <div class="pf-tit fl fw">
+      <h1>{{ titulo() }}</h1>
+      @if (isEdit() && currentFolio()) {
+        <span class="folio-pill mono">{{ currentFolio() }}</span>
+      }
     </div>
-    <span class="header-spacer"></span>
-    <button *ngIf="isEdit()" mat-stroked-button type="button" class="ticket-header-btn" (click)="abrirModalTicketActual()">
-      <mat-icon>qr_code_2</mat-icon>
-      Ticket QR
-    </button>
-  </div>
 
-  <form [formGroup]="form" (ngSubmit)="save()">
+    @if (isEdit()) {
+      <button type="button" class="btn ifl" (click)="abrirModalTicketActual()">
+        <mat-icon aria-hidden="true">qr_code_2</mat-icon>
+        <span>Ticket QR</span>
+      </button>
+    }
+  </header>
 
-    <div class="status-bar-container" *ngIf="isEdit()">
-      <p class="section-label">Estatus del Pedido</p>
-      <div class="status-stepper">
-        <div *ngFor="let st of ESTADOS" class="step" [class.active]="form.get('estado')?.value === st"
-          (click)="setStatus(st)">
-
-          <div class="circle">
-            <mat-icon *ngIf="st === 'recibido'">hourglass_empty</mat-icon>
-            <mat-icon *ngIf="st === 'lavando'">local_laundry_service</mat-icon>
-            <mat-icon *ngIf="st === 'secando'">dry</mat-icon>
-            <mat-icon *ngIf="st === 'doblando'">layers</mat-icon>
-            <mat-icon *ngIf="st === 'listo'">check_circle</mat-icon>
-            <mat-icon *ngIf="st === 'entregado'">inventory_2</mat-icon>
-            <mat-icon *ngIf="st === 'cancelado'">block</mat-icon>
-          </div>
-
-          <span class="label">{{ st | titlecase }}</span>
+  @if (loading()) {
+    <section class="gr g14" aria-busy="true" aria-label="Cargando pedido">
+      <div class="sk-box" [style.height.px]="78"></div>
+      <div class="pf-grid gr g14">
+        <div class="gr g14">
+          <div class="sk-box" [style.height.px]="220"></div>
+          <div class="sk-box" [style.height.px]="190"></div>
+        </div>
+        <div class="gr g14">
+          <div class="sk-box" [style.height.px]="430"></div>
         </div>
       </div>
-    </div>
-
-    <mat-card class="form-card">
-      <mat-card-header class="card-header-with-button">
-        <mat-card-title class="titulo-seccion">Cliente</mat-card-title>
-        <button *ngIf="selectedCliente() && !isEdit()" mat-button color="warn" type="button" (click)="clearCliente()">
-          <mat-icon>person_remove</mat-icon> Cambiar
-        </button>
-      </mat-card-header>
-      <mat-card-content class="card-content">
-        <div class="row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Nombre del Cliente</mat-label>
-            <input type="text" matInput formControlName="cliente_nombre" [matAutocomplete]="auto">
-            <mat-autocomplete #auto="matAutocomplete" [displayWith]="displayCliente"
-              (optionSelected)="selectCliente($event.option.value)">
-              <mat-option *ngFor="let c of clientesFiltrados()" [value]="c">
-                <span class="auto-name">{{ c.nombre }}</span>
-                <span class="auto-phone">{{ c.telefono }}</span>
-              </mat-option>
-            </mat-autocomplete>
-            <mat-icon matPrefix>person</mat-icon>
-            <mat-error>Requerido</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Teléfono (WhatsApp)</mat-label>
-            <input matInput formControlName="cliente_telefono" type="tel" placeholder="10 dígitos">
-            <mat-icon matPrefix>phone</mat-icon>
-            <mat-error>Mínimo 10 dígitos</mat-error>
-          </mat-form-field>
-        </div>
-
-        <div class="lealtad-panel" *ngIf="selectedCliente()">
-
-          <div class="lealtad-header">
-            <div class="lealtad-title">
-              <mat-icon class="lealtad-icon">loyalty</mat-icon>
-              <span>Programa de Lealtad</span>
-            </div>
-            <button mat-stroked-button [color]="selectedCliente()?.apto_promociones !== false ? 'primary' : 'warn'"
-              type="button" (click)="toggleAptitudPromo(selectedCliente()?.apto_promociones === false)">
-              <mat-icon>{{ selectedCliente()?.apto_promociones !== false ? 'check_circle' : 'block' }}</mat-icon>
-              {{ selectedCliente()?.apto_promociones !== false ? 'Apto para promos' : 'No aplica promos' }}
-            </button>
-          </div>
-
-          <ng-container *ngIf="selectedCliente()?.apto_promociones !== false">
-            <div class="lealtad-stats">
-              <div class="stat-item">
-                <span class="stat-label">Saldo disponible</span>
-                <span class="stat-value green">${{ (selectedCliente()?.monedero ?? 0) | number:'1.2-2' }}</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-label">Historial de servicios</span>
-                <span class="stat-value">{{ selectedCliente()?.contador_servicios ?? 0 }} <small>totales</small></span>
-              </div>
-              <div class="stat-item highlight-box">
-                <span class="stat-label">Siguiente recompensa</span>
-                <span class="stat-value accent" *ngIf="(selectedCliente()?.monedero ?? 0) < 50">
-                  +${{ proximaGanancia }} <small>en el próximo servicio</small>
-                </span>
-                <span class="stat-value text-muted" *ngIf="(selectedCliente()?.monedero ?? 0) >= 50">
-                  Tope alcanzado
-                </span>
-              </div>
-            </div>
-
-            <div class="ciclo-progress">
-              <div class="ciclo-header-flex">
-                <span class="ciclo-label">Progreso hacia bono especial ($20)</span>
-                <span class="ciclo-count">{{ serviciosEnCiclo }} / 4</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-fill" [style.width.%]="promoProgressPercent"></div>
-              </div>
-              <div class="ciclo-dots">
-                <span class="dot" *ngFor="let i of [0,1,2,3]" [class.filled]="i < serviciosEnCiclo"></span>
-              </div>
-            </div>
-
-            <div class="lealtad-hint">
-              <mat-icon class="hint-star">stars</mat-icon>
-              <span>{{ getLoyaltyMessage() }}</span>
-            </div>
-          </ng-container>
-
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="form-card">
-      <mat-card-header><mat-card-title class="titulo-seccion">Detalles y Cobro</mat-card-title></mat-card-header>
-      <mat-card-content>
-
-        <div class="descuento-banner" *ngIf="descuentoInicial() > 0">
-          <mat-icon>local_offer</mat-icon>
-          <div>
-            <strong>Descuento de monedero aplicado: ${{ descuentoInicial() | number:'1.2-2' }} MXN.</strong>
-            <span>El saldo pendiente sugerido ya contempla esta reducción.</span>
-          </div>
-        </div>
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Sucursal</mat-label>
-          <mat-select formControlName="sucursal_id">
-            <mat-option *ngFor="let s of sucursales()" [value]="s.id">{{ s.nombre }}</mat-option>
-          </mat-select>
-          <mat-icon matPrefix>store</mat-icon>
-        </mat-form-field>
-
-        <div class="quick-pos-box">
-          <span class="preset-label">Captura rápida por toque o peso:</span>
-          <div class="kilo-calc-row">
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              class="mini-num-input"
-              placeholder="Kg (ej. 4.5)"
-              [ngModel]="kilosCaptura()"
-              [ngModelOptions]="{standalone: true}"
-              (ngModelChange)="kilosCaptura.set($event)" />
-            <span class="calc-x">x</span>
-            <input
-              type="number"
-              step="1"
-              min="0"
-              class="mini-num-input"
-              placeholder="$/kg"
-              [ngModel]="tarifaKg() || null"
-              [ngModelOptions]="{standalone: true}"
-              (ngModelChange)="actualizarTarifaKg($event)" />
-            <button
-              type="button"
-              class="apply-kg-btn"
-              [disabled]="!(kilosCaptura() && kilosCaptura()! > 0)"
-              (click)="aplicarCalculoKilos()">
-              + Agregar kg
-            </button>
-          </div>
-
-          <div class="preset-chips">
-            <button
-              type="button"
-              class="preset-chip"
-              *ngFor="let p of prendasRapidas"
-              (click)="agregarPrendaRapida(p)">
-              + {{ p }}
-            </button>
-          </div>
-        </div>
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Descripción de prendas</mat-label>
-          <textarea matInput formControlName="descripcion" rows="2"></textarea>
-        </mat-form-field>
-
-        <div class="row">
-          <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Total ($)</mat-label>
-            <input matInput type="number" formControlName="monto_total">
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="half-width">
-            <mat-label>Saldo pendiente a pagar ($)</mat-label>
-            <input matInput type="number" formControlName="saldo_pendiente">
-          </mat-form-field>
-        </div>
-
-        <div class="anticipo-presets-container" *ngIf="(form.get('monto_total')?.value || 0) > 0">
-          <span class="preset-label">Anticipo rápido:</span>
-          <div class="preset-chips">
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="anticipoCalculado === 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
-              (click)="aplicarPresetAnticipo('total')">
-              Debe todo (${{ saldoMaximoPendiente | number:'1.2-2' }})
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
-              (click)="aplicarPresetAnticipo('mitad')">
-              50% anticipo (${{ (saldoMaximoPendiente / 2) | number:'1.2-2' }})
-            </button>
-            <button
-              type="button"
-              class="preset-chip"
-              [class.active]="form.get('saldo_pendiente')?.value === 0"
-              (click)="aplicarPresetAnticipo('cero')">
-              Pagó todo ($0)
-            </button>
-          </div>
-
-          <div class="metodo-inline-box" *ngIf="!isEdit() && anticipoCalculado > 0">
-            <span class="preset-label">Método de cobro (se registra automático en caja):</span>
-            <div class="preset-chips">
+    </section>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      @if (isEdit()) {
+        <section class="stepper-card gr" aria-label="Estatus del pedido">
+          <span class="field-lbl">Estatus del pedido</span>
+          <div class="stepper" role="group" aria-label="Seleccionar estatus">
+            @for (step of statusSteps; track step.key) {
               <button
                 type="button"
-                class="preset-chip"
-                *ngFor="let m of metodosPago"
-                [class.active]="metodoPago() === m.id"
-                (click)="metodoPago.set(m.id)">
-                <mat-icon class="chip-mini-icon">{{ m.icon }}</mat-icon>
-                {{ m.label }}
+                class="step-btn"
+                [class.active]="estadoActual() === step.key"
+                [class.is-cancel]="step.key === 'cancelado'"
+                [attr.aria-pressed]="estadoActual() === step.key"
+                (click)="setStatus(step.key)">
+                <span class="step-ico cc">
+                  <mat-icon aria-hidden="true">{{ step.icon }}</mat-icon>
+                </span>
+                <span>{{ step.label }}</span>
               </button>
-            </div>
+            }
+          </div>
+        </section>
+      }
 
-            <div class="categoria-inline-row" *ngIf="categoriasIngreso().length > 0">
-              <button
-                type="button"
-                class="categoria-pill-btn"
-                (click)="mostrarSelectorCategoria.set(!mostrarSelectorCategoria())">
-                <mat-icon class="chip-mini-icon">sell</mat-icon>
-                <span>Categoría: <strong>{{ categoriaIngresoNombre() }}</strong></span>
-                <span class="cambiar-link">{{ mostrarSelectorCategoria() ? 'Ocultar' : 'Cambiar' }}</span>
-              </button>
-              <div class="preset-chips categoria-chips-panel" *ngIf="mostrarSelectorCategoria()">
-                <button
-                  type="button"
-                  class="preset-chip"
-                  *ngFor="let c of categoriasIngreso()"
-                  [class.active]="categoriaIngresoId() === c.id"
-                  (click)="seleccionarCategoriaIngreso(c.id)">
-                  {{ c.nombre }}
+      <div class="pf-grid gr g14">
+        <div class="gr g14">
+          <section class="pf-card pf-card--client">
+            <header class="card-hd flb">
+              <div class="card-lead fl">
+                <span class="card-ico cc"><mat-icon aria-hidden="true">person</mat-icon></span>
+                <div>
+                  <h2>Cliente y lealtad</h2>
+                  <p>Vincula un cliente o registra uno nuevo</p>
+                </div>
+              </div>
+              @if (selectedCliente() && !isEdit()) {
+                <button type="button" class="btn btn--del ifl" (click)="clearCliente()">
+                  <mat-icon aria-hidden="true">person_remove</mat-icon>
+                  <span>Cambiar</span>
                 </button>
+              }
+            </header>
+
+            <div class="card-bd gr">
+              <div class="row-2 gr">
+                <div class="gr g6">
+                  <label class="field-lbl" for="pf-cliente-nombre">Nombre del cliente</label>
+                  <div
+                    class="inp-wrap fl"
+                    matAutocompleteOrigin
+                    #clienteOrigin="matAutocompleteOrigin"
+                    [class.is-invalid]="form.controls.cliente_nombre.invalid && (form.controls.cliente_nombre.touched || submitAttempted())"
+                    [class.is-disabled]="form.controls.cliente_nombre.disabled">
+                    <mat-icon aria-hidden="true">person</mat-icon>
+                    <input
+                      id="pf-cliente-nombre"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="Buscar o escribir nombre"
+                      formControlName="cliente_nombre"
+                      [matAutocomplete]="auto"
+                      [matAutocompleteConnectedTo]="clienteOrigin" />
+                  </div>
+                  <mat-autocomplete
+                    #auto="matAutocomplete"
+                    [displayWith]="displayCliente"
+                    (optionSelected)="onClienteOptionSelected($event)">
+                    @for (c of clientesFiltrados(); track c.id) {
+                      <mat-option [value]="c">
+                        <span class="auto-name">{{ c.nombre }}</span>
+                        <span class="auto-phone mono">{{ c.telefono }}</span>
+                      </mat-option>
+                    }
+                  </mat-autocomplete>
+                  @if (form.controls.cliente_nombre.invalid && (form.controls.cliente_nombre.touched || submitAttempted())) {
+                    <span class="field-err" role="alert">Ingresa el nombre del cliente</span>
+                  }
+                </div>
+
+                <div class="gr g6">
+                  <label class="field-lbl" for="pf-cliente-telefono">Teléfono (WhatsApp)</label>
+                  <div
+                    class="inp-wrap fl"
+                    [class.is-invalid]="form.controls.cliente_telefono.invalid && (form.controls.cliente_telefono.touched || submitAttempted())"
+                    [class.is-disabled]="form.controls.cliente_telefono.disabled">
+                    <mat-icon aria-hidden="true">phone</mat-icon>
+                    <input
+                      id="pf-cliente-telefono"
+                      type="tel"
+                      inputmode="numeric"
+                      placeholder="10 dígitos"
+                      formControlName="cliente_telefono" />
+                  </div>
+                  @if (form.controls.cliente_telefono.invalid && (form.controls.cliente_telefono.touched || submitAttempted())) {
+                    <span class="field-err" role="alert">
+                      @if (form.controls.cliente_telefono.hasError('required')) {
+                        Ingresa el teléfono del cliente
+                      } @else {
+                        Mínimo 10 dígitos
+                      }
+                    </span>
+                  }
+                </div>
               </div>
+
+              @if (selectedCliente(); as cliente) {
+                <div class="loyalty-box gr">
+                  <div class="flb fw">
+                    <span class="loyalty-title ifl">
+                      <mat-icon aria-hidden="true">loyalty</mat-icon>
+                      <span>Programa de lealtad</span>
+                    </span>
+                    <button
+                      type="button"
+                      class="chip-btn ifl promo-toggle"
+                      [class.is-off]="cliente.apto_promociones === false"
+                      [disabled]="togglingPromo()"
+                      [attr.aria-pressed]="cliente.apto_promociones !== false"
+                      (click)="toggleAptitudPromo(cliente.apto_promociones === false)">
+                      <mat-icon aria-hidden="true">
+                        {{ cliente.apto_promociones !== false ? 'check_circle' : 'block' }}
+                      </mat-icon>
+                      <span>{{ cliente.apto_promociones !== false ? 'Apto para promos' : 'No aplica promos' }}</span>
+                    </button>
+                  </div>
+
+                  @if (cliente.apto_promociones !== false) {
+                    <div class="gr c3">
+                      <div class="l-stat gr">
+                        <span class="mini-lbl">Monedero</span>
+                        <strong class="l-val is-ok">{{ formatMxn(cliente.monedero ?? 0) }}</strong>
+                      </div>
+                      <div class="l-stat gr">
+                        <span class="mini-lbl">Servicios</span>
+                        <strong class="l-val">{{ cliente.contador_servicios ?? 0 }}</strong>
+                      </div>
+                      <div class="l-stat gr is-hi">
+                        <span class="mini-lbl">Siguiente bono</span>
+                        @if ((cliente.monedero ?? 0) < 50) {
+                          <strong class="l-val is-ac">+{{ formatMxn(proximaGanancia()) }}</strong>
+                        } @else {
+                          <strong class="l-val is-muted">Tope alcanzado</strong>
+                        }
+                      </div>
+                    </div>
+
+                    <div class="gr g6">
+                      <div class="cycle-hd flb">
+                        <span>Progreso hacia bono especial ($20.00)</span>
+                        <strong>{{ serviciosEnCiclo() }} / 4</strong>
+                      </div>
+                      <div class="cycle-track">
+                        <div class="cycle-fill" [style.width.%]="promoProgressPercent()"></div>
+                      </div>
+                      <div class="fl g6" aria-hidden="true">
+                        @for (slot of cicloSlots; track slot) {
+                          <span class="c-dot" [class.filled]="slot < serviciosEnCiclo()"></span>
+                        }
+                      </div>
+                    </div>
+
+                    <p class="banner banner--warn">
+                      <mat-icon aria-hidden="true">stars</mat-icon>
+                      <span>{{ loyaltyMessage() }}</span>
+                    </p>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+
+          <section class="pf-card pf-card--media">
+            <header class="card-hd flb">
+              <div class="card-lead fl">
+                <span class="card-ico cc"><mat-icon aria-hidden="true">photo_camera</mat-icon></span>
+                <div>
+                  <h2>Evidencia fotográfica</h2>
+                  <p>
+                    @if (fotos().length > 0) {
+                      {{ fotos().length }} {{ fotos().length === 1 ? 'foto adjunta' : 'fotos adjuntas' }} · Toca para ampliar
+                    } @else {
+                      Adjunta fotos de ingreso en formato WebP
+                    }
+                  </p>
+                </div>
+              </div>
+            </header>
+
+            <div class="card-bd gr">
+              <div class="gr c2">
+                <button type="button" class="btn btn--soft ifl" (click)="cameraInput.click()">
+                  <mat-icon aria-hidden="true">camera_alt</mat-icon>
+                  <span>Tomar foto</span>
+                </button>
+                <button type="button" class="btn ifl" (click)="galleryInput.click()">
+                  <mat-icon aria-hidden="true">photo_library</mat-icon>
+                  <span>Galería</span>
+                </button>
+                <input
+                  #cameraInput
+                  type="file"
+                  class="sr-input"
+                  multiple
+                  accept="image/*"
+                  capture="environment"
+                  (change)="onFileSelected($event)" />
+                <input
+                  #galleryInput
+                  type="file"
+                  class="sr-input"
+                  multiple
+                  accept="image/*"
+                  (change)="onFileSelected($event)" />
+              </div>
+
+              @if (fotos().length > 0) {
+                <div class="photos-grid gr">
+                  @for (foto of fotos(); track foto.id || foto.url; let i = $index) {
+                    <div class="photo-item">
+                      <button
+                        type="button"
+                        class="photo-thumb-btn"
+                        [attr.aria-label]="'Ampliar evidencia ' + (i + 1) + ' de ' + fotos().length"
+                        (click)="openLightbox(i)">
+                        <img [src]="foto.url" [alt]="'Evidencia ' + (i + 1)" loading="lazy" />
+                        <span class="photo-badge" [class.is-new]="!foto.id">
+                          {{ foto.id ? 'Guardada' : 'Optimizada' }}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        class="photo-rm cc"
+                        [disabled]="deletingFotoIndex() === i"
+                        [attr.aria-label]="'Eliminar evidencia ' + (i + 1)"
+                        (click)="removeFoto(i)">
+                        <mat-icon aria-hidden="true">close</mat-icon>
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-photos cc">
+                  <mat-icon aria-hidden="true">add_a_photo</mat-icon>
+                  <span>Sin fotos adjuntas</span>
+                </div>
+              }
+
+              <div class="gr g6">
+                <label class="field-lbl" for="pf-evidencia-nota">Nota sobre la evidencia</label>
+                <div class="inp-wrap fl">
+                  <mat-icon aria-hidden="true">notes</mat-icon>
+                  <input
+                    id="pf-evidencia-nota"
+                    type="text"
+                    formControlName="evidencia_nota"
+                    placeholder="Ej. Mancha en manga derecha" />
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="gr g14">
+          <section class="pf-card pf-card--billing">
+            <header class="card-hd flb">
+              <div class="card-lead fl">
+                <span class="card-ico cc"><mat-icon aria-hidden="true">receipt_long</mat-icon></span>
+                <div>
+                  <h2>Detalles y cobro</h2>
+                  <p>Sucursal, prendas, cálculo rápido y fecha de entrega</p>
+                </div>
+              </div>
+            </header>
+
+            <div class="card-bd gr">
+              @if (descuentoInicial() > 0) {
+                <div class="banner banner--ok fl" role="status">
+                  <mat-icon aria-hidden="true">local_offer</mat-icon>
+                  <div>
+                    <strong>Descuento de monedero aplicado: {{ formatMxn(descuentoInicial()) }} MXN</strong>
+                    <span>El saldo pendiente sugerido ya contempla esta reducción.</span>
+                  </div>
+                </div>
+              }
+
+              <div class="gr g6">
+                <span class="field-lbl">Sucursal</span>
+                @if (usaSegmentadoSucursal()) {
+                  <div class="branch-chips" role="group" aria-label="Seleccionar sucursal">
+                    @for (s of sucursales(); track s.id) {
+                      <button
+                        type="button"
+                        class="branch-btn ifl"
+                        [class.active]="sucursalSeleccionada() === s.id"
+                        [attr.aria-pressed]="sucursalSeleccionada() === s.id"
+                        (click)="selectSucursal(s.id)">
+                        <mat-icon aria-hidden="true">store</mat-icon>
+                        <span>{{ s.nombre }}</span>
+                      </button>
+                    }
+                  </div>
+                } @else {
+                  <div
+                    class="inp-wrap fl"
+                    [class.is-invalid]="form.controls.sucursal_id.invalid && (form.controls.sucursal_id.touched || submitAttempted())">
+                    <mat-icon aria-hidden="true">store</mat-icon>
+                    <select formControlName="sucursal_id" aria-label="Seleccionar sucursal">
+                      @if (sucursales().length === 0) {
+                        <option value="">Sin sucursales activas</option>
+                      }
+                      @for (s of sucursales(); track s.id) {
+                        <option [value]="s.id">{{ s.nombre }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+                @if (form.controls.sucursal_id.invalid && (form.controls.sucursal_id.touched || submitAttempted())) {
+                  <span class="field-err" role="alert">Selecciona una sucursal</span>
+                }
+              </div>
+
+              <div class="sub-box gr">
+                <span class="field-lbl">Captura rápida por peso o toque</span>
+                <div class="fl fw g6">
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    class="kg-inp mono"
+                    aria-label="Kilogramos"
+                    placeholder="Kg (ej. 4.5)"
+                    [value]="kilosCaptura() ?? ''"
+                    (input)="onKilosInput($event)"
+                    (keydown.enter)="$event.preventDefault(); aplicarCalculoKilos()" />
+                  <span class="kg-x" aria-hidden="true">x</span>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    class="kg-inp mono"
+                    aria-label="Tarifa por kilogramo"
+                    placeholder="$/kg"
+                    [value]="tarifaKg() > 0 ? tarifaKg() : ''"
+                    (input)="onTarifaInput($event)"
+                    (keydown.enter)="$event.preventDefault(); aplicarCalculoKilos()" />
+                  <button
+                    type="button"
+                    class="kg-add-btn"
+                    [disabled]="(kilosCaptura() ?? 0) <= 0"
+                    (click)="aplicarCalculoKilos()">
+                    @if (subtotalKilosPreview() > 0) {
+                      + Agregar ({{ formatMxn(subtotalKilosPreview()) }})
+                    } @else {
+                      + Agregar kg
+                    }
+                  </button>
+                </div>
+
+                <div class="fl fw g6">
+                  @for (prenda of prendasRapidas; track prenda) {
+                    <button type="button" class="chip-btn ifl" (click)="agregarPrendaRapida(prenda)">
+                      + {{ prenda }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="gr g6">
+                <label class="field-lbl" for="pf-descripcion">Descripción de prendas</label>
+                <textarea
+                  id="pf-descripcion"
+                  class="pf-textarea"
+                  rows="2"
+                  formControlName="descripcion"
+                  placeholder="Ej. 4.5 kg lavado y secado, Edredón Mat."></textarea>
+              </div>
+
+              <div class="row-2 gr">
+                <div class="gr g6">
+                  <label class="field-lbl" for="pf-monto-total">Total ($)</label>
+                  <div class="inp-wrap fl is-num">
+                    <span class="curr-prefix" aria-hidden="true">$</span>
+                    <input
+                      id="pf-monto-total"
+                      class="mono"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      formControlName="monto_total" />
+                  </div>
+                </div>
+
+                <div class="gr g6">
+                  <label class="field-lbl" for="pf-saldo-pendiente">Saldo pendiente ($)</label>
+                  <div class="inp-wrap fl is-num">
+                    <span class="curr-prefix" aria-hidden="true">$</span>
+                    <input
+                      id="pf-saldo-pendiente"
+                      class="mono"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      inputmode="decimal"
+                      formControlName="saldo_pendiente" />
+                  </div>
+                </div>
+              </div>
+
+              @if (montoTotal() > 0) {
+                <div class="sub-box gr">
+                  <span class="field-lbl">Anticipo rápido</span>
+                  <div class="fl fw g6" role="group" aria-label="Opciones rápidas de anticipo">
+                    <button
+                      type="button"
+                      class="chip-btn ifl"
+                      [class.active]="anticipoCalculado() === 0 && saldoPendiente() > 0"
+                      (click)="aplicarPresetAnticipo('total')">
+                      Debe todo ({{ formatMxn(saldoMaximoPendiente()) }})
+                    </button>
+                    <button
+                      type="button"
+                      class="chip-btn ifl"
+                      [class.active]="anticipoCalculado() > 0 && saldoPendiente() > 0"
+                      (click)="aplicarPresetAnticipo('mitad')">
+                      50% ({{ formatMxn(saldoMaximoPendiente() / 2) }})
+                    </button>
+                    <button
+                      type="button"
+                      class="chip-btn ifl"
+                      [class.active]="saldoPendiente() === 0"
+                      (click)="aplicarPresetAnticipo('cero')">
+                      Pagó todo ($0.00)
+                    </button>
+                  </div>
+
+                  @if (!isEdit() && anticipoCalculado() > 0) {
+                    <div class="gr g6">
+                      <span class="field-lbl">Método de cobro (registro automático en caja)</span>
+                      <div class="fl fw g6" role="group" aria-label="Método de cobro">
+                        @for (m of metodosPago; track m.id) {
+                          <button
+                            type="button"
+                            class="chip-btn ifl"
+                            [class.active]="metodoPago() === m.id"
+                            [attr.aria-pressed]="metodoPago() === m.id"
+                            (click)="metodoPago.set(m.id)">
+                            <mat-icon aria-hidden="true">{{ m.icon }}</mat-icon>
+                            <span>{{ m.label }}</span>
+                          </button>
+                        }
+                      </div>
+
+                      @if (categoriasIngreso().length > 0) {
+                        <div class="gr g6">
+                          <button
+                            type="button"
+                            class="cat-pill ifl"
+                            [attr.aria-expanded]="mostrarSelectorCategoria()"
+                            (click)="mostrarSelectorCategoria.set(!mostrarSelectorCategoria())">
+                            <mat-icon aria-hidden="true">sell</mat-icon>
+                            <span>Categoría: <strong>{{ categoriaIngresoNombre() }}</strong></span>
+                            <span class="cat-link">{{ mostrarSelectorCategoria() ? 'Ocultar' : 'Cambiar' }}</span>
+                          </button>
+                          @if (mostrarSelectorCategoria()) {
+                            <div class="fl fw g6">
+                              @for (cat of categoriasIngreso(); track cat.id) {
+                                <button
+                                  type="button"
+                                  class="chip-btn ifl"
+                                  [class.active]="categoriaIngresoId() === cat.id"
+                                  [attr.aria-pressed]="categoriaIngresoId() === cat.id"
+                                  (click)="seleccionarCategoriaIngreso(cat.id)">
+                                  {{ cat.nombre }}
+                                </button>
+                              }
+                            </div>
+                          }
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <div
+                    class="anticipo-badge"
+                    [class.is-part]="anticipoCalculado() > 0 && saldoPendiente() > 0"
+                    [class.is-paid]="saldoPendiente() === 0">
+                    @if (saldoPendiente() === 0) {
+                      <span>Pagado en su totalidad ($0.00 pendiente)</span>
+                    } @else if (anticipoCalculado() > 0) {
+                      <span>
+                        Anticipo en caja: {{ formatMxn(anticipoCalculado()) }} MXN · Restan: {{ formatMxn(saldoPendiente()) }} MXN
+                      </span>
+                    } @else {
+                      <span>Sin anticipo (liquidación contra entrega: {{ formatMxn(saldoPendiente()) }} MXN)</span>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="gr g6">
+                <label class="field-lbl" for="pf-fecha-entrega">Fecha de entrega estimada</label>
+                <div
+                  class="inp-wrap fl"
+                  [class.is-invalid]="form.controls.fecha_entrega_estimada.invalid && (form.controls.fecha_entrega_estimada.touched || submitAttempted())">
+                  <mat-icon aria-hidden="true">event</mat-icon>
+                  <input
+                    id="pf-fecha-entrega"
+                    type="date"
+                    formControlName="fecha_entrega_estimada"
+                    (change)="onFechaEntregaChange($event)" />
+                </div>
+                @if (form.controls.fecha_entrega_estimada.invalid && (form.controls.fecha_entrega_estimada.touched || submitAttempted())) {
+                  <span class="field-err" role="alert">Selecciona una fecha de entrega válida</span>
+                }
+
+                <div class="fl fw g6" role="group" aria-label="Entrega rápida">
+                  @for (preset of fechaPresets; track preset.dias) {
+                    <button
+                      type="button"
+                      class="chip-btn ifl"
+                      [class.active]="isFechaOffsetActivo(preset.dias)"
+                      [attr.aria-pressed]="isFechaOffsetActivo(preset.dias)"
+                      (click)="setFechaOffset(preset.dias)">
+                      {{ preset.label }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <footer class="pf-footer">
+        <div class="pf-footer__inner flb fw">
+          <div class="fl">
+            <div class="tot-item">
+              <span class="mini-lbl">Total</span>
+              <strong class="pf-tot-val">{{ formatMxn(montoTotal()) }}</strong>
+            </div>
+            <div class="pf-tot-sep" aria-hidden="true"></div>
+            <div class="tot-item">
+              <span class="mini-lbl">Saldo</span>
+              <strong
+                class="pf-tot-val"
+                [class.is-due]="saldoPendiente() > 0"
+                [class.is-paid]="saldoPendiente() === 0 && montoTotal() > 0">
+                {{ formatMxn(saldoPendiente()) }}
+              </strong>
             </div>
           </div>
 
-          <div class="anticipo-resumen-badge"
-               [class.has-anticipo]="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0"
-               [class.total-liquidado]="form.get('saldo_pendiente')?.value === 0">
-            <span *ngIf="form.get('saldo_pendiente')?.value === 0">
-              Pagado en su totalidad ($0.00 pendiente)
-            </span>
-            <span *ngIf="anticipoCalculado > 0 && (form.get('saldo_pendiente')?.value || 0) > 0">
-              Anticipo automático en caja: ${{ anticipoCalculado | number:'1.2-2' }} MXN | Restan: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN
-            </span>
-            <span *ngIf="anticipoCalculado === 0 && (form.get('saldo_pendiente')?.value || 0) > 0">
-              Sin anticipo (liquidación contra entrega: ${{ (form.get('saldo_pendiente')?.value || 0) | number:'1.2-2' }} MXN)
-            </span>
-          </div>
-        </div>
-
-        <div class="row">
-          <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Fecha Entrega</mat-label>
-            <input matInput [matDatepicker]="picker" formControlName="fecha_entrega_estimada">
-            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-          </mat-form-field>
-        </div>
-
-        <div class="date-presets-container">
-          <span class="preset-label">Entrega rápida:</span>
-          <div class="preset-chips">
-            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(0)" (click)="setFechaOffset(0)">Hoy</button>
-            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(1)" (click)="setFechaOffset(1)">Mañana</button>
-            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(2)" (click)="setFechaOffset(2)">En 2 días</button>
-            <button type="button" class="preset-chip" [class.active]="isFechaOffsetActivo(3)" (click)="setFechaOffset(3)">En 3 días</button>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="form-card">
-      <mat-card-header class="evidencia-header">
-        <mat-card-title class="titulo-evidencia">Evidencia Fotográfica</mat-card-title>
-        <div class="evidencia-actions">
-          <button type="button" mat-stroked-button color="primary" (click)="cameraInput.click()">
-            <mat-icon>camera_alt</mat-icon> Tomar foto
-          </button>
-          <button type="button" mat-stroked-button (click)="galleryInput.click()">
-            <mat-icon>photo_library</mat-icon> Galería
-          </button>
-        </div>
-        <input #cameraInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" capture="environment" style="display:none">
-        <input #galleryInput type="file" multiple (change)="onFileSelected($event)" accept="image/*" style="display:none">
-      </mat-card-header>
-
-      <mat-card-content>
-        <div class="photos-grid" *ngIf="fotos().length > 0; else noPhotos">
-          <div class="photo-item" *ngFor="let f of fotos(); let i = index">
-            <img [src]="f.url" alt="Evidencia">
-            <button type="button" class="remove-btn" (click)="removeFoto(i)">
-              <mat-icon>close</mat-icon>
+          <div class="pf-acts fl">
+            <button type="button" class="btn ifl" [disabled]="saving()" (click)="cancelar()">
+              Cancelar
             </button>
-            <span class="badge" *ngIf="f.id">Guardada</span>
-            <span class="badge new" *ngIf="!f.id">Optimizada</span>
+            <button type="submit" class="btn btn--pri ifl" [disabled]="!canSave()">
+              @if (saving()) {
+                <span class="btn-spin" aria-hidden="true"></span>
+                <span>Guardando...</span>
+              } @else {
+                <mat-icon aria-hidden="true">check</mat-icon>
+                <span>{{ isEdit() ? 'Guardar cambios' : 'Crear pedido' }}</span>
+              }
+            </button>
           </div>
         </div>
-        <ng-template #noPhotos>
-          <div class="empty-photos">Sin fotos adjuntas</div>
-        </ng-template>
+      </footer>
+    </form>
+  }
+</div>
 
-        <mat-form-field appearance="outline" class="full-width mt-3">
-          <mat-label>Nota sobre la evidencia</mat-label>
-          <input matInput formControlName="evidencia_nota" placeholder="Ej: Mancha en manga derecha">
-        </mat-form-field>
-      </mat-card-content>
-    </mat-card>
-
-    <div class="footer-actions">
-      <button mat-flat-button color="primary" class="save-btn" [disabled]="form.invalid || saving()">
-        <mat-spinner *ngIf="saving()" diameter="20" class="white-spinner"></mat-spinner>
-        <span *ngIf="!saving()">{{ isEdit() ? 'Guardar Cambios' : 'Crear Pedido' }}</span>
-        <mat-icon *ngIf="!saving()">check</mat-icon>
+@if (lightboxFoto(); as activeFoto) {
+  <div
+    class="lb-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Vista ampliada de evidencia fotográfica"
+    (click)="onLightboxBackdropClick($event)">
+    <div class="lb-topbar flb">
+      <div class="lb-meta ifl">
+        <span class="mono">{{ lightboxCounter() }}</span>
+        <span class="lb-tag" [class.is-new]="!activeFoto.id">
+          {{ activeFoto.id ? 'Guardada' : 'Optimizada' }}
+        </span>
+      </div>
+      <button
+        type="button"
+        class="lb-close cc"
+        aria-label="Cerrar vista ampliada"
+        (click)="closeLightbox()">
+        <mat-icon aria-hidden="true">close</mat-icon>
       </button>
     </div>
 
-  </form>
+    <div class="lb-stage cc" (click)="onLightboxBackdropClick($event)">
+      @if (canNavigateLightbox()) {
+        <button
+          type="button"
+          class="lb-nav lb-nav--prev cc"
+          aria-label="Foto anterior"
+          (click)="prevLightbox()">
+          <mat-icon aria-hidden="true">chevron_left</mat-icon>
+        </button>
+      }
 
-</div>
+      <img class="lb-img" [src]="activeFoto.url" [alt]="'Evidencia ampliada ' + lightboxCounter()" />
+
+      @if (canNavigateLightbox()) {
+        <button
+          type="button"
+          class="lb-nav lb-nav--next cc"
+          aria-label="Foto siguiente"
+          (click)="nextLightbox()">
+          <mat-icon aria-hidden="true">chevron_right</mat-icon>
+        </button>
+      }
+    </div>
+  </div>
+}
