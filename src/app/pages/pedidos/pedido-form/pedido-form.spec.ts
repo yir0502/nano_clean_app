@@ -471,8 +471,13 @@ describe('PedidoFormComponent', () => {
         tick();
         fixture.detectChanges();
 
-        const optionEl = TestBed.inject(OverlayContainer).getContainerElement().querySelector<HTMLElement>('mat-option');
+        const overlayEl = TestBed.inject(OverlayContainer).getContainerElement();
+        expect(overlayEl.querySelector('.pf-client-ac-panel')).not.toBeNull();
+        const optionEl = overlayEl.querySelector<HTMLElement>('mat-option.pf-client-opt');
         expect(optionEl).not.toBeNull();
+        expect(optionEl?.querySelector('.pf-ac-name')?.textContent?.trim()).toBe('Ana Lopez');
+        expect(optionEl?.querySelector('.pf-ac-phone')?.textContent).toContain('5511223344');
+        expect(optionEl?.querySelector('.pf-ac-wallet')?.textContent?.trim()).toBe('$20.00');
         optionEl?.click();
         fixture.detectChanges();
         flush();

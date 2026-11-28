@@ -97,12 +97,26 @@
                   </div>
                   <mat-autocomplete
                     #auto="matAutocomplete"
+                    class="pf-client-ac-panel"
                     [displayWith]="displayCliente"
                     (optionSelected)="onClienteOptionSelected($event)">
                     @for (c of clientesFiltrados(); track c.id) {
-                      <mat-option [value]="c">
-                        <span class="auto-name">{{ c.nombre }}</span>
-                        <span class="auto-phone mono">{{ c.telefono }}</span>
+                      <mat-option [value]="c" class="pf-client-opt">
+                        <div class="pf-ac-row">
+                          <span class="pf-ac-avatar" aria-hidden="true">
+                            <mat-icon>person</mat-icon>
+                          </span>
+                          <div class="pf-ac-info">
+                            <span class="pf-ac-name">{{ c.nombre }}</span>
+                            <span class="pf-ac-phone">
+                              <mat-icon aria-hidden="true">phone</mat-icon>
+                              <span>{{ c.telefono }}</span>
+                            </span>
+                          </div>
+                          @if ((c.monedero ?? 0) > 0) {
+                            <span class="pf-ac-wallet">{{ formatMxn(c.monedero ?? 0) }}</span>
+                          }
+                        </div>
                       </mat-option>
                     }
                   </mat-autocomplete>

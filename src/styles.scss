@@ -539,3 +539,133 @@ mat-toolbar .mat-mdc-button {
     opacity: 1;
   }
 }
+
+.cdk-overlay-container {
+  .mat-mdc-autocomplete-panel,
+  .mat-mdc-select-panel {
+    background: #ffffff !important;
+    border: 1.5px solid #94a3b8 !important;
+    border-radius: 14px !important;
+    margin-top: 6px;
+    padding: 6px !important;
+    box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.16), 0 4px 10px -2px rgba(15, 23, 42, 0.08) !important;
+    font-family: var(--font-ui) !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    .mat-mdc-option {
+      border-radius: 10px !important;
+      font-family: var(--font-ui) !important;
+      color: #0f172a;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+
+      &:hover:not(.mdc-list-item--disabled),
+      &.mdc-list-item--selected:not(.mdc-list-item--disabled),
+      &.mat-mdc-option-active {
+        background: #eff6ff !important;
+      }
+    }
+  }
+
+  .mat-mdc-autocomplete-panel.pf-client-ac-panel {
+    .mat-mdc-option.pf-client-opt {
+      min-height: 54px !important;
+      padding: 6px 8px !important;
+      margin-bottom: 2px;
+      border: 1px solid transparent;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      &:hover:not(.mdc-list-item--disabled),
+      &.mdc-list-item--selected:not(.mdc-list-item--disabled),
+      &.mat-mdc-option-active {
+        border-color: #bfdbfe;
+      }
+
+      .mdc-list-item__primary-text {
+        width: 100%;
+      }
+    }
+
+    .pf-ac-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .pf-ac-avatar {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: var(--brand-primary, #196aff);
+      flex-shrink: 0;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+      }
+    }
+
+    .pf-ac-info {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pf-ac-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #0f172a;
+      line-height: 1.25;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pf-ac-phone {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #475569;
+      font-variant-numeric: tabular-nums;
+
+      mat-icon {
+        font-size: 13px;
+        width: 13px;
+        height: 13px;
+        line-height: 13px;
+        color: #64748b;
+      }
+    }
+
+    .pf-ac-wallet {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #047857;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+  }
+}
