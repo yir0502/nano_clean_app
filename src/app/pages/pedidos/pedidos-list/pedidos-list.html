@@ -417,18 +417,26 @@
         class="order-progress"
         *ngIf="esActivos()"
         role="progressbar"
-        [attr.aria-valuenow]="card.progress"
+        [attr.aria-valuenow]="card.stage.percent"
         aria-valuemin="0"
         aria-valuemax="100"
-        [attr.aria-label]="'Avance: ' + card.stage.label + ' (' + card.progress + '%)'">
-        <div class="progress-track">
-          <div
-            class="progress-fill"
-            [ngClass]="card.stage.cssClass"
-            [style.width.%]="card.progress">
-          </div>
+        [attr.aria-label]="'Etapa actual: ' + card.stage.label + ' (' + card.stage.percent + '%)'">
+        <div class="order-progress__track">
+          <span
+            *ngFor="let step of activeStages; trackBy: trackByStageKey"
+            class="order-progress__step"
+            [class.is-done]="step.index < card.stage.index"
+            [class.is-current]="step.index === card.stage.index"
+            [attr.title]="step.label">
+          </span>
         </div>
-        <span class="progress-pct">{{ card.progress }}%</span>
+        <div class="order-progress__caption">
+          <span class="order-progress__label" [ngClass]="card.stage.cssClass">
+            <mat-icon aria-hidden="true">{{ card.stage.icon }}</mat-icon>
+            <span>{{ card.stage.label }}</span>
+          </span>
+          <span class="order-progress__pct">{{ card.stage.percent }}%</span>
+        </div>
       </div>
 
       <div class="order-actions" *ngIf="esActivos()">

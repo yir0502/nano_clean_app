@@ -302,6 +302,13 @@ describe('PedidosListComponent', () => {
       expect(Array.from(host.querySelectorAll('.stage-chip .chip-cnt')).map((el) => el.textContent?.trim())).toEqual([
         '7', '1', '2', '1', '1', '2',
       ]);
+      const steps = Array.from(host.querySelectorAll('.order-progress__step'));
+      expect(steps.length).toBe(5);
+      expect(steps[0].classList.contains('is-done')).toBeTrue();
+      expect(steps[1].classList.contains('is-current')).toBeTrue();
+      expect(steps[2].classList.contains('is-done') || steps[2].classList.contains('is-current')).toBeFalse();
+      expect(queryReq(host, '.order-progress__label').textContent).toContain('Lavando');
+      expect(queryReq(host, '.order-progress__pct').textContent?.trim()).toBe('40%');
     });
 
     it('KPIs Listos, Por cobrar y En proceso alternan filtros y chips filtran etapa', async () => {
