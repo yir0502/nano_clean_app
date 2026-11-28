@@ -478,6 +478,10 @@ describe('PedidoFormComponent', () => {
         expect(optionEl?.querySelector('.pf-ac-name')?.textContent?.trim()).toBe('Ana Lopez');
         expect(optionEl?.querySelector('.pf-ac-phone')?.textContent).toContain('5511223344');
         expect(optionEl?.querySelector('.pf-ac-wallet')?.textContent?.trim()).toBe('$20.00');
+        const avatarIcon = optionEl?.querySelector<HTMLElement>('.pf-ac-avatar mat-icon');
+        const phoneIcon = optionEl?.querySelector<HTMLElement>('.pf-ac-phone mat-icon');
+        expect(avatarIcon ? window.getComputedStyle(avatarIcon).marginRight : '').toBe('0px');
+        expect(phoneIcon ? window.getComputedStyle(phoneIcon).marginRight : '').toBe('0px');
         optionEl?.click();
         fixture.detectChanges();
         flush();
